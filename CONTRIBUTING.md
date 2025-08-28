@@ -6,7 +6,7 @@ Code should be modular components limited in scope to perform a single operation
 
 ## Writing documentation
 
-The Book of Orbit is kept in `docs/src`. There are four main sections to write:
+The Orbit Book is kept in `docs/src`. There are four main sections to write:
 1. _tutorials_ - for users to get their hands dirty and learn by doing
 2. _user guide_ - how to do common and popular tasks
 3. _topic guide_ - general information about how the program works

@@ -118,6 +118,38 @@ impl VhdlToken {
         }
     }
 
+    /// Casts into an abstract literal.
+    pub fn as_abstract_literal(&self) -> Option<&AbstLiteral> {
+        match self {
+            Self::AbstLiteral(al) => Some(al),
+            _ => None,
+        }
+    }
+
+    /// Casts into a bit string literal.
+    pub fn as_bit_str_literal(&self) -> Option<&BitStrLiteral> {
+        match self {
+            Self::BitStrLiteral(bsl) => Some(bsl),
+            _ => None,
+        }
+    }
+
+    /// Casts into a character literal.
+    pub fn as_char_literal(&self) -> Option<&Character> {
+        match self {
+            Self::CharLiteral(c) => Some(c),
+            _ => None,
+        }
+    }
+
+    /// Casts into a string literal.
+    pub fn as_str_literal(&self) -> Option<&String> {
+        match self {
+            Self::StrLiteral(s) => Some(s),
+            _ => None,
+        }
+    }
+
     /// Checks if the current token type `self` is a delimiter.
     pub fn is_delimiter(&self) -> bool {
         match self {

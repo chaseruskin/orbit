@@ -15,7 +15,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
-## 0.26.1 - unreleased
+## 0.26.1
 
 ### Features
 - Adds file locking mechanism among multiple Orbit processes for atomic operations within single shared catalog resource
@@ -25,6 +25,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - Adds `--depth <depth>` option to `orbit tree` to set a maximum depth to the tree displayed
 - Allows `orbit tree` to export tree as structured JSON data using `--json` for potential to be processed downstream by other tools
 - Improves parameter type inference for Verilog/SV language conversions to VHDL for `orbit get` command
+- Improves default value conversions between Verilog/SV and VHDL for `orbit get` command
 
 ### Changes
 - Prevents duplicate values from being appended to configuration's `include` field using `orbit config` command

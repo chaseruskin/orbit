@@ -28,7 +28,7 @@ use crate::core::lang::{
     verilog::{
         error::VerilogError,
         interface::{self, DataType, ParamList, PortList},
-        token::{identifier::Identifier, operator::Operator},
+        token::{identifier::Identifier, number::Number, operator::Operator},
     },
     vhdl::token::VhdlTokenizer,
 };
@@ -480,7 +480,9 @@ impl Module {
                         false => Vvt::Identifier(VhIdentifier::Basic("bit".to_string())),
                     },
                     Keyword::String => Vvt::Identifier(VhIdentifier::Basic("string".to_string())),
-                    _ => panic!("unsupported datatype keyword conversion to vhdl"),
+                    Keyword::Real => Vvt::Identifier(VhIdentifier::Basic("real".to_string())),
+                    Keyword::Time => Vvt::Identifier(VhIdentifier::Basic("time".to_string())),
+                    _ => panic!("unsupported datatype keyword conversion to vhdl: {}", k),
                 },
                 SystemVerilogToken::Identifier(i) => match i {
                     Identifier::Basic(s) => Vvt::Identifier(VhIdentifier::Basic(s.clone())),
@@ -488,16 +490,22 @@ impl Module {
                     Identifier::Directive(s) => Vvt::Identifier(VhIdentifier::Extended(s.clone())),
                     Identifier::System(s) => Vvt::Identifier(VhIdentifier::Extended(s.clone())),
                 },
-                _ => panic!("unsupported datatype conversion to vhdl"),
+                _ => panic!("unsupported datatype conversion to vhdl: {:?}", dtype),
             }
         } else {
             match def_value {
                 Some(expr) => {
                     if let Some(first_token) = expr.first() {
                         match first_token {
-                            SystemVerilogToken::Number(_) => {
-                                Vvt::Identifier(VhIdentifier::Basic("integer".to_string()))
-                            }
+                            SystemVerilogToken::Number(num) => match num {
+                                Number::Real(_) => {
+                                    Vvt::Identifier(VhIdentifier::Basic("real".to_string()))
+                                }
+                                Number::Time(_) => {
+                                    Vvt::Identifier(VhIdentifier::Basic("time".to_string()))
+                                }
+                                _ => Vvt::Identifier(VhIdentifier::Basic("integer".to_string())),
+                            },
                             SystemVerilogToken::StringLiteral(_) => {
                                 Vvt::Identifier(VhIdentifier::Basic("string".to_string()))
                             }
@@ -574,6 +582,21 @@ impl Module {
     /// Helps convert a SV default value into a VHDL equivalent set of tokens.
     fn convert_default_to_vh(expr: &Vec<SystemVerilogToken>) -> Vec<Token<VhdlToken>> {
         let mut tokens = Vec::new();
+
+        // check to not provide invalid VHDL when we cannot currently handle converting sv
+        // values to vhdl values
+        if let Some(ft) = expr.first() {
+            if let Some(ft_num) = ft.as_number() {
+                match ft_num {
+                    Number::Decimal(_) | Number::Real(_) => (),
+                    _ => return tokens,
+                }
+            }
+        }
+        // bail if the default expression contains a keyword
+        if expr.iter().find(|f| f.as_keyword().is_some()).is_some() {
+            return tokens;
+        }
 
         VhdlTokenizer::tokenize(&tokens_to_string(&expr).into_all_bland())
             .into_iter()

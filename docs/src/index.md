@@ -1,4 +1,4 @@
-# The Book of Orbit
+# The Orbit Book
 
 ![](./images/orbit_logo_128px.png)
 

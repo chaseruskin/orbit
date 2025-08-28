@@ -37,7 +37,7 @@ Orbit's use case is targeted toward anyone interested in developing digital hard
 
 Prebuilt binaries are available for Linux, MacOS, and Windows with no dependencies. Visit the [releases page](https://github.com/chaseruskin/orbit/releases) for the latest version. Working on a different platform? No problem, building from source is easy with [Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html), Rust's default package manager. Use docker? We have [docker images](https://hub.docker.com/repository/docker/chaseruskin/orbit/general) available too. See [Installing](https://chaseruskin.github.io/orbit/starting/installing.html) for complete details.
 
-For more information on getting started and how to use Orbit in your workflow, check out the [Book of Orbit](https://chaseruskin.github.io/orbit/).
+For more information on getting started and how to use Orbit in your workflow, check out [The Orbit Book](https://chaseruskin.github.io/orbit/).
 
 ## The Missing Layer of Abstraction
 
@@ -196,7 +196,7 @@ Orbit has prebuilt binaries for MacOS, Windows, and Linux. See the [releases pag
 
 ## Documentation
 
-Read the [Book of Orbit](https://chaseruskin.github.io/orbit/) for comprehensive documentation composed of tutorials, user guides, topic guides, references, and command manuals.
+Read [The Orbit Book](https://chaseruskin.github.io/orbit/) for comprehensive documentation composed of tutorials, user guides, topic guides, references, and command manuals.
 
 Orbit brings a modern approach to hardware development that minimizes technical debt through its available commands related to code management and build automation:
 ```

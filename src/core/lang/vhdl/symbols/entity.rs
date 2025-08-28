@@ -21,7 +21,8 @@ use serde_derive::Serialize;
 
 use crate::core::lang::{
     reference::RefSet,
-    vhdl::{error::VhdlError, format::VhdlFormat},
+    verilog::token::number::Number,
+    vhdl::{error::VhdlError, format::VhdlFormat, token::literal::AbstLiteral},
 };
 
 use crate::core::lang::highlight;
@@ -373,10 +374,10 @@ impl Entity {
                 tokens.push(Self::sv(Svt::Keyword(SvKeyword::Parameter)));
 
                 // datatype
-                tokens.push(Self::sv(Self::convert_datatype_to_sv(
-                    g.get_type().get_type(),
-                    true,
-                )));
+                let sv_type = Self::convert_datatype_to_sv(g.get_type().get_type(), true);
+                let is_logic_type = sv_type.as_keyword().is_some()
+                    && sv_type.as_keyword().unwrap() == &SvKeyword::Logic;
+                tokens.push(Self::sv(sv_type));
 
                 // ignore any ranges used for a VHDL string datatype since SV does not have explicit range for it
                 if tokens
@@ -403,7 +404,7 @@ impl Entity {
 
                 // default value (if exists)
                 if let Some(expr) = g.get_default().as_static_expr() {
-                    tokens.append(&mut Self::convert_default_to_sv(expr));
+                    tokens.append(&mut Self::convert_default_to_sv(expr, is_logic_type));
                 }
 
                 // closing delimiter
@@ -432,10 +433,10 @@ impl Entity {
                 tokens.push(Self::sv(Svt::Keyword(dir)));
 
                 // datatype
-                tokens.push(Self::sv(Self::convert_datatype_to_sv(
-                    p.get_type().get_type(),
-                    false,
-                )));
+                let sv_type = Self::convert_datatype_to_sv(p.get_type().get_type(), false);
+                let is_logic_type = sv_type.as_keyword().is_some()
+                    && sv_type.as_keyword().unwrap() == &SvKeyword::Logic;
+                tokens.push(Self::sv(sv_type));
 
                 // ignore any ranges used for a VHDL string datatype since SV does not have explicit range for it
                 if tokens
@@ -462,7 +463,7 @@ impl Entity {
 
                 // default value (if exists)
                 if let Some(expr) = p.get_default().as_static_expr() {
-                    tokens.append(&mut Self::convert_default_to_sv(expr));
+                    tokens.append(&mut Self::convert_default_to_sv(expr, is_logic_type));
                 }
 
                 // closing delimiter
@@ -562,19 +563,77 @@ impl Entity {
     }
 
     /// Helps convert a VHDL default value into a SystemVerilog equivalent set of tokens.
-    fn convert_default_to_sv(expr: &Vec<VhdlToken>) -> Vec<Token<SystemVerilogToken>> {
+    fn convert_default_to_sv(
+        expr: &Vec<VhdlToken>,
+        is_logic_type: bool,
+    ) -> Vec<Token<SystemVerilogToken>> {
         let mut tokens = Vec::new();
 
-        SystemVerilogTokenizer::tokenize(&tokens_to_string(&expr).into_all_bland())
-            .into_iter()
-            .filter_map(|r| match r {
-                Ok(r) => Some(r),
-                Err(_) => None,
-            })
-            .filter(|r| r.as_type().is_eof() == false)
-            .for_each(|t| {
-                tokens.push(t);
-            });
+        let mut already_checked = false;
+        // check to not provide invalid SV when we cannot currently handle converting VHDL
+        // values to sv values
+        if let Some(ft) = expr.first() {
+            if let Some(ft_lit) = ft.as_abstract_literal() {
+                match ft_lit {
+                    AbstLiteral::Decimal(_) => (),
+                    AbstLiteral::Based(_) => return tokens,
+                }
+            }
+            if let Some(_) = ft.as_bit_str_literal() {
+                return tokens;
+            }
+            // convert VHDL logic values to SV logic values
+            if is_logic_type == true {
+                // scalar types
+                if let Some(str) = ft.as_char_literal() {
+                    let str = &str.0.to_lowercase();
+                    if str == "0" || str == "1" || str == "x" || str == "z" {
+                        tokens.push(Token::new(
+                            Svt::Number(Number::Based(format!("1'b{}", str))),
+                            Position::new(),
+                        ));
+                    } else {
+                        return tokens;
+                    }
+                    already_checked = true;
+                }
+                // vector types
+                if let Some(str) = ft.as_str_literal() {
+                    let str = str.to_lowercase();
+                    // don't try with unmapped types to sv logic
+                    if str.contains('u')
+                        || str.contains('w')
+                        || str.contains("l")
+                        || str.contains('h')
+                        || str.contains('-')
+                    {
+                        return tokens;
+                    }
+                    tokens.push(Token::new(
+                        Svt::Number(Number::Based(format!("'b{}", str))),
+                        Position::new(),
+                    ));
+                    already_checked = true;
+                }
+            }
+        }
+        // bail if the default expression contains a keyword (like "others")
+        if expr.iter().find(|f| f.as_keyword().is_some()).is_some() {
+            return tokens;
+        }
+
+        if already_checked == false {
+            SystemVerilogTokenizer::tokenize(&tokens_to_string(&expr).into_all_bland())
+                .into_iter()
+                .filter_map(|r| match r {
+                    Ok(r) => Some(r),
+                    Err(_) => None,
+                })
+                .filter(|r| r.as_type().is_eof() == false)
+                .for_each(|t| {
+                    tokens.push(t);
+                });
+        }
 
         // only introduce the '=' token if we successfully transfered the VHDL to SV
         if tokens.len() > 0 {

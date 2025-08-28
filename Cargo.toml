@@ -1,6 +1,6 @@
 [package]
 name = "orbit"
-version = "0.26.0"
+version = "0.26.1"
 description = "Package manager and build system for VHDL, Verilog, and SystemVerilog"
 authors = ["Chase Ruskin <cruskin@umich.edu>"]
 keywords = ["package-manager", "build-system", "vhdl", "verilog", "systemverilog"]

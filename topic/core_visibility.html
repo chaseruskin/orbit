@@ -186,12 +186,12 @@
 <p>A good rule of thumb when thinking about accessibility is to make everything as private as possible; make accessible only what is strictly necessary. In the context of packages, this typically means making the following private to an package:</p>
 <ul>
 <li><strong>Testbenches</strong>: These modules are typically only used when actively developing a project, not when it is needed as a dependency. A source file that contains a testbench is typically named with a <code>_tb</code> suffix.</li>
-<li><strong>Board-level design units</strong>: These modules are typically designed around application-specific requirements, stitching together the physical board's interface with the core logic of the application. An application would require its own board-level design unit, thus not making it a good candidate for accessibility within an project. A source file that contains a board-level design unit is typically named with <code>top</code> or <code>app</code>.</li>
+<li><strong>Board-level design units</strong>: These modules are typically designed around application-specific requirements, stitching together the physical board's interface with the core logic of the application. An application would require its own board-level design unit, thus not making it a good candidate for accessibility within a project. A source file that contains a board-level design unit is typically named with <code>top</code> or <code>app</code>.</li>
 </ul>
-<p>Any other design units that should be left private are up to the developer and greatly depend on how an project's code is organized.</p>
+<p>Any other design units that should be left private are up to the developer and greatly depend on how a project's code is organized.</p>
 <h2 id="file-accessibility"><a class="header" href="#file-accessibility">File accessibility</a></h2>
 <p>By default, all source files, and therefore all design units, are considered private to the current project.</p>
-<p>An project's manifest allows for users to set the <a href="./../reference/manifest.html#the-public-field"><code>public</code></a> field, which can store a list of user-defined file patterns for Orbit to consider publicly accessible from outside the project.</p>
+<p>A project's manifest allows for users to set the <a href="./../reference/manifest.html#the-public-field"><code>public</code></a> field, which can store a list of user-defined file patterns for Orbit to consider publicly accessible from outside the project.</p>
 <h2 id="file-visibility"><a class="header" href="#file-visibility">File visibility</a></h2>
 <p>By default, all source files in a project are included when Orbit performs source code analysis within the current project.</p>
 <p>A project's manifest allows for users to set an <a href="./../reference/manifest.html#the-ignore-field"><code>ignore</code></a> field, which can store a list of user-defined file patterns for Orbit to ignore during file discovery.</p>

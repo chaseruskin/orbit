@@ -193,7 +193,7 @@
 <p>Every project requires a <strong>Manifest</strong> file, named <code>Orbit.toml</code>. This is a simple TOML file maintained by the user. The manifest file documents basic metadata about the project, like its name and version, as well as the project's list of direct dependencies.</p>
 </li>
 <li>
-<p>A project saves its world state by storing a <strong>Lockfile</strong>, called <code>Orbit.lock</code>, alongside the manifest. A lockfile lists all of the resolved project dependencies required for the current project and how to retrieve those projects if necessary again. Running <code>orbit lock</code> will build an project-level graph to resolve the entire project-level dependency tree and store this information in the lockfile.</p>
+<p>A project saves its world state by storing a <strong>Lockfile</strong>, called <code>Orbit.lock</code>, alongside the manifest. A lockfile lists all of the resolved project dependencies required for the current project and how to retrieve those projects if necessary again. Running <code>orbit lock</code> will build a project-level graph to resolve the entire project-level dependency tree and store this information in the lockfile.</p>
 </li>
 <li>
 <p>Users customize their experience with Orbit using <strong>Configurations</strong>, which are collections of <strong>Targets</strong>, <strong>Settings</strong>, and <strong>Protocols</strong>. All of these items are defined in an Orbit configuration file, called <code>config.toml</code>. Configurations allow users to reuse and share their workflows across teams and projects.</p>

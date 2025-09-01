@@ -531,7 +531,7 @@ command = ["python", "yilinx.py"]
 </code></pre>
 <pre><code>info: lockfile experienced no changes
 info: top-level set to and_gate
-info: blueprint created at: "/Users/chase/Develop/rust/orbit/gates/target/yilinx/blueprint.tsv"
+info: blueprint created at: "/Users/chase/tutorials/gates/target/yilinx/blueprint.tsv"
 info: executing target yilinx
 YILINX: Synthesizing file /Users/chase/tutorials/gates/nand_gate.vhd into gates...
 YILINX: Synthesizing file /Users/chase/tutorials/gates/and_gate.vhd into gates...
@@ -622,7 +622,7 @@ gates = "0.1.0" # Add the dependency here!
 nand_gate                           entity        public 
 </code></pre>
 <p>Okay, how did we implement the NAND gate architecture?</p>
-<pre><code>$ orbit read --ip gates nand_gate --start architecture
+<pre><code>$ orbit read --project gates nand_gate --start architecture
 </code></pre>
 <pre><code>architecture rtl of nand_gate is
 begin
@@ -1085,7 +1085,7 @@ end architecture;
 </code></pre>
 <pre><code>name = "yilinx"
 description = "Generate bitstreams for Yilinx FPGAs"
-command = ["python", "/Users/chase/Develop/rust/orbit/gates/.orbit/yilinx.py"]
+command = ["python", "/Users/chase/tutorials/gates/.orbit/yilinx.py"]
 build = true
 test = true
 
@@ -1934,7 +1934,7 @@ gates = { uuid = "3p3oajkuoukigs45fskr0svnv", version = "1.0.0" }
 <p>Every project requires a <strong>Manifest</strong> file, named <code>Orbit.toml</code>. This is a simple TOML file maintained by the user. The manifest file documents basic metadata about the project, like its name and version, as well as the project's list of direct dependencies.</p>
 </li>
 <li>
-<p>A project saves its world state by storing a <strong>Lockfile</strong>, called <code>Orbit.lock</code>, alongside the manifest. A lockfile lists all of the resolved project dependencies required for the current project and how to retrieve those projects if necessary again. Running <code>orbit lock</code> will build an project-level graph to resolve the entire project-level dependency tree and store this information in the lockfile.</p>
+<p>A project saves its world state by storing a <strong>Lockfile</strong>, called <code>Orbit.lock</code>, alongside the manifest. A lockfile lists all of the resolved project dependencies required for the current project and how to retrieve those projects if necessary again. Running <code>orbit lock</code> will build a project-level graph to resolve the entire project-level dependency tree and store this information in the lockfile.</p>
 </li>
 <li>
 <p>Users customize their experience with Orbit using <strong>Configurations</strong>, which are collections of <strong>Targets</strong>, <strong>Settings</strong>, and <strong>Protocols</strong>. All of these items are defined in an Orbit configuration file, called <code>config.toml</code>. Configurations allow users to reuse and share their workflows across teams and projects.</p>
@@ -2063,14 +2063,14 @@ gates = { uuid = "3p3oajkuoukigs45fskr0svnv", version = "1.0.0" }
 <h3 id="reserved-names"><a class="header" href="#reserved-names">Reserved names</a></h3>
 <p>File names that begin with ".orbit-" are reserved for internal use and are not allowed at the root directory of a project. Files that are named with this pattern are used by Orbit in the catalog to store additional metadata about the project.</p>
 <h2 id="names"><a class="header" href="#names">Names</a></h2>
-<p>A project's name is a human-readable identifier given to an project so users can easily remember and locate packages of interest.</p>
+<p>A project's name is a human-readable identifier given to a project so users can easily remember and locate packages of interest.</p>
 <pre><code>gates
 </code></pre>
-<p>A project's <em>specification</em>, more commonly called a <em>spec</em>, is the full resolved name of an project. The spec involves the project's name, uuid, and version. A complete spec looks like the following:</p>
+<p>A project's <em>specification</em>, more commonly called a <em>spec</em>, is the full resolved name of a project. The spec involves the project's name, uuid, and version. A complete spec looks like the following:</p>
 <pre><code>gates+8ah2qa261k8wgv55sd1qq17w9:1.0.0
 </code></pre>
 <p>When asking Orbit to operate on a particular project outside of the working project, Orbit will ask you to provide the project's spec. Orbit uses the spec to lookup the project in the catalog and then carry out the requested function on that project.</p>
-<p>To learn more about an project spec, see <a href="topic/./../reference/project_id_specification.html">Project ID Specification</a>.</p>
+<p>To learn more about a project spec, see <a href="topic/./../reference/project_id_specification.html">Project ID Specification</a>.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="catalog"><a class="header" href="#catalog">Catalog</a></h1>
 <p>As a package manager, Orbit must know what packages are available and where packages are stored on your local file system so that they can be operated on. Orbit stores your projects in the <em>catalog</em>. The <em>catalog</em> is a set of directories on your local file system maintained by orbit. These directories are typically hidden from the user because they are not regularly interfacing with the file system contents at these locations and manually tampering the contents may cause trouble for Orbit when it tries to use them.</p>
 <h2 id="levels"><a class="header" href="#levels">Levels</a></h2>
@@ -2162,7 +2162,7 @@ post.command =["python", "publish.py"]
 <p>Orbit automates the process of releasing a project to a channel through the publishing process invoked through <code>orbit publish</code>.</p>
 <p>The core operation during the publishing process is the project's manifest gets placed in the channel at its generated index directory. The root of the index directory can be configured using the <code>root</code> field, and the remaining subdirectories are pre-determined according to the project's name.</p>
 <p>The full path to the index root directory can be read from the <code>ORBIT_CHANNEL_DIR</code> environment variable during a channel's pre-publish or post-publish hook processes.</p>
-<p>The full path to the directoy when an project's metadata contents are copied to during the publishing process can be read from the <code>ORBIT_CHANNEL_PROJECT_DIR</code> environment variable.</p>
+<p>The full path to the directory where a project's metadata contents are copied to during the publishing process can be read from the <code>ORBIT_CHANNEL_PROJECT_DIR</code> environment variable.</p>
 <p>Along with copying the project's manifest to the index directory, the publishing process also copies the project's lockfile as well as creates a new file, <code>Orbit.json</code>, that contains additional metadata about the project in JSON format. To learn more about what properties are stored in a <code>Orbit.json</code> file, see <a href="topic/./../reference/json.html">JSON</a>.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbitlock"><a class="header" href="#orbitlock">Orbit.lock</a></h1>
 <p>The <em>Orbit.lock</em> lock file is a file that captures every dependency required for the current project. This includes information about exact versions of dependencies and how to get them if any are missing from the cache.</p>
@@ -2180,12 +2180,12 @@ post.command =["python", "publish.py"]
 <p>A good rule of thumb when thinking about accessibility is to make everything as private as possible; make accessible only what is strictly necessary. In the context of packages, this typically means making the following private to an package:</p>
 <ul>
 <li><strong>Testbenches</strong>: These modules are typically only used when actively developing a project, not when it is needed as a dependency. A source file that contains a testbench is typically named with a <code>_tb</code> suffix.</li>
-<li><strong>Board-level design units</strong>: These modules are typically designed around application-specific requirements, stitching together the physical board's interface with the core logic of the application. An application would require its own board-level design unit, thus not making it a good candidate for accessibility within an project. A source file that contains a board-level design unit is typically named with <code>top</code> or <code>app</code>.</li>
+<li><strong>Board-level design units</strong>: These modules are typically designed around application-specific requirements, stitching together the physical board's interface with the core logic of the application. An application would require its own board-level design unit, thus not making it a good candidate for accessibility within a project. A source file that contains a board-level design unit is typically named with <code>top</code> or <code>app</code>.</li>
 </ul>
-<p>Any other design units that should be left private are up to the developer and greatly depend on how an project's code is organized.</p>
+<p>Any other design units that should be left private are up to the developer and greatly depend on how a project's code is organized.</p>
 <h2 id="file-accessibility"><a class="header" href="#file-accessibility">File accessibility</a></h2>
 <p>By default, all source files, and therefore all design units, are considered private to the current project.</p>
-<p>An project's manifest allows for users to set the <a href="topic/./../reference/manifest.html#the-public-field"><code>public</code></a> field, which can store a list of user-defined file patterns for Orbit to consider publicly accessible from outside the project.</p>
+<p>A project's manifest allows for users to set the <a href="topic/./../reference/manifest.html#the-public-field"><code>public</code></a> field, which can store a list of user-defined file patterns for Orbit to consider publicly accessible from outside the project.</p>
 <h2 id="file-visibility"><a class="header" href="#file-visibility">File visibility</a></h2>
 <p>By default, all source files in a project are included when Orbit performs source code analysis within the current project.</p>
 <p>A project's manifest allows for users to set an <a href="topic/./../reference/manifest.html#the-ignore-field"><code>ignore</code></a> field, which can store a list of user-defined file patterns for Orbit to ignore during file discovery.</p>
@@ -2436,7 +2436,7 @@ name = "my-project"
 </code></pre>
 <h3 id="the-uuid-field"><a class="header" href="#the-uuid-field">The <code>uuid</code> field</a></h3>
 <p>A random string consisting of 25 characters in base36 encoding (a-z0-9).</p>
-<p>This field is used to safeguard against namespace collisions at the project-level, and should <em>not</em> be manually edited at any point over the lifetime of an project.</p>
+<p>This field is used to safeguard against namespace collisions at the project-level, and should <em>not</em> be manually edited at any point over the lifetime of a project.</p>
 <p>If needing a UUID, obtain a UUID from Orbit by running <code>orbit init --uuid</code>.</p>
 <pre><code class="language-toml">[project]
 # ...
@@ -2598,7 +2598,7 @@ logic-analyzer = "4.8.0"
 <p>Lastly, users provide a version, which denotes the current state of the project.</p>
 <p>A project ID specification is composed of the project's name, UUID, and version.</p>
 <h2 id="name"><a class="header" href="#name">Name</a></h2>
-<p>The project <em>name</em> is a unique string of characters that abides by a certain set of rules. It is a single name and is defined under the "name" field in a project's manifest. Every project is required to have a name. The name should not change over the course of an project's lifetime.</p>
+<p>The project <em>name</em> is a unique string of characters that abides by a certain set of rules. It is a single name and is defined under the "name" field in a project's manifest. Every project is required to have a name. The name should not change over the course of a project's lifetime.</p>
 <pre><code class="language-toml">[project]
 name = "cpu"
 # ...
@@ -2612,7 +2612,7 @@ name = "cpu"
 <li>cannot be "work"</li>
 </ul>
 <h2 id="uuid"><a class="header" href="#uuid">UUID</a></h2>
-<p>The project <em>UUID</em> is a unique string of characters encoded in base36 (a-z0-9). An encoded UUID is 25 characters long and is generated using Version 4 UUID. It is defined under the "uuid" field in a project's manifest. Every project is required to have a UUID. The UUID should not change over the course of an project's lifetime.</p>
+<p>The project <em>UUID</em> is a unique string of characters encoded in base36 (a-z0-9). An encoded UUID is 25 characters long and is generated using Version 4 UUID. It is defined under the "uuid" field in a project's manifest. Every project is required to have a UUID. The UUID should not change over the course of a project's lifetime.</p>
 <pre><code class="language-toml">[project]
 # ...
 uuid = "71vs0nyo7lqjji6p6uzfviaoi"
@@ -2624,7 +2624,7 @@ uuid = "71vs0nyo7lqjji6p6uzfviaoi"
 <li>is 25 characters long</li>
 </ul>
 <h2 id="version"><a class="header" href="#version">Version</a></h2>
-<p>The project <em>version</em> is a series of 3 numbers separated by decimal characters (<code>.</code>) with an optional label suffix attached with a dash character (<code>-</code>). The version should be updated over the course of an project's lifetime when significant enough changes to the project require a new version value.</p>
+<p>The project <em>version</em> is a series of 3 numbers separated by decimal characters (<code>.</code>) with an optional label suffix attached with a dash character (<code>-</code>). The version should be updated over the course of a project's lifetime when significant enough changes to the project require a new version value.</p>
 <pre><code class="language-toml">[project]
 # ...
 version = "1.0.0"
@@ -3092,7 +3092,7 @@ precedence:
 <ul>
 <li><a href="reference/configuration.html#the-name-field">name</a> - The name of the protocol.</li>
 <li><a href="reference/configuration.html#the-description-field">description</a> - A short description of the protocol.</li>
-<li><a href="reference/configuration.html#the-patterns-field">patterns</a> - String patterns to match an project's URL.</li>
+<li><a href="reference/configuration.html#the-patterns-field">patterns</a> - String patterns to match a project's URL.</li>
 <li><a href="reference/configuration.html#the-command-field">command</a> - The command to execute the protocol.</li>
 </ul>
 </li>
@@ -3574,7 +3574,7 @@ explicitly set.</p>
 <p>The newly created manifest file is intended to be edited by the user. See more
 <code>Orbit.toml</code> keys and their definitions at:</p>
 <p>https://chaseruskin.github.io/orbit/reference/manifest.html</p>
-<p>For initializing an already existing project into an project, see the <code>init</code>
+<p>For initializing an already existing directory into a project, see the <code>init</code>
 command.</p>
 <h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;path&gt;</code><br />

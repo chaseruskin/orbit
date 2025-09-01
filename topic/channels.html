@@ -211,7 +211,7 @@ post.command =["python", "publish.py"]
 <p>Orbit automates the process of releasing a project to a channel through the publishing process invoked through <code>orbit publish</code>.</p>
 <p>The core operation during the publishing process is the project's manifest gets placed in the channel at its generated index directory. The root of the index directory can be configured using the <code>root</code> field, and the remaining subdirectories are pre-determined according to the project's name.</p>
 <p>The full path to the index root directory can be read from the <code>ORBIT_CHANNEL_DIR</code> environment variable during a channel's pre-publish or post-publish hook processes.</p>
-<p>The full path to the directoy when an project's metadata contents are copied to during the publishing process can be read from the <code>ORBIT_CHANNEL_PROJECT_DIR</code> environment variable.</p>
+<p>The full path to the directory where a project's metadata contents are copied to during the publishing process can be read from the <code>ORBIT_CHANNEL_PROJECT_DIR</code> environment variable.</p>
 <p>Along with copying the project's manifest to the index directory, the publishing process also copies the project's lockfile as well as creates a new file, <code>Orbit.json</code>, that contains additional metadata about the project in JSON format. To learn more about what properties are stored in a <code>Orbit.json</code> file, see <a href="./../reference/json.html">JSON</a>.</p>
 
                     </main>

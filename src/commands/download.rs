@@ -358,7 +358,7 @@ impl Download {
 //     false => Catalog::new().downloads(c.get_downloads_path())?,
 // };
 
-// // verify running from an project directory and enter project's root directory
+// // verify running from a project directory and enter project's root directory
 // c.jump_to_working_ip()?;
 
 // let ip = Ip::load(c.get_ip_path().unwrap().clone(), true)?;

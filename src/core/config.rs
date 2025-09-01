@@ -129,18 +129,23 @@ impl ConfigDocument {
     ///
     /// Returns true if the key already exists.
     pub fn already_include(&self, item: &str) -> bool {
-        let arr = match self.document[INCLUDE_KEY].as_array() {
-            Some(arr) => arr,
-            None => return false,
-        };
-        for ar in arr {
-            if let Some(val) = ar.as_str() {
-                if val == item {
-                    return true;
+        match self.document.contains_key(INCLUDE_KEY) {
+            true => {
+                let arr = match self.document[INCLUDE_KEY].as_array() {
+                    Some(arr) => arr,
+                    None => return false,
+                };
+                for ar in arr {
+                    if let Some(val) = ar.as_str() {
+                        if val == item {
+                            return true;
+                        }
+                    }
                 }
+                false
             }
+            false => false,
         }
-        false
     }
 
     /// Pops the last value from the `include` entry.

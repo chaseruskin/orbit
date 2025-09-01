@@ -213,7 +213,7 @@ $ orbit build --target yilinx
 ```
 info: lockfile experienced no changes
 info: top-level set to and_gate
-info: blueprint created at: "/Users/chase/Develop/rust/orbit/gates/target/yilinx/blueprint.tsv"
+info: blueprint created at: "/Users/chase/tutorials/gates/target/yilinx/blueprint.tsv"
 info: executing target yilinx
 YILINX: Synthesizing file /Users/chase/tutorials/gates/nand_gate.vhd into gates...
 YILINX: Synthesizing file /Users/chase/tutorials/gates/and_gate.vhd into gates...

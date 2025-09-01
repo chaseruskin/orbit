@@ -34,13 +34,13 @@ File names that begin with ".orbit-" are reserved for internal use and are not a
 
 ## Names
 
-A project's name is a human-readable identifier given to an project so users can easily remember and locate packages of interest.
+A project's name is a human-readable identifier given to a project so users can easily remember and locate packages of interest.
 
 ```
 gates
 ```
 
-A project's _specification_, more commonly called a _spec_, is the full resolved name of an project. The spec involves the project's name, uuid, and version. A complete spec looks like the following:
+A project's _specification_, more commonly called a _spec_, is the full resolved name of a project. The spec involves the project's name, uuid, and version. A complete spec looks like the following:
 
 ```
 gates+8ah2qa261k8wgv55sd1qq17w9:1.0.0
@@ -48,4 +48,4 @@ gates+8ah2qa261k8wgv55sd1qq17w9:1.0.0
 
 When asking Orbit to operate on a particular project outside of the working project, Orbit will ask you to provide the project's spec. Orbit uses the spec to lookup the project in the catalog and then carry out the requested function on that project. 
 
-To learn more about an project spec, see [Project ID Specification](./../reference/project_id_specification.md).
+To learn more about a project spec, see [Project ID Specification](./../reference/project_id_specification.md).

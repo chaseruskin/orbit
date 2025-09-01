@@ -11,15 +11,15 @@ However, at the design unit abstraction level, where users deal with the primary
 A good rule of thumb when thinking about accessibility is to make everything as private as possible; make accessible only what is strictly necessary. In the context of packages, this typically means making the following private to an package:
 
 - __Testbenches__: These modules are typically only used when actively developing a project, not when it is needed as a dependency. A source file that contains a testbench is typically named with a `_tb` suffix.
-- __Board-level design units__: These modules are typically designed around application-specific requirements, stitching together the physical board's interface with the core logic of the application. An application would require its own board-level design unit, thus not making it a good candidate for accessibility within an project. A source file that contains a board-level design unit is typically named with `top` or `app`.
+- __Board-level design units__: These modules are typically designed around application-specific requirements, stitching together the physical board's interface with the core logic of the application. An application would require its own board-level design unit, thus not making it a good candidate for accessibility within a project. A source file that contains a board-level design unit is typically named with `top` or `app`.
 
-Any other design units that should be left private are up to the developer and greatly depend on how an project's code is organized.
+Any other design units that should be left private are up to the developer and greatly depend on how a project's code is organized.
 
 ## File accessibility
 
 By default, all source files, and therefore all design units, are considered private to the current project.
 
-An project's manifest allows for users to set the [`public`](./../reference/manifest.md#the-public-field) field, which can store a list of user-defined file patterns for Orbit to consider publicly accessible from outside the project.
+A project's manifest allows for users to set the [`public`](./../reference/manifest.md#the-public-field) field, which can store a list of user-defined file patterns for Orbit to consider publicly accessible from outside the project.
 
 ## File visibility
 

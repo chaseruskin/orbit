@@ -46,7 +46,7 @@ impl Subcommand<Context> for Lock {
     }
 
     fn execute(self, c: &Context) -> proc::Result {
-        // check that user is in an project directory
+        // check that user is in a project directory
         c.jump_to_working_project()?;
 
         let force_apply_new_uuid = self.force;

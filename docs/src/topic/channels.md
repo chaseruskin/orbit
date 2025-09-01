@@ -50,6 +50,6 @@ The core operation during the publishing process is the project's manifest gets 
 
 The full path to the index root directory can be read from the `ORBIT_CHANNEL_DIR` environment variable during a channel's pre-publish or post-publish hook processes. 
 
-The full path to the directoy when an project's metadata contents are copied to during the publishing process can be read from the `ORBIT_CHANNEL_PROJECT_DIR` environment variable.
+The full path to the directory where a project's metadata contents are copied to during the publishing process can be read from the `ORBIT_CHANNEL_PROJECT_DIR` environment variable.
 
 Along with copying the project's manifest to the index directory, the publishing process also copies the project's lockfile as well as creates a new file, `Orbit.json`, that contains additional metadata about the project in JSON format. To learn more about what properties are stored in a `Orbit.json` file, see [JSON](./../reference/json.md).

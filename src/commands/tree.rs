@@ -374,7 +374,7 @@ impl Tree {
         Ok(())
     }
 
-    /// Construct and print the graph at an project dependency level.
+    /// Construct and print the graph at a project dependency level.
     fn run_project_graph(
         &self,
         target: Project,

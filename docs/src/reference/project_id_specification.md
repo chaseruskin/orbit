@@ -10,7 +10,7 @@ A project ID specification is composed of the project's name, UUID, and version.
 
 ## Name 
 
-The project _name_ is a unique string of characters that abides by a certain set of rules. It is a single name and is defined under the "name" field in a project's manifest. Every project is required to have a name. The name should not change over the course of an project's lifetime.
+The project _name_ is a unique string of characters that abides by a certain set of rules. It is a single name and is defined under the "name" field in a project's manifest. Every project is required to have a name. The name should not change over the course of a project's lifetime.
 
 ``` toml
 [project]
@@ -28,7 +28,7 @@ The following rules currently apply to a name values:
 
 ## UUID 
 
-The project _UUID_ is a unique string of characters encoded in base36 (a-z0-9). An encoded UUID is 25 characters long and is generated using Version 4 UUID. It is defined under the "uuid" field in a project's manifest. Every project is required to have a UUID. The UUID should not change over the course of an project's lifetime.
+The project _UUID_ is a unique string of characters encoded in base36 (a-z0-9). An encoded UUID is 25 characters long and is generated using Version 4 UUID. It is defined under the "uuid" field in a project's manifest. Every project is required to have a UUID. The UUID should not change over the course of a project's lifetime.
 
 ``` toml
 [project]
@@ -44,7 +44,7 @@ The following rules currently apply to uuid values:
 
 ## Version 
 
-The project _version_ is a series of 3 numbers separated by decimal characters (`.`) with an optional label suffix attached with a dash character (`-`). The version should be updated over the course of an project's lifetime when significant enough changes to the project require a new version value.
+The project _version_ is a series of 3 numbers separated by decimal characters (`.`) with an optional label suffix attached with a dash character (`-`). The version should be updated over the course of a project's lifetime when significant enough changes to the project require a new version value.
 
 ``` toml
 [project]

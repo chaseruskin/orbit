@@ -54,7 +54,7 @@ name = "my-project"
 
 A random string consisting of 25 characters in base36 encoding (a-z0-9). 
 
-This field is used to safeguard against namespace collisions at the project-level, and should _not_ be manually edited at any point over the lifetime of an project.
+This field is used to safeguard against namespace collisions at the project-level, and should _not_ be manually edited at any point over the lifetime of a project.
 
 If needing a UUID, obtain a UUID from Orbit by running `orbit init --uuid`.
 

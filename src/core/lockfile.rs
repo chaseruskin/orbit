@@ -350,7 +350,7 @@ pub mod v1 {
                                             }
                                         }
                                         found_project
-                                            .expect("missing an project from the build list")
+                                            .expect("missing a project from the build list")
                                             .get_uuid()
                                     }
                                 };

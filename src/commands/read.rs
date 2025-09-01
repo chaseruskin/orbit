@@ -143,7 +143,7 @@ impl Subcommand<Context> for Read {
             // release our "READ" action to the cache
             crate::util::filesystem::release_lock(&cache_ap_lock)?;
             result
-        // must be in an project if omitting the pkgid
+        // must be in a project if omitting the pkgid
         } else {
             let ip = match c.get_project_path() {
                 Some(p) => Project::load(p.to_path_buf(), true, false)?,

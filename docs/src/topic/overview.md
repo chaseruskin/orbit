@@ -12,7 +12,7 @@ Orbit is a package manager and build system for VHDL, Verilog, and SystemVerilog
 
 - Every project requires a __Manifest__ file, named `Orbit.toml`. This is a simple TOML file maintained by the user. The manifest file documents basic metadata about the project, like its name and version, as well as the project's list of direct dependencies.
 
-- A project saves its world state by storing a __Lockfile__, called `Orbit.lock`, alongside the manifest. A lockfile lists all of the resolved project dependencies required for the current project and how to retrieve those projects if necessary again. Running `orbit lock` will build an project-level graph to resolve the entire project-level dependency tree and store this information in the lockfile.
+- A project saves its world state by storing a __Lockfile__, called `Orbit.lock`, alongside the manifest. A lockfile lists all of the resolved project dependencies required for the current project and how to retrieve those projects if necessary again. Running `orbit lock` will build a project-level graph to resolve the entire project-level dependency tree and store this information in the lockfile.
 
 - Users customize their experience with Orbit using __Configurations__, which are collections of __Targets__, __Settings__, and __Protocols__. All of these items are defined in an Orbit configuration file, called `config.toml`. Configurations allow users to reuse and share their workflows across teams and projects.
 

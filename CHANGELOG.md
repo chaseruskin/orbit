@@ -15,6 +15,11 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.26.2 - unreleased
+
+### Fixes
+- Fixes issue with unsafe handling of trying to use `include` key in config.toml when it may not exist when using `orbit config`
+
 ## 0.26.1
 
 ### Features

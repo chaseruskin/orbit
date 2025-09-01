@@ -1986,7 +1986,7 @@ mod test {
 //         // unwrap because at this point the target must exist
 //         let target = target.unwrap();
 
-//         // check that user is in an project directory
+//         // check that user is in a project directory
 //         c.jump_to_working_ip()?;
 
 //         // store the working ip struct

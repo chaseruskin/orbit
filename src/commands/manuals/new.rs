@@ -36,7 +36,7 @@ DESCRIPTION
     
        https://chaseruskin.github.io/orbit/reference/manifest.html
     
-    For initializing an already existing project into an project, see the 'init' 
+    For initializing an already existing directory into a project, see the 'init' 
     command.
 
 OPTIONS

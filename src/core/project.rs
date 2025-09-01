@@ -736,7 +736,7 @@ impl Project {
     }
 
     /// Compile a list of referenced paths to make sure are copied into a directory
-    /// when moving an project around the filesystem.
+    /// when moving a project around the filesystem.
     pub fn get_files_to_keep(&self) -> HashSet<PathBuf> {
         let mut list = HashSet::new();
         // keep the readme if set in manifest

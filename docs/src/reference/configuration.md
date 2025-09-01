@@ -69,7 +69,7 @@ Every configuration file consists of the following sections:
 - [[[protocol]]](#the-protocol-array) - Define a protocol.
     - [name](#the-name-field) - The name of the protocol.
     - [description](#the-description-field) - A short description of the protocol.
-    - [patterns](#the-patterns-field) - String patterns to match an project's URL.
+    - [patterns](#the-patterns-field) - String patterns to match a project's URL.
     - [command](#the-command-field) - The command to execute the protocol.
 - [[[channel]]](#the-channel-array) - Define a channel.
     - [name](#the-name-field) - The name of the channel.

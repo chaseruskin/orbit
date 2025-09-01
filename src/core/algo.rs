@@ -42,7 +42,7 @@ use super::lang::verilog::token::tokenizer::VerilogTokenizer;
 use super::lang::{sv, verilog, vhdl, Lang, LangIdentifier};
 use super::project::PartialProjectIdSpec;
 
-/// Constructs an project-level graph from a lockfile.
+/// Constructs a project-level graph from a lockfile.
 pub fn graph_project_from_lock(
     lock: &LockFile,
 ) -> Result<GraphMap<ProjectIdSpec, &LockEntry, ()>, Fault> {

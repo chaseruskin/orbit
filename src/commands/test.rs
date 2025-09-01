@@ -116,7 +116,7 @@ impl Subcommand<Context> for Test {
         // coordinate the plan
         let plan = target.coordinate_plan(&self.plan)?;
 
-        // check that user is in an project directory
+        // check that user is in a project directory
         c.jump_to_working_project()?;
 
         // create the ip manifest

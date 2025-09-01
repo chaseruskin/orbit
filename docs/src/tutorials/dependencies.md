@@ -57,7 +57,7 @@ nand_gate                           entity        public
 
 Okay, how did we implement the NAND gate architecture?
 ```
-$ orbit read --ip gates nand_gate --start architecture
+$ orbit read --project gates nand_gate --start architecture
 ```
 ```
 architecture rtl of nand_gate is

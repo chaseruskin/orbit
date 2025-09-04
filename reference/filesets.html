@@ -195,7 +195,8 @@
 </ul>
 <h2 id="custom-filesets"><a class="header" href="#custom-filesets">Custom filesets</a></h2>
 <p>Custom filesets are filesets that are be defined by the user for a specific target. By default, these filesets are only searched for in the current project and do not extend any of the project's dependencies. Set the <code>recursive</code> entry of a fileset true to apply it to all projects in the dependency graph.</p>
-<p>If a pattern does not start with an explicit path delimiter (<code>/</code>), then Orbit assumes to look for the fileset across every possible subdirectory in the current project by implicitly prepending the pattern with <code>**/</code>.</p>
+<p>If a pattern does not start with an explicit path delimiter (<code>/</code>) or relative path indicator (<code>./</code>), then Orbit assumes to look for the fileset across every possible subdirectory in the current project by implicitly prepending the pattern with <code>**/</code>.</p>
+<p>A custom fileset's pattern is glob-style pattern. See <a href="./glob_patterns.html">Glob Patterns</a> to learn more about the rules for pattern matching.</p>
 <p>A custom fileset's patterns support string swapping. See <a href="./../topic/swapping.html">String Swapping</a> to learn more about how it can be applied to fileset patterns.</p>
 <h2 id="applying-fileset-patterns"><a class="header" href="#applying-fileset-patterns">Applying fileset patterns</a></h2>
 <p>A fileset's pattern is applied starting from the current project's root directory, the same directory where the <code>Orbit.toml</code> file exists.</p>
@@ -214,6 +215,7 @@
 <div class="table-wrapper"><table><thead><tr><th>User-defined pattern</th><th>Interpreted pattern</th></tr></thead><tbody>
 <tr><td><code>*.txt</code></td><td><code>**/*.txt</code></td></tr>
 <tr><td><code>Boards/*.toml</code></td><td><code>**/Boards/*.toml</code></td></tr>
+<tr><td><code>./Boards/*.toml</code></td><td><code>./Boards/*.toml</code></td></tr>
 <tr><td><code>/specific/path.log</code></td><td><code>./specific/path.log</code></td></tr>
 </tbody></table>
 </div>

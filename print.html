@@ -2750,7 +2750,8 @@ ELSE:
 </ul>
 <h2 id="custom-filesets"><a class="header" href="#custom-filesets">Custom filesets</a></h2>
 <p>Custom filesets are filesets that are be defined by the user for a specific target. By default, these filesets are only searched for in the current project and do not extend any of the project's dependencies. Set the <code>recursive</code> entry of a fileset true to apply it to all projects in the dependency graph.</p>
-<p>If a pattern does not start with an explicit path delimiter (<code>/</code>), then Orbit assumes to look for the fileset across every possible subdirectory in the current project by implicitly prepending the pattern with <code>**/</code>.</p>
+<p>If a pattern does not start with an explicit path delimiter (<code>/</code>) or relative path indicator (<code>./</code>), then Orbit assumes to look for the fileset across every possible subdirectory in the current project by implicitly prepending the pattern with <code>**/</code>.</p>
+<p>A custom fileset's pattern is glob-style pattern. See <a href="reference/./glob_patterns.html">Glob Patterns</a> to learn more about the rules for pattern matching.</p>
 <p>A custom fileset's patterns support string swapping. See <a href="reference/./../topic/swapping.html">String Swapping</a> to learn more about how it can be applied to fileset patterns.</p>
 <h2 id="applying-fileset-patterns"><a class="header" href="#applying-fileset-patterns">Applying fileset patterns</a></h2>
 <p>A fileset's pattern is applied starting from the current project's root directory, the same directory where the <code>Orbit.toml</code> file exists.</p>
@@ -2769,6 +2770,7 @@ ELSE:
 <div class="table-wrapper"><table><thead><tr><th>User-defined pattern</th><th>Interpreted pattern</th></tr></thead><tbody>
 <tr><td><code>*.txt</code></td><td><code>**/*.txt</code></td></tr>
 <tr><td><code>Boards/*.toml</code></td><td><code>**/Boards/*.toml</code></td></tr>
+<tr><td><code>./Boards/*.toml</code></td><td><code>./Boards/*.toml</code></td></tr>
 <tr><td><code>/specific/path.log</code></td><td><code>./specific/path.log</code></td></tr>
 </tbody></table>
 </div>
@@ -3444,6 +3446,9 @@ This sequence <strong>must</strong> form a single path component, so both <code>
 <li><code>[...]</code> matches any character inside the brackets. Character sequences can also specify ranges of characters, as ordered by Unicode, so e.g. <code>[0-9]</code> specifies any character between 0 and 9 inclusive. An unclosed bracket is invalid.</li>
 <li><code>[!...]</code> is the negation of <code>[...]</code>, i.e. it matches any characters <strong>not</strong> in the brackets.</li>
 <li>The metacharacters <code>?</code>, <code>*</code>, <code>[</code>, <code>]</code> can be matched by using brackets (e.g. <code>[?]</code>). When a <code>]</code> occurs immediately following <code>[</code> or <code>[!</code> then it is interpreted as being part of, rather then ending, the character set, so <code>]</code> and NOT <code>]</code> can be matched by <code>[]]</code> and <code>[!]] </code>respectively. The <code>-</code> character can be specified inside a character sequence pattern by placing it at the start or the end, e.g. <code>[abc-]</code>.</li>
+<li>Path-component separator characters (<code>/</code>) must be matched by a literal /, rather than by <code>*</code> or <code>?</code> or <code>[...]</code>.</li>
+<li>Patterns are case-sensitive (only considering upper/lower case relationships between ASCII characters).</li>
+<li>Paths that contain components that start with a . will not require that . appears literally in the pattern; <code>*</code>, <code>?</code>, <code>**</code>, or <code>[...]</code> will match.</li>
 </ul>
 <p>These rules originate from the <a href="https://docs.rs/glob/latest/glob/index.html"><code>glob</code></a> crate.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="command-line"><a class="header" href="#command-line">Command line</a></h1>

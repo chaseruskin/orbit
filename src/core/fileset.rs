@@ -18,6 +18,7 @@
 use glob::{Pattern, PatternError};
 use serde::de::MapAccess;
 use serde_derive::Serialize;
+use std::path::PathBuf;
 use std::str::FromStr;
 
 #[derive(Debug, PartialEq, Serialize, Clone)]
@@ -161,6 +162,10 @@ impl FromStr for Style {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let prefix = match s.get(0..1) {
             Some("/") => ".",
+            Some(".") => match s.get(1..2) {
+                Some("/") => "",
+                _ => "**/",
+            },
             _ => "**/",
         };
         Ok(Style(Pattern::new(&(prefix.to_owned() + s))?.into()))
@@ -342,18 +347,10 @@ impl Fileset {
         self.recursive
     }
 
-    /// Set the [Fileset] glob-style pattern.
+    /// Add to the [Fileset] glob-style pattern list.
     ///
-    /// If no explicit relative file path character is present (`.`), then
-    /// it implicitly sets a recursive directory glob pattern as the prefix
-    /// (`**/`).
     pub fn add_pattern(mut self, p: &str) -> Result<Self, PatternError> {
-        let prefix = match p.get(0..1) {
-            Some(".") => "",
-            _ => "**/",
-        };
-        self.patterns
-            .push(Pattern::new(&(prefix.to_owned() + p))?.into());
+        self.patterns.push(Style::from_str(p)?);
         Ok(self)
     }
 
@@ -365,21 +362,25 @@ impl Fileset {
     }
 
     /// Uses the given pattern to return a set of build files.
-    pub fn collect_files<'a>(&self, files: &'a [String]) -> Vec<&'a String> {
+    pub fn collect_files<'a>(&self, files: &'a [String], working_dir: &PathBuf) -> Vec<&'a String> {
         let match_opts = glob::MatchOptions {
-            case_sensitive: false,
-            require_literal_separator: false,
+            case_sensitive: true,
+            require_literal_separator: true,
             require_literal_leading_dot: false,
         };
+
+        let working_dir = crate::util::filesystem::into_std_str(working_dir.clone());
 
         files
             .iter()
             .filter_map(|f| {
+                // remove base directory to allow for comparisons with fileset patterns (which are relative)
+                let f_relative = f.replace(&working_dir, ".");
                 // iterate through all known patterns for the fileset
                 match &self
                     .patterns
                     .iter()
-                    .find(|p| p.inner().matches_with(&f, match_opts))
+                    .find(|p| p.inner().matches_with(&f_relative, match_opts))
                 {
                     Some(_) => Some(f),
                     None => None,
@@ -432,24 +433,6 @@ pub fn is_systemverilog(file: &str) -> bool {
 /// Checks if the given file is one of the supported HDLs.
 pub fn is_hdl(file: &str) -> bool {
     is_vhdl(file) || is_verilog(file) || is_systemverilog(file)
-}
-
-/// Checks against file patterns if the file is an rtl file (not testbench).
-pub fn is_rtl(file: &str) -> bool {
-    let match_opts = glob::MatchOptions {
-        case_sensitive: false,
-        require_literal_separator: false,
-        require_literal_leading_dot: false,
-    };
-
-    if is_hdl(file) == false {
-        return false;
-    }
-
-    let tb1 = Pattern::new("tb_*").unwrap();
-    let tb2 = Pattern::new("*_tb.*").unwrap();
-
-    tb1.matches_with(file, match_opts) == false && tb2.matches_with(file, match_opts) == false
 }
 
 #[cfg(test)]

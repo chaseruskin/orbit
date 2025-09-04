@@ -445,19 +445,19 @@ impl Plan {
                 })
                 .unwrap_or(false);
 
-            // look in all ip for the fileset patterns
+            // look in all projects for the fileset patterns
             if has_recursive_fset == true {
                 let mut topo_order = prj_graph.get_graph().topological_sort();
-                // remove the last ip (the "working ip")
+                // remove the last project (the "working project")
                 topo_order.pop().unwrap();
                 let topo_order = topo_order;
                 for i in topo_order {
-                    let all_files = prj_graph
+                    let dep_project = prj_graph
                         .get_node_by_index(i)
                         .unwrap()
                         .as_ref()
-                        .as_project()
-                        .gather_current_files();
+                        .as_project();
+                    let all_files = dep_project.gather_current_files();
                     Self::add_files_from_filesets_to_blueprint(
                         &mut blueprint,
                         all_files,
@@ -466,10 +466,11 @@ impl Plan {
                         &vtable,
                         &working_lib,
                         true,
+                        dep_project.get_root(),
                     )?;
                 }
             }
-
+            // search the working project
             let current_files: Vec<String> = working_project.gather_current_files();
             Self::add_files_from_filesets_to_blueprint(
                 &mut blueprint,
@@ -479,16 +480,13 @@ impl Plan {
                 &vtable,
                 &working_lib,
                 false,
+                working_project.get_root(),
             )?;
         }
 
         // collect in-order HDL file list
         for ip_file_node in file_order {
-            if fileset::is_rtl(&ip_file_node.get_file()) == true {
-                blueprint.add(Entry::Hdl(ip_file_node));
-            } else {
-                blueprint.add(Entry::Hdl(ip_file_node));
-            }
+            blueprint.add(Entry::Hdl(ip_file_node));
         }
 
         let blueprint_name = blueprint.get_filename();
@@ -525,6 +523,7 @@ impl Plan {
         vtable: &StrSwapTable,
         working_lib: &LangIdentifier,
         require_recur: bool,
+        project_root: &PathBuf,
     ) -> Result<(), Fault> {
         // collect data for the given target
         if let Some(filesets) = target.get_filesets() {
@@ -543,7 +542,7 @@ impl Plan {
                     fset = fset.add_pattern(&swap::substitute(pat.to_string(), &vtable))?;
                 }
                 // match files
-                fset.collect_files(&current_files)
+                fset.collect_files(&current_files, &project_root)
                     .into_iter()
                     .for_each(|f| {
                         blueprint.add(Entry::Auxiliary(
@@ -570,7 +569,7 @@ impl Plan {
                 fset = fset.add_pattern(&swap::substitute(pat.to_string(), &vtable))?;
             }
             // match files
-            fset.collect_files(&current_files)
+            fset.collect_files(&current_files, &project_root)
                 .into_iter()
                 .for_each(|f| {
                     blueprint.add(Entry::Auxiliary(
@@ -795,7 +794,6 @@ fn install_ip_from_downloads(dep: &Project, catalog: &Catalog, force: bool) -> R
     Ok(())
 }
 
-use crate::core::fileset;
 use crate::util::anyerror::AnyError;
 
 use super::download::ProtocolMap;

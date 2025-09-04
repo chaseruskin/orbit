@@ -128,14 +128,15 @@ impl PkgCache {
                 .map(|n| n.get_suffix())
                 .collect();
             let name = f.0.get_suffix().clone();
-            let lunit = umap.get(&name).unwrap();
-            units.push(UnitCache::from_graph_entry(
-                &project,
-                name,
-                f.1.as_ref(),
-                lunit,
-                deps,
-            ));
+            if let Some(local_unit) = umap.get(&name) {
+                units.push(UnitCache::from_graph_entry(
+                    &project,
+                    name,
+                    f.1.as_ref(),
+                    local_unit,
+                    deps,
+                ));
+            }
         }
 
         Ok(Self { units: units })

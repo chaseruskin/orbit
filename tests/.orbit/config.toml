@@ -16,5 +16,13 @@ description = "Test of recursive filesets"
 command = ["cat", "blueprint.tsv"]
 fileset.pyf = { patterns = ["*.py"], recursive = true }
 
+[[target]]
+name = "ll"
+description = "Test of custom filesets"
+command = ["cat", "blueprint.tsv"]
+fileset.atxt = { patterns = ["*.txt"], recursive = false }
+fileset.stxt = "/here/*.txt"
+fileset.ptxt = "here/*.txt"
+
 [test]
 default-target = "ao"

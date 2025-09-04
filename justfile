@@ -51,6 +51,7 @@ run-sys-tests:
     just test-rel-dep
     just test-sep-arch-refs
     just test-recur-filesets
+    just test-custom-filesets
 
 # Run all system tests
 test-all:
@@ -63,6 +64,7 @@ test-all:
     just test-rel-dep
     just test-sep-arch-refs
     just test-recur-filesets
+    just test-custom-filesets
 
 # Planning stage (associated files)
 test-plan-1:
@@ -113,3 +115,8 @@ test-sep-arch-refs:
 test-recur-filesets:
     chmod +x ./tests/s8/test.sh
     cd ./tests/s8; ./test.sh
+
+# Custom filesets
+test-custom-filesets:
+    chmod +x ./tests/s9/test.sh
+    cd ./tests/s9; ./test.sh

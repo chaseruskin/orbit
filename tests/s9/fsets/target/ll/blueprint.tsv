@@ -1,0 +1,7 @@
+ATXT	fsets	/Users/chase/Develop/rust/orbit/tests/s9/fsets/b.txt
+ATXT	fsets	/Users/chase/Develop/rust/orbit/tests/s9/fsets/c.txt
+ATXT	fsets	/Users/chase/Develop/rust/orbit/tests/s9/fsets/here/a.txt
+ATXT	fsets	/Users/chase/Develop/rust/orbit/tests/s9/fsets/here/there/d.txt
+PTXT	fsets	/Users/chase/Develop/rust/orbit/tests/s9/fsets/here/a.txt
+STXT	fsets	/Users/chase/Develop/rust/orbit/tests/s9/fsets/here/a.txt
+SYSV	fsets	/Users/chase/Develop/rust/orbit/tests/s9/fsets/foo.sv

@@ -1,0 +1,6 @@
+[project]
+name = "fsets"
+version = "0.1.0"
+uuid = "7du9uv8b2zvwxliz7sf9ny3nt"
+
+[dependencies]

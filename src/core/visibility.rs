@@ -53,7 +53,7 @@ impl VipList {
     /// Checks if the given filepath is included. If there is no public list,
     /// then it will always return true.
     ///
-    /// Assumes `path` is not a directory
+    /// Assumes `path` is not a directory.
     pub fn is_included(&self, path: &str) -> bool {
         match &self.inner {
             Some(ig) => {

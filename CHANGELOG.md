@@ -15,6 +15,12 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.26.3 - unreleased
+
+### Fixes
+- Fixes file path interpretations for custom filesets when glob pattern matching
+- Safely checks if result is `Some(...)` during caching process of local design unit names when installing a project 
+
 ## 0.26.2
 
 ### Fixes

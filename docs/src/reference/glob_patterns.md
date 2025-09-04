@@ -11,5 +11,8 @@ This sequence __must__ form a single path component, so both `**a` and `b**` are
 - `[...]` matches any character inside the brackets. Character sequences can also specify ranges of characters, as ordered by Unicode, so e.g. `[0-9]` specifies any character between 0 and 9 inclusive. An unclosed bracket is invalid.
 - `[!...]` is the negation of `[...]`, i.e. it matches any characters __not__ in the brackets.
 - The metacharacters `?`, `*`, `[`, `]` can be matched by using brackets (e.g. `[?]`). When a `]` occurs immediately following `[` or `[!` then it is interpreted as being part of, rather then ending, the character set, so `]` and NOT `]` can be matched by `[]]` and `[!]] `respectively. The `-` character can be specified inside a character sequence pattern by placing it at the start or the end, e.g. `[abc-]`.
+- Path-component separator characters (`/`) must be matched by a literal /, rather than by `*` or `?` or `[...]`.
+- Patterns are case-sensitive (only considering upper/lower case relationships between ASCII characters).
+- Paths that contain components that start with a . will not require that . appears literally in the pattern; `*`, `?`, `**`, or `[...]` will match.
 
 These rules originate from the [`glob`](https://docs.rs/glob/latest/glob/index.html) crate.

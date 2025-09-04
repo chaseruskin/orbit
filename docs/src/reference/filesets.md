@@ -19,7 +19,9 @@ There are built-in filesets that Orbit uses that have special rules and work acr
 
 Custom filesets are filesets that are be defined by the user for a specific target. By default, these filesets are only searched for in the current project and do not extend any of the project's dependencies. Set the `recursive` entry of a fileset true to apply it to all projects in the dependency graph.
 
-If a pattern does not start with an explicit path delimiter (`/`), then Orbit assumes to look for the fileset across every possible subdirectory in the current project by implicitly prepending the pattern with `**/`.
+If a pattern does not start with an explicit path delimiter (`/`) or relative path indicator (`./`), then Orbit assumes to look for the fileset across every possible subdirectory in the current project by implicitly prepending the pattern with `**/`.
+
+A custom fileset's pattern is glob-style pattern. See [Glob Patterns](./glob_patterns.md) to learn more about the rules for pattern matching.
 
 A custom fileset's patterns support string swapping. See [String Swapping](./../topic/swapping.md) to learn more about how it can be applied to fileset patterns.
 
@@ -48,6 +50,7 @@ Unless starting with a path delimiter (`/`), a pattern of a fileset is assumed t
 | - | - |
 | `*.txt` | `**/*.txt` |
 | `Boards/*.toml` | `**/Boards/*.toml` |
+| `./Boards/*.toml` | `./Boards/*.toml` |
 | `/specific/path.log` | `./specific/path.log` |
 
 The custom patterns begin their search for files at the current project's root directory. The file pattern used by Orbit when collecting files for custom filesets is the interpreted pattern.

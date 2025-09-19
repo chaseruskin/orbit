@@ -15,6 +15,8 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.26.4 - unreleased
+
 ## 0.26.3
 
 ### Fixes

@@ -15,20 +15,16 @@
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-pub mod build;
-pub mod config;
-pub mod doc;
-pub mod env;
-pub mod get;
-pub mod info;
-pub mod init;
-pub mod install;
-pub mod lock;
-pub mod new;
-pub mod orbit;
-pub mod publish;
-pub mod read;
-pub mod remove;
-pub mod search;
-pub mod test;
-pub mod tree;
+// This manual page was automatically generated from the mangen.py tool.
+pub const MANUAL: &str = r#"NAME
+    doc - build a project's documentation
+
+SYNOPSIS
+    orbit doc [options]
+
+DESCRIPTION
+    Generates a project's documentation from inline markdown comments.
+
+EXAMPLES
+    orbit doc
+"#;

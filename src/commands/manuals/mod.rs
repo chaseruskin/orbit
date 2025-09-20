@@ -17,6 +17,7 @@
 
 pub mod build;
 pub mod config;
+pub mod doc;
 pub mod env;
 pub mod get;
 pub mod info;

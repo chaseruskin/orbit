@@ -31,6 +31,7 @@ Commands:
     lock                  save the world state of a project
     test, t               run a test
     build, b              plan and execute a target
+    doc                   build a project's documentation
     publish               post a project to a channel
     search                browse the catalog
     install               store an immutable reference to a project

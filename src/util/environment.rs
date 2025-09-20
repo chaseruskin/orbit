@@ -319,7 +319,7 @@ impl Environment {
         self.0.iter().map(|v| (&v.key, &v.value)).collect()
     }
 
-    /// Loads environment variables from a target [Ip].
+    /// Loads environment variables from a target [Project].
     pub fn from_project(mut self, prj: &Project) -> Result<Self, Fault> {
         self = self.overwrite(
             EnvVar::new()

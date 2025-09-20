@@ -21,6 +21,7 @@ pub mod orbit;
 // commands
 mod build;
 mod config;
+mod doc;
 mod download;
 mod env;
 mod get;

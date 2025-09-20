@@ -451,6 +451,21 @@ orbit build --target xsim --force -- --help
 """
 
 # ------------------------------------------------------------------------------
+# doc          
+# ------------------------------------------------------------------------------
+[doc]
+name = "doc"
+summary = "build a project's documentation"
+synopsis = "orbit doc [options]"
+description = """
+Generates a project's documentation from inline markdown comments.
+"""
+
+examples = """
+orbit doc
+"""
+
+# ------------------------------------------------------------------------------
 # publish          
 # ------------------------------------------------------------------------------
 [publish]
@@ -728,6 +743,7 @@ examples = """
 orbit config --push include="profiles/hyperspacelab"
 orbit config ~/.orbit/config.toml --unset env.vivado_path
 """
+
 
 # ------------------------------------------------------------------------------
 # orbit      

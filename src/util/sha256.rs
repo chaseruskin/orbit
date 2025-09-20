@@ -16,7 +16,7 @@
 //
 
 //! Implements the SHA-256 algorithm (found under the SHA-2 group).
-//! Reference: https://sha256algorithm.com/
+//! Reference: <https://sha256algorithm.com/>
 
 use std::fmt::Display;
 use std::num::ParseIntError;

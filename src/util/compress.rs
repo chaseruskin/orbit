@@ -17,7 +17,7 @@
 
 //! Abstraction layer for writing a directory to a zip file
 //!
-//! Reference: https://github.com/zip-rs/zip/blob/master/examples/write_dir.rs
+//! Reference: <https://github.com/zip-rs/zip/blob/master/examples/write_dir.rs>
 
 use std::io::prelude::*;
 use std::io::{Seek, Write};

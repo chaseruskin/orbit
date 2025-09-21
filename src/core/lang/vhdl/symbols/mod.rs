@@ -32,6 +32,7 @@ use super::super::parser::*;
 use crate::core::lang::reference::{CompoundIdentifier, RefSet};
 use crate::core::lang::vhdl::interface::*;
 use crate::core::lang::vhdl::token::*;
+use crate::core::lang::LangIdentifier;
 
 pub mod architecture;
 pub mod configuration;
@@ -411,12 +412,12 @@ impl VHDLParser {
 
 use std::iter::Peekable;
 
-type TokenPair = (Statement, RefSet);
+pub type TokenPair = (Statement, RefSet);
 
 /// A `Statement` is a vector of tokens, similiar to how a `String` is a vector
 /// of characters.
 #[derive(PartialEq, Clone)]
-struct Statement(Vec<Token<VhdlToken>>);
+pub struct Statement(Vec<Token<VhdlToken>>);
 
 impl Statement {
     /// References the mutable list of vhdl tokens.
@@ -468,7 +469,7 @@ impl std::fmt::Debug for Statement {
 }
 
 impl Statement {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self(Vec::new())
     }
 
@@ -480,6 +481,130 @@ impl Statement {
     /// References the list of tokens.
     fn get_tokens(&self) -> &Vec<Token<VhdlToken>> {
         &self.0
+    }
+}
+
+// Methods for documentation generation
+impl Statement {
+    pub fn is_package_decl(&self) -> Option<LangIdentifier> {
+        if let Some(t0) = self.0.first() {
+            if t0.as_ref().check_keyword(&Keyword::Package) {
+                if let Some(t1) = self.0.get(1) {
+                    if let Some(name) = t1.as_ref().as_identifier() {
+                        return Some(LangIdentifier::Vhdl(name.clone()));
+                    }
+                }
+            }
+        }
+        None
+    }
+
+    pub fn is_package_body_decl(&self) -> bool {
+        if let Some(t0) = self.0.first() {
+            if t0.as_ref().check_keyword(&Keyword::Package) {
+                if let Some(t1) = self.0.get(1) {
+                    if t1.as_ref().check_keyword(&Keyword::Body) == true {
+                        return true;
+                    }
+                }
+            }
+        }
+        false
+    }
+
+    /// Tries to return the first identifier found in the stream of tokens.
+    pub fn get_first_identifier(&self) -> Option<LangIdentifier> {
+        Some(LangIdentifier::Vhdl(
+            self.0
+                .iter()
+                .find(|t| t.as_ref().as_identifier().is_some())?
+                .as_ref()
+                .as_identifier()?
+                .clone(),
+        ))
+    }
+
+    pub fn is_entity_decl(&self) -> Option<LangIdentifier> {
+        if let Some(t0) = self.0.first() {
+            if t0.as_ref().check_keyword(&Keyword::Entity) {
+                if let Some(t1) = self.0.get(1) {
+                    if let Some(name) = t1.as_ref().as_identifier() {
+                        return Some(LangIdentifier::Vhdl(name.clone()));
+                    }
+                }
+            }
+        }
+        None
+    }
+
+    /// Checks if the given statement is an architecture declaration, and if so,
+    /// returns the architecture name and the entity it belongs to.
+    pub fn is_arch_decl(&self) -> Option<(LangIdentifier, LangIdentifier)> {
+        let mut arch_name = None;
+        if let Some(t0) = self.0.first() {
+            if t0.as_ref().check_keyword(&Keyword::Architecture) {
+                if let Some(t1) = self.0.get(1) {
+                    if let Some(name) = t1.as_ref().as_identifier() {
+                        arch_name = Some(LangIdentifier::Vhdl(name.clone()));
+                    }
+                }
+            }
+        }
+        if let Some(t2) = self.0.get(2) {
+            if t2.as_ref().check_keyword(&Keyword::Of) {
+                if let Some(t3) = self.0.get(3) {
+                    if let Some(e_name) = t3.as_ref().as_identifier() {
+                        if let Some(a_name) = arch_name {
+                            return Some((a_name, LangIdentifier::Vhdl(e_name.clone())));
+                        }
+                    }
+                }
+            }
+        }
+        None
+    }
+
+    pub fn starts_with_kw(&self, kw: Keyword) -> bool {
+        if let Some(t0) = self.0.first() {
+            if t0.as_ref().check_keyword(&kw) {
+                return true;
+            }
+        }
+        false
+    }
+
+    pub fn starts_with_iden(&self) -> bool {
+        if let Some(t0) = self.0.first() {
+            if t0.as_ref().as_identifier().is_some() {
+                return true;
+            }
+        }
+        false
+    }
+
+    /// Checks if the statement can be considered an interface, where it starts with an identifier
+    /// or `constant` or `signal`.
+    pub fn can_be_interface(&self) -> bool {
+        self.starts_with_iden()
+            || self.starts_with_kw(Keyword::Constant)
+            || self.starts_with_kw(Keyword::Signal)
+    }
+
+    /// Checks if the statement can be function, either starting with `pure`, `impure`, or `function`.
+    pub fn is_function(&self) -> bool {
+        self.starts_with_kw(Keyword::Pure)
+            || self.starts_with_kw(Keyword::Impure)
+            || self.starts_with_kw(Keyword::Function)
+    }
+
+    /// Checks if the statement is a type
+    pub fn is_type(&self) -> bool {
+        self.starts_with_kw(Keyword::Type)
+    }
+
+    /// Checks if the statement is a subtype
+    pub fn is_subtype(&self) -> bool {
+        self.starts_with_kw(Keyword::Subtype)
     }
 }
 
@@ -1104,6 +1229,126 @@ impl VhdlSymbol {
         } else {
             false
         }
+    }
+
+    /// Parses together a series of tokens into a single `Statement` suitable for
+    /// further downstream processing of document generation.
+    ///
+    /// Statements end on a ';' and do not include the ';' token. If the EOF
+    /// is reached before completing a statement, it is omitted and a blank
+    /// statement is returned.
+    pub fn parse_doc_statement<I>(tokens: &mut Peekable<I>) -> Statement
+    where
+        I: Iterator<Item = Token<VhdlToken>>,
+    {
+        let mut clause = Statement::new();
+
+        // determine if the statement will be a sensitivity list
+        let mut paren_count: i32 = 0;
+        let is_sensitivity_list = {
+            if let Some(t) = tokens.peek() {
+                t.as_type().check_delimiter(&Delimiter::ParenL) == true
+            } else {
+                false
+            }
+        };
+
+        let is_a_type = {
+            if let Some(t) = tokens.peek() {
+                t.as_type().check_keyword(&Keyword::Type)
+                    || t.as_type().check_keyword(&Keyword::Subtype)
+            } else {
+                false
+            }
+        };
+
+        // general-purpose parenthesis counter
+        let mut gp_paren_count: i32 = 0;
+
+        // traverse through token stream
+        while let Some(t) = tokens.next() {
+            if t.as_ref().check_delimiter(&Delimiter::ParenL) {
+                gp_paren_count += 1;
+            } else if t.as_ref().check_delimiter(&Delimiter::ParenR) {
+                gp_paren_count -= 1;
+            }
+            // gather sensitivity list as its own statement
+            if is_sensitivity_list == true
+                && (t.as_type().check_delimiter(&Delimiter::ParenL)
+                    || t.as_type().check_delimiter(&Delimiter::ParenR))
+            {
+                clause.get_tokens_mut().push(t);
+                if clause
+                    .get_tokens()
+                    .last()
+                    .unwrap()
+                    .as_type()
+                    .check_delimiter(&Delimiter::ParenL)
+                {
+                    paren_count += 1;
+                    // add token
+                } else if clause
+                    .get_tokens()
+                    .last()
+                    .unwrap()
+                    .as_type()
+                    .check_delimiter(&Delimiter::ParenR)
+                {
+                    paren_count -= 1;
+                    if paren_count == 0 {
+                        return clause;
+                    }
+                }
+            // exit upon encountering terminator ';'
+            } else if t.as_type().check_delimiter(&Delimiter::Terminator) {
+                // println!("{:?}", clause);
+                // fix the ending of a last constant/signal in a entity declaration?
+                if gp_paren_count == -1 {
+                    if let Some(pr) = clause.0.last() {
+                        if pr.as_ref().check_delimiter(&Delimiter::ParenR) {
+                            clause.0.pop();
+                        }
+                    }
+                }
+                return clause;
+            // take generic and its leading parenthesis
+            } else if t.as_type().check_keyword(&Keyword::Generic)
+                || t.as_type().check_keyword(&Keyword::Port)
+            {
+                // add the breaking token to the statement before exiting
+                clause.get_tokens_mut().push(t);
+                if let Some(pl) = tokens.next() {
+                    if pl.as_type().check_delimiter(&Delimiter::ParenL) {
+                        clause.get_tokens_mut().push(pl);
+                    }
+                }
+                return clause;
+            // extra keywords to help break up statements early
+            } else if t.as_type().check_keyword(&Keyword::Generate)
+                || t.as_type().check_keyword(&Keyword::Process)
+                || t.as_type().check_keyword(&Keyword::Begin)
+                || (t.as_type().check_keyword(&Keyword::Is) && !is_a_type)
+                || t.as_type().as_comment().is_some()
+                || (clause.get_tokens().first().is_some()
+                    && clause
+                        .get_tokens()
+                        .first()
+                        .unwrap()
+                        .as_type()
+                        .check_keyword(&Keyword::When)
+                    && t.as_type().check_delimiter(&Delimiter::Arrow))
+            {
+                // add the breaking token to the statement before exiting
+                clause.get_tokens_mut().push(t);
+                // println!("{:?}", clause);
+                return clause;
+            } else {
+                clause.get_tokens_mut().push(t);
+            }
+        }
+        // println!("{:?}", clause);
+        // return empty statement if unable to close with terminator ';'
+        Statement::new()
     }
 
     /// Parses together a series of tokens into a single `Statement`.
@@ -2154,6 +2399,11 @@ end entity nor_gate;";
         assert_eq!(
             tokens.next().unwrap().as_type(),
             &VhdlToken::Keyword(Keyword::End)
+        );
+        let _ = VhdlSymbol::parse_statement(&mut tokens);
+        assert_eq!(
+            tokens.next().unwrap().as_type(),
+            &VhdlToken::Delimiter(Delimiter::Terminator)
         );
     }
 

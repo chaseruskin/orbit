@@ -36,6 +36,23 @@ impl Comment {
         }
     }
 
+    /// Returns the inner comment string as it's raw doc comment if it is a doc comment, otherwise returns None.
+    pub fn into_doc_comment(&self) -> Option<String> {
+        match self {
+            Self::Single(s) => match s.starts_with("- ") || s == "-" {
+                true => {
+                    if s == "-" {
+                        Some(String::from("\n"))
+                    } else {
+                        Some(String::from(s.split_once("- ")?.1) + "\n")
+                    }
+                }
+                false => None,
+            },
+            _ => None,
+        }
+    }
+
     /// Computes the ending position the cursor ends up in.
     pub fn ending_position(&self) -> Position {
         // begin with counting the opening delimiters (-- or /*)

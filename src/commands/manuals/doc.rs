@@ -17,13 +17,17 @@
 
 // This manual page was automatically generated from the mangen.py tool.
 pub const MANUAL: &str = r#"NAME
-    doc - build a project's documentation
+    doc - generate a project's documentation
 
 SYNOPSIS
     orbit doc [options]
 
 DESCRIPTION
     Generates a project's documentation from inline markdown comments.
+
+OPTIONS
+    --target-dir <dir>
+        Directory for all generated artifacts and intermediate files
 
 EXAMPLES
     orbit doc

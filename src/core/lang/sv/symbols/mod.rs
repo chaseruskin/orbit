@@ -35,10 +35,153 @@ use crate::core::lang::parser::{Parse, Symbol};
 use crate::core::lang::reference::{CompoundIdentifier, RefSet};
 use crate::core::lang::sv::token::keyword::Keyword;
 use crate::core::lang::sv::token::token::SystemVerilogToken;
+use crate::core::lang::verilog::error::VerilogError;
 use crate::core::lang::verilog::symbols::VerilogSymbol;
+use crate::core::lang::LangIdentifier;
 use std::str::FromStr;
 
-pub type Statement = Vec<Token<SystemVerilogToken>>;
+#[derive(PartialEq, Clone)]
+pub struct Statement(pub Vec<Token<SystemVerilogToken>>);
+
+impl Statement {
+    pub fn get_inner(&self) -> &Vec<Token<SystemVerilogToken>> {
+        &self.0
+    }
+
+    pub fn to_inner(self) -> Vec<Token<SystemVerilogToken>> {
+        self.0
+    }
+
+    pub fn new() -> Self {
+        Self(Vec::new())
+    }
+}
+
+impl Statement {
+    pub fn is_module_decl(&self) -> Option<LangIdentifier> {
+        if let Some(t0) = self.0.first() {
+            if t0.as_ref().check_keyword(&Keyword::Module) {
+                if let Some(t1) = self.0.get(1) {
+                    if let Some(name) = t1.as_ref().as_identifier() {
+                        return Some(LangIdentifier::SystemVerilog(name.clone()));
+                    }
+                }
+            }
+        }
+        None
+    }
+
+    pub fn is_package_decl(&self) -> Option<LangIdentifier> {
+        if let Some(t0) = self.0.first() {
+            if t0.as_ref().check_keyword(&Keyword::Package) {
+                if let Some(t1) = self.0.get(1) {
+                    if let Some(name) = t1.as_ref().as_identifier() {
+                        return Some(LangIdentifier::SystemVerilog(name.clone()));
+                    }
+                }
+            }
+        }
+        None
+    }
+
+    pub fn is_param_stmt(&self) -> bool {
+        if let Some(t0) = self.0.first() {
+            if t0.as_ref().check_delimiter(&Operator::Pound) {
+                if let Some(t1) = self.0.get(1) {
+                    if t1.as_ref().check_delimiter(&Operator::ParenL) {
+                        return true;
+                    }
+                }
+            }
+        }
+        false
+    }
+
+    pub fn is_port_stmt(&self) -> bool {
+        if let Some(t0) = self.0.first() {
+            if t0.as_ref().check_delimiter(&Operator::ParenR) {
+                if let Some(t1) = self.0.get(1) {
+                    if t1.as_ref().check_delimiter(&Operator::ParenL) {
+                        return true;
+                    }
+                }
+            }
+        }
+        false
+    }
+
+    pub fn is_end_mod_decl(&self) -> bool {
+        if let Some(t0) = self.0.first() {
+            return t0.as_ref().check_delimiter(&Operator::ParenR) && self.0.len() == 1;
+        }
+        false
+    }
+
+    pub fn starts_with_kw(&self, kw: Keyword) -> bool {
+        if let Some(t0) = self.0.first() {
+            if t0.as_ref().check_keyword(&kw) {
+                return true;
+            }
+        }
+        false
+    }
+
+    pub fn starts_with_iden(&self) -> bool {
+        if let Some(t0) = self.0.first() {
+            if t0.as_ref().as_identifier().is_some() {
+                return true;
+            }
+        }
+        false
+    }
+
+    pub fn starts_with_compiler_directive(&self) -> bool {
+        if let Some(t0) = self.0.first() {
+            return t0.as_ref().is_directive();
+        }
+        false
+    }
+
+    /// Checks if the statement can be considered an interface, where it starts with a direction keyword
+    pub fn can_be_interface(&self) -> bool {
+        !self.starts_with_compiler_directive() && !self.is_param_stmt() && !self.is_port_stmt()
+    }
+
+    pub fn is_typedef_enum(&self) -> bool {
+        if let Some(t0) = self.0.first() {
+            if t0.as_ref().check_keyword(&Keyword::Typedef) {
+                if let Some(t1) = self.0.get(1) {
+                    if t1.as_ref().check_keyword(&Keyword::Enum) {
+                        return true;
+                    }
+                }
+            }
+        }
+        false
+    }
+
+    pub fn is_typedef_struct(&self) -> bool {
+        if let Some(t0) = self.0.first() {
+            if t0.as_ref().check_keyword(&Keyword::Typedef) {
+                if let Some(t1) = self.0.get(1) {
+                    if t1.as_ref().check_keyword(&Keyword::Struct) {
+                        return true;
+                    }
+                }
+            }
+        }
+        false
+    }
+}
+
+impl std::fmt::Debug for Statement {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for t in &self.0 {
+            write!(f, "{} ", t.as_ref().to_string())?
+        }
+        Ok(())
+    }
+}
 
 pub mod checker;
 pub mod class;
@@ -50,11 +193,11 @@ pub mod primitive;
 pub mod program;
 
 fn into_tokens(stmt: Statement) -> Vec<SystemVerilogToken> {
-    stmt.into_iter().map(|t| t.take()).collect()
+    stmt.0.into_iter().map(|t| t.take()).collect()
 }
 
 fn statement_to_string(stmt: &Statement) -> String {
-    stmt.iter().fold(String::new(), |mut acc, x| {
+    stmt.0.iter().fold(String::new(), |mut acc, x| {
         acc.push_str(&x.as_type().to_string());
         acc.push(' ');
         acc
@@ -132,6 +275,22 @@ impl SystemVerilogSymbol {
             Self::Checker(c) => c.extend_refs(refs),
             Self::Program(p) => p.extend_refs(refs),
         }
+    }
+}
+
+impl SystemVerilogSymbol {
+    pub fn parse_doc_statement<I>(tokens: &mut Peekable<I>) -> Result<Statement, VerilogError>
+    where
+        I: Iterator<Item = Token<SystemVerilogToken>>,
+    {
+        if let Some(init) = tokens.next() {
+            if init.as_ref().is_eof() == false {
+                if let Some(stmt) = VerilogSymbol::into_next_doc_statement(init, tokens)? {
+                    return Ok(stmt);
+                }
+            }
+        }
+        Ok(Statement::new())
     }
 }
 
@@ -437,7 +596,7 @@ impl SystemVerilogSymbol {
             }
             stmt.push(t);
         }
-        Ok(stmt)
+        Ok(Statement(stmt))
     }
 
     /// Parses a statement that is for importing packages.
@@ -478,11 +637,12 @@ impl SystemVerilogSymbol {
     /// the token immediately before a scope resolution operator `::`.
     pub fn extract_refs_from_statement(stmt: &Statement) -> Option<RefSet> {
         // return none if we cannot find the scope resolution operator
-        stmt.iter()
+        stmt.0
+            .iter()
             .find(|c| c.as_type().check_delimiter(&Operator::ScopeResolution))?;
 
         let mut refs = RefSet::new();
-        let mut iter = stmt.iter();
+        let mut iter = stmt.0.iter();
 
         let mut prev_t = iter.next()?;
         // check if there is a scope resolution operator, then chec

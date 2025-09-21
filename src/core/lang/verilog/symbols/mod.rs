@@ -25,6 +25,7 @@ use super::token::tokenizer::VerilogTokenizer;
 use crate::core::lang::lexer::{Position, Token};
 use crate::core::lang::parser::{Parse, Symbol};
 use crate::core::lang::reference::{CompoundIdentifier, RefSet};
+use crate::core::lang::sv::symbols::Statement;
 use crate::core::lang::sv::symbols::SystemVerilogSymbol;
 use crate::core::lang::sv::token::keyword::Keyword;
 use crate::core::lang::sv::token::token::SystemVerilogToken;
@@ -40,14 +41,12 @@ use config::Config;
 use module::Module;
 use primitive::Primitive;
 
-pub type Statement = Vec<Token<SystemVerilogToken>>;
-
 fn into_tokens(stmt: Statement) -> Vec<SystemVerilogToken> {
-    stmt.into_iter().map(|t| t.take()).collect()
+    stmt.0.into_iter().map(|t| t.take()).collect()
 }
 
 fn statement_to_string(stmt: &Statement) -> String {
-    stmt.iter().fold(String::new(), |mut acc, x| {
+    stmt.0.iter().fold(String::new(), |mut acc, x| {
         acc.push_str(&x.as_type().to_string());
         acc.push(' ');
         acc
@@ -252,13 +251,13 @@ impl VerilogSymbol {
             // parse nested parentheses
             } else if t.as_ref().check_delimiter(&Operator::ParenL) {
                 let t = tokens.next().unwrap();
-                stmt.extend(Self::parse_until_operator(tokens, t, Operator::ParenR)?);
+                stmt.extend(Self::parse_until_operator(tokens, t, Operator::ParenR)?.0);
             } else {
                 let t = tokens.next().unwrap();
                 stmt.push(t);
             }
         }
-        Ok(stmt)
+        Ok(Statement(stmt))
     }
 
     /// Parses evenly until finding the balancing operator `end_op` to counter-act all
@@ -307,7 +306,7 @@ impl VerilogSymbol {
                 stmt.push(t);
             }
         }
-        Ok(stmt)
+        Ok(Statement(stmt))
     }
 
     fn parse_attr<I>(tokens: &mut Peekable<I>, pos: Position) -> Result<Statement, VerilogError>
@@ -332,7 +331,7 @@ impl VerilogSymbol {
             }
             stmt.push(t);
         }
-        Ok(stmt)
+        Ok(Statement(stmt))
     }
 
     /// Parses an `Entity` primary design unit from the entity's identifier to
@@ -462,12 +461,12 @@ impl VerilogSymbol {
         I: Iterator<Item = Token<SystemVerilogToken>>,
     {
         let mut stmt = Statement::new();
-        stmt.push(init);
+        stmt.0.push(init);
 
         let mut now_line = None;
         loop {
             // review the last token we have added to the current statement
-            let t = stmt.last().unwrap();
+            let t = stmt.0.last().unwrap();
             let next_line = t.locate().line();
 
             // whoops... we should not have ran out of tokens here!
@@ -483,8 +482,8 @@ impl VerilogSymbol {
                 };
                 // take the `:` `label`
                 if has_code_label == true {
-                    stmt.push(tokens.next().unwrap());
-                    stmt.push(tokens.next().unwrap());
+                    stmt.0.push(tokens.next().unwrap());
+                    stmt.0.push(tokens.next().unwrap());
                 }
                 break;
             // take a parentheses
@@ -493,34 +492,28 @@ impl VerilogSymbol {
                 let opening_p = tokens.next().unwrap();
                 if opening_p.as_ref().check_delimiter(&Operator::ParenL) {
                     // take the parentheses
-                    stmt.extend(Self::parse_until_operator(
-                        tokens,
-                        opening_p,
-                        Operator::ParenR,
-                    )?);
+                    stmt.0
+                        .extend(Self::parse_until_operator(tokens, opening_p, Operator::ParenR)?.0);
                 }
             // take everything in the parentheses
             } else if t.as_ref().check_delimiter(&Operator::ParenL) == true {
-                let opening_p = stmt.pop().unwrap();
-                stmt.extend(Self::parse_until_operator(
-                    tokens,
-                    opening_p,
-                    Operator::ParenR,
-                )?);
+                let opening_p = stmt.0.pop().unwrap();
+                stmt.0
+                    .extend(Self::parse_until_operator(tokens, opening_p, Operator::ParenR)?.0);
             // take all symbols until new line when handling a new directive on a new line
             } else if (now_line.is_none() || next_line > now_line.unwrap())
                 && t.as_ref().is_directive() == true
             {
-                let dir = stmt.pop().unwrap();
+                let dir = stmt.0.pop().unwrap();
                 let directive_stuff = Self::parse_compiler_directive_statement(tokens, dir)?;
-                stmt.extend(directive_stuff);
+                stmt.0.extend(directive_stuff.0);
                 // println!("directive: {}", statement_to_string(&stmt));
                 return Ok(Some(stmt));
             }
 
             // push a new token onto the statment
             if let Some(t_next) = tokens.next() {
-                stmt.push(t_next);
+                stmt.0.push(t_next);
             } else {
                 break;
             }
@@ -540,18 +533,18 @@ impl VerilogSymbol {
         let mut stmt = Statement::new();
 
         let mut next_line = init.locate().line();
-        stmt.push(init);
+        stmt.0.push(init);
 
         while let Some(t_next) = tokens.peek() {
             if t_next.locate().line() > next_line
-                && stmt.last().unwrap().as_type()
+                && stmt.0.last().unwrap().as_type()
                     != &SystemVerilogToken::Identifier(Identifier::Escaped(String::new()))
             {
                 break;
             } else {
                 // println!("[directive]: {:?}", t_next);
                 next_line = t_next.locate().line();
-                stmt.push(tokens.next().unwrap());
+                stmt.0.push(tokens.next().unwrap());
             }
         }
         Ok(stmt)
@@ -564,7 +557,7 @@ impl VerilogSymbol {
         refs: &mut RefSet,
         deps: Option<&mut RefSet>,
     ) -> Result<(), VerilogError> {
-        if stmt.is_empty() == true {
+        if stmt.0.is_empty() == true {
             return Ok(());
         }
 
@@ -572,12 +565,13 @@ impl VerilogSymbol {
 
         // try as import statement
         if stmt
+            .0
             .first()
             .unwrap()
             .as_type()
             .check_keyword(&Keyword::Import)
         {
-            let mut tokens = stmt.into_iter().skip(1).peekable();
+            let mut tokens = stmt.0.into_iter().skip(1).peekable();
             let i_refs = SystemVerilogSymbol::parse_import_statement(&mut tokens)?;
             refs.extend(i_refs);
             return Ok(());
@@ -602,13 +596,14 @@ impl VerilogSymbol {
 
         // try as bind statement
         if stmt
+            .0
             .first()
             .unwrap()
             .as_type()
             .check_keyword(&Keyword::Bind)
         {
             // skip the "bind" keyword
-            let mut tokens = stmt.clone().into_iter().skip(1).peekable();
+            let mut tokens = stmt.0.clone().into_iter().skip(1).peekable();
             // take the next token (identifier) as the "target" module
             if let Some(target) = tokens.next() {
                 if let Some(dep) = target.as_ref().as_identifier() {
@@ -679,7 +674,7 @@ impl VerilogSymbol {
 
     fn as_port_definition(stmt: &Statement, ports: &PortList) -> Option<PortList> {
         // println!("as port? {}", statement_to_string(&stmt));
-        let mut tokens = stmt.clone().into_iter().peekable();
+        let mut tokens = stmt.0.clone().into_iter().peekable();
         // verify the start token is valid
         match tokens.peek()?.as_type() {
             SystemVerilogToken::Identifier(name) => match interface::does_exist(&ports, name) {
@@ -700,7 +695,7 @@ impl VerilogSymbol {
 
     fn as_param_definition(stmt: &Statement, params: &ParamList) -> Option<ParamList> {
         // println!("as param? {}", statement_to_string(&stmt));
-        let mut tokens = stmt.clone().into_iter().peekable();
+        let mut tokens = stmt.0.clone().into_iter().peekable();
         // verify the start token is valid
         match tokens.peek()?.as_type() {
             SystemVerilogToken::Identifier(name) => match interface::does_exist(&params, name) {
@@ -769,9 +764,9 @@ impl VerilogSymbol {
     /// Returns the name of the module that is being instantiated in this statement, if
     /// one exists.
     fn as_module_instance(stmt: &Statement) -> Option<(&Identifier, bool)> {
-        let mod_name = stmt.first()?.as_ref().as_identifier()?;
+        let mod_name = stmt.0.first()?.as_ref().as_identifier()?;
         // are there parameters defined
-        let mut stmt_iter = stmt.iter().skip(1);
+        let mut stmt_iter = stmt.0.iter().skip(1);
 
         let mut state = 0;
         let mut counter = 0;
@@ -941,12 +936,12 @@ impl VerilogSymbol {
                 // take all symbols until new line when handling a new directive
                 if t.as_type().is_directive() == true {
                     let mut stmt = Statement::new();
-                    stmt.push(t);
+                    stmt.0.push(t);
                     while let Some(t_next) = tokens.peek() {
                         if t_next.locate().line() > next_token_line {
                             break;
                         } else {
-                            stmt.push(tokens.next().unwrap());
+                            stmt.0.push(tokens.next().unwrap());
                         }
                     }
                     // println!("{}", statement_to_string(&stmt));
@@ -1108,12 +1103,12 @@ impl VerilogSymbol {
                 // take all symbols until new line when handling a new directive
                 if t.as_type().is_directive() == true {
                     let mut stmt = Statement::new();
-                    stmt.push(t);
+                    stmt.0.push(t);
                     while let Some(t_next) = tokens.peek() {
                         if t_next.locate().line() > next_token_line {
                             break;
                         } else {
-                            stmt.push(tokens.next().unwrap());
+                            stmt.0.push(tokens.next().unwrap());
                         }
                     }
                     // println!("{}", statement_to_string(&stmt));
@@ -1247,6 +1242,7 @@ impl VerilogSymbol {
         Ok((ports, refs))
     }
 
+    // 2025-09-20 CR: Is this ever needed? Did SV parser implement this?
     fn parse_port_connection<I>(
         _tokens: &mut Peekable<I>,
     ) -> Result<(Vec<Statement>, Vec<Statement>, RefSet), VerilogError>
@@ -1254,5 +1250,152 @@ impl VerilogSymbol {
         I: Iterator<Item = Token<SystemVerilogToken>>,
     {
         todo!()
+    }
+}
+
+impl VerilogSymbol {
+    pub fn parse_doc_statement<I>(tokens: &mut Peekable<I>) -> Result<Statement, VerilogError>
+    where
+        I: Iterator<Item = Token<SystemVerilogToken>>,
+    {
+        SystemVerilogSymbol::parse_doc_statement(tokens)
+    }
+
+    pub fn into_next_doc_statement<I>(
+        init: Token<SystemVerilogToken>,
+        tokens: &mut Peekable<I>,
+    ) -> Result<Option<Statement>, VerilogError>
+    where
+        I: Iterator<Item = Token<SystemVerilogToken>>,
+    {
+        let mut stmt = Statement::new();
+
+        // check if is a function
+        let keep_commas = init.as_ref().check_keyword(&Keyword::Task)
+            || init.as_ref().check_keyword(&Keyword::Function)
+            || init.as_ref().check_keyword(&Keyword::Typedef);
+
+        stmt.0.push(init);
+
+        let mut now_line = None;
+        loop {
+            // review the last token we have added to the current statement
+            let t = stmt.0.last().unwrap();
+            let next_line = t.locate().line();
+
+            // take the start to parameters as a dedicated statement
+            if t.as_type().check_delimiter(&Operator::Pound) {
+                if let Some(tnext) = tokens.peek() {
+                    if tnext.as_ref().check_delimiter(&Operator::ParenL) {
+                        stmt.0.push(tokens.next().unwrap());
+                        break;
+                    }
+                }
+            }
+
+            // next token is a closing paren...most likely odd so break before hitting it
+            if let Some(tnext) = tokens.peek() {
+                if tnext.as_ref().check_delimiter(&Operator::ParenR) {
+                    break;
+                }
+            }
+
+            if t.as_type().as_comment().is_some() {
+                break;
+            }
+
+            // take the ending of parameters and beginning of ports
+            if t.as_type().check_delimiter(&Operator::ParenR) {
+                if let Some(tnext) = tokens.peek() {
+                    if tnext.as_ref().check_delimiter(&Operator::ParenL) {
+                        stmt.0.push(tokens.next().unwrap());
+                        break;
+                    }
+                }
+            }
+
+            if t.as_ref().is_eof() == true {
+                break;
+            // finish this statement
+            } else if VerilogSymbol::is_statement_separator(t.as_type()) {
+                let has_code_label = if let Some(t_next) = tokens.peek() {
+                    // take the optional code segment's label
+                    t_next.as_type().check_delimiter(&Operator::Colon)
+                } else {
+                    false
+                };
+                // take the `:` `label`
+                if has_code_label == true {
+                    stmt.0.push(tokens.next().unwrap());
+                    stmt.0.push(tokens.next().unwrap());
+                }
+                break;
+            // take module and module name
+            } else if t.as_type().check_keyword(&Keyword::Module) {
+                if let Some(tnext) = tokens.next() {
+                    stmt.0.push(tnext);
+                    // take the beginning of port '(' if starting without parameters
+                    if let Some(tnextnext) = tokens.peek() {
+                        // proceed past the port '(' token (do not include in statement list)
+                        if tnextnext.as_ref().check_delimiter(&Operator::ParenL) {
+                            tokens.next().unwrap();
+                        }
+                    }
+                    break;
+                }
+            // break on commas for non-comma things (module declarations)
+            } else if !keep_commas && t.as_type().check_delimiter(&Operator::Comma) {
+                break;
+            // take a parentheses
+            } else if VerilogSymbol::is_start_to_parentheses_statement(t.as_type()) {
+                // expecting '('
+                let opening_p = tokens.next().unwrap();
+                if opening_p.as_ref().check_delimiter(&Operator::ParenL) {
+                    // take the parentheses
+                    stmt.0.extend(
+                        VerilogSymbol::parse_until_operator(tokens, opening_p, Operator::ParenR)?.0,
+                    );
+                }
+            // take everything in the parentheses
+            } else if t.as_ref().check_delimiter(&Operator::ParenL) == true {
+                let opening_p = stmt.0.pop().unwrap();
+                stmt.0.extend(
+                    VerilogSymbol::parse_until_operator(tokens, opening_p, Operator::ParenR)?.0,
+                );
+            // take everything in the curly brackets
+            } else if t.as_ref().check_delimiter(&Operator::ConcatL) == true {
+                let opening_p = stmt.0.pop().unwrap();
+                stmt.0.extend(
+                    VerilogSymbol::parse_until_operator(tokens, opening_p, Operator::ConcatR)?.0,
+                );
+            // take all symbols until new line when handling a new directive on a new line
+            } else if (now_line.is_none() || next_line > now_line.unwrap())
+                && t.as_ref().is_directive() == true
+            {
+                let dir = stmt.0.pop().unwrap();
+                let directive_stuff =
+                    VerilogSymbol::parse_compiler_directive_statement(tokens, dir)?;
+                stmt.0.extend(directive_stuff.0);
+                // println!("directive: {}", statement_to_string(&stmt));
+                return Ok(Some(stmt));
+            }
+
+            // push a new token onto the statment
+            if let Some(t_next) = tokens.next() {
+                stmt.0.push(t_next);
+            } else {
+                break;
+            }
+            now_line = Some(next_line);
+        }
+        // remove the terminator and commas from end of statements
+        if let Some(tlast) = stmt.0.last() {
+            if tlast.as_ref().check_delimiter(&Operator::Terminator)
+                || tlast.as_ref().check_delimiter(&Operator::Comma)
+            {
+                stmt.0.pop();
+            }
+        }
+        Ok(Some(stmt))
     }
 }

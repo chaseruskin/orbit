@@ -94,6 +94,25 @@ impl Display for VhdlToken {
 }
 
 impl VhdlToken {
+    /// Checks if the token is documentable.
+    pub fn is_documentable(&self) -> bool {
+        match self {
+            Self::Identifier(_) => true,
+            Self::Keyword(kw) => match kw {
+                keyword::Keyword::Architecture
+                | keyword::Keyword::Entity
+                | keyword::Keyword::Package
+                | keyword::Keyword::Function
+                | keyword::Keyword::Procedure
+                | keyword::Keyword::Constant
+                | keyword::Keyword::Signal
+                | keyword::Keyword::Process => true,
+                _ => false,
+            },
+            _ => false,
+        }
+    }
+
     /// Takes the identifier from the token.
     pub fn take_identifier(self) -> Option<Identifier> {
         match self {

@@ -67,6 +67,8 @@ pub enum Error {
     TargetNotFoundTest(String, Hint),
     #[error("a target must be specified{0}")]
     TargetNotSpecified(Hint),
+    #[error("failed to generate documentation: {0}")]
+    DocGenFailed(LastError),
     #[error("failed to execute target process: {0}")]
     TargetProcFailed(LastError),
     #[error("failed to execute protocol process: {0}")]

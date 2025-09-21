@@ -16,9 +16,12 @@
 //
 
 // Automatically generated from the mansync.py script.
-pub const HELP: &str = r#"Build a project's documentation.
+pub const HELP: &str = r#"Generate a project's documentation.
 
 Usage:
     orbit doc [options]
+
+Options:
+    --target-dir <dir>    directory for all generated artifacts and intermediate files
 
 Use 'orbit help doc' to read more about the command."#;

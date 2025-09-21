@@ -1,0 +1,9 @@
+[project]
+name = "docu"
+version = "0.1.0"
+uuid = "61kfbsth23uk2tgxgwljeo29t"
+ignore = [
+    "ignore"
+]
+
+[dependencies]

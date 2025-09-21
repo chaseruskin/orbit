@@ -455,11 +455,13 @@ orbit build --target xsim --force -- --help
 # ------------------------------------------------------------------------------
 [doc]
 name = "doc"
-summary = "build a project's documentation"
+summary = "generate a project's documentation"
 synopsis = "orbit doc [options]"
 description = """
 Generates a project's documentation from inline markdown comments.
 """
+
+options."--target-dir <dir>" = "Directory for all generated artifacts and intermediate files"
 
 examples = """
 orbit doc

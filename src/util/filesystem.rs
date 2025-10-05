@@ -18,6 +18,7 @@
 use crate::core::context::CACHE_TAG_FILE;
 use crate::core::fileset;
 use crate::core::lockfile;
+use crate::core::lockfile::PROJECT_LOCK_FILE;
 use crate::core::manifest;
 use crate::core::manifest::PROJECT_MANIFEST_FILE;
 use crate::error::Error;
@@ -310,11 +311,10 @@ pub fn is_keep_override(target: &PathBuf, vip_list: &HashSet<PathBuf>) -> bool {
 
 /// Recursively copies files from `source` to `target` directory.
 ///
-/// Assumes `target` directory does not already exist. Ignores the `.git/` folder
-/// if `ignore_git` is set to `true`. Respects `.gitignore` files.
+/// Assumes `target` directory does not already exist. Always respects `.gitignore` files.
 ///
-/// If immutable is `true`, then read_only permissions will be enabled, else the files
-/// will be mutable. Silently skips files that could be changed with mutability/permissions.
+/// If `minimal` is set to true, then ignores hidden files, directories with a CACHEDIR.TAG file,
+/// and nested directories with an Orbit.toml file.
 pub fn copy(
     source: &PathBuf,
     target: &PathBuf,
@@ -391,17 +391,28 @@ pub fn copy(
             std::fs::remove_dir(to)?;
         }
     }
+
+    // Always include Orbit.toml and Orbit.lock
+    let always_move = [PROJECT_MANIFEST_FILE, PROJECT_LOCK_FILE];
+    for base_path in always_move {
+        let start_source_path = source.join(base_path);
+        let end_target_path = target.join(base_path);
+        if start_source_path.exists() == true && end_target_path.exists() == false {
+            std::fs::copy(start_source_path, end_target_path)?;
+        }
+    }
+
     Ok(())
 }
 
 /// Recursively copies files from `source` to `target` directory in a "smart" way.
 ///
-/// Assumes `target` directory does not already exist. Ignores the `.git/` folder
-/// if `ignore_git` is set to `true`. Respects `.gitignore` files.
+/// Assumes `target` directory does not already exist. Always respects `.gitignore` files.
 ///
-/// If immutable is `true`, then read_only permissions will be enabled, else the files
-/// will be mutable. Silently skips files that could be changed with mutability/permissions.
+/// If `minimal` is set to true, then ignores hidden files, directories with a CACHEDIR.TAG file,
+/// and nested directories with an Orbit.toml file.
 ///
+/// Some "smart" behaviors exist:
 /// - If source and destination files both exist:
 ///     - Do nothing if the contents are the same
 ///     - Write new contents if they differ
@@ -523,6 +534,17 @@ pub fn smart_copy(
             }
         }
     }
+
+    // Always include Orbit.toml and Orbit.lock
+    let always_move = [PROJECT_MANIFEST_FILE, PROJECT_LOCK_FILE];
+    for base_path in always_move {
+        let start_source_path = source.join(base_path);
+        let end_target_path = target.join(base_path);
+        if start_source_path.exists() == true && end_target_path.exists() == false {
+            std::fs::copy(start_source_path, end_target_path)?;
+        }
+    }
+
     Ok(())
 }
 

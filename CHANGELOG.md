@@ -17,6 +17,10 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 ## 0.26.4 - unreleased
 
+### Fixes
+- Fixes issue when Orbit.toml and Orbit.lock files were not always included during an installation when ignore rules were ignoring those files
+- Projects installed from their local path now also get moved into the catalog's archive upon successful installation
+
 ## 0.26.3
 
 ### Fixes

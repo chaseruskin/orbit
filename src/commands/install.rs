@@ -77,7 +77,7 @@ use cliproc::{Arg, Cli, Help, Subcommand};
 
 #[derive(Debug, PartialEq)]
 pub struct Install {
-    ip: Option<PartialProjectIdSpec>,
+    prj: Option<PartialProjectIdSpec>,
     url: Option<String>,
     path: Option<PathBuf>,
     protocol: Option<String>,
@@ -105,7 +105,7 @@ impl Subcommand<Context> for Install {
             url: cli.get(Arg::option("url"))?,
             protocol: cli.get(Arg::option("protocol").switch('p').value("name"))?,
             // Positionals
-            ip: cli.get(Arg::positional("project"))?,
+            prj: cli.get(Arg::positional("project"))?,
         })
     }
 
@@ -169,14 +169,14 @@ impl Subcommand<Context> for Install {
         // check if trying to download from the internet
         let target = if let Some(link) = &self.url {
             provided_spec = Some(
-                Self::download_target_from_url(c, &link, &self.ip, self.force)?
+                Self::download_target_from_url(c, &link, &self.prj, self.force)?
                     .0
                     .to_partial_project_id_spec(),
             );
             None
         // check if trying to download from local filesystem
-        } else if self.path.is_some() || self.ip.is_none() {
-            // verify the path points to a valid ip
+        } else if self.path.is_some() || self.prj.is_none() {
+            // verify the path points to a valid project
             let search_path = filesystem::resolve_rel_path(
                 &env::current_dir()?,
                 &filesystem::into_std_str(
@@ -184,7 +184,7 @@ impl Subcommand<Context> for Install {
                 ),
             );
 
-            // check if specifying an ip
+            // check if specifying a project
             let search_dir = PathBuf::standardize(PathBuf::from(search_path));
             // check if it is a zip file and get the directory to the unzipped contents if so
             let temp_dir_for_zip = if let Some(ext) = search_dir.extension() {
@@ -209,7 +209,7 @@ impl Subcommand<Context> for Install {
 
             let search_path = search_dir.join(PROJECT_MANIFEST_FILE);
 
-            let target = match &self.ip {
+            let target = match &self.prj {
                 Some(entry) => match search_path.exists() {
                     true => {
                         let ip = Project::load(search_dir.to_path_buf(), true, false)?;
@@ -272,19 +272,6 @@ impl Subcommand<Context> for Install {
                     }
                 },
             };
-            // 2025-08-26: Not needed as checklist procedure will install local to downloads
-            // // move the ip to the downloads folder if not already there
-            // let (spec, _) = Download::move_to_download_dir(
-            //     &target.get_root(),
-            //     c.get_downloads_path(),
-            //     Some(
-            //         &target
-            //             .get_man()
-            //             .get_project()
-            //             .into_project_id_spec()
-            //             .to_partial_project_id_spec(),
-            //     ),
-            // )?;
             provided_spec = Some(
                 target
                     .get_man()
@@ -300,14 +287,14 @@ impl Subcommand<Context> for Install {
 
         let determined_spec = match &provided_spec {
             Some(p) => Some(p),
-            None => self.ip.as_ref(),
+            None => self.prj.as_ref(),
         };
 
         // update the downloads
         catalog = catalog.downloads(c.get_downloads_path())?;
 
         // use the catalog (if no path is provided)
-        let target = if self.path.is_none() == true && (self.url.is_some() || self.ip.is_some()) {
+        let target = if self.path.is_none() == true && (self.url.is_some() || self.prj.is_some()) {
             if let Some(spec) = &determined_spec {
                 if let Some(lvl) = catalog.translate_name(&spec.to_pkg_name())? {
                     if let Some(slot) = lvl.get(true, true, spec.get_version()) {
@@ -445,7 +432,7 @@ impl Subcommand<Context> for Install {
         )?;
 
         // add additional check if we can download from online and it matches
-        if (self.path.is_some() || self.ip.is_none())
+        if (self.path.is_some() || self.prj.is_none())
             && target.get_man().get_project().get_source().is_some()
             && self.offline == false
         {
@@ -695,13 +682,8 @@ impl Install {
         // lookup the package name in the index to see if the UUIDs match
         // verify the version for this package is not already logged
 
-        // @note: a package's index file contains all metadata for all versions known to orbit
-        // @note: ability to link various index directories (essentially vendors)
-        // @note: also want to store zipped archives of installs in the "vault" for quicker retrieval
-
-        // @todo: listing all units
-
-        // @todo: store a LUT for unit names to the correct file to read when computing "get" command
+        // @idea: a package's index file contains all metadata for all versions known to orbit
+        // @idea: ability to link various index directories (essentially vendors)
 
         // @todo: getting the size of the entire directory
 
@@ -781,9 +763,23 @@ impl Install {
     }
 
     fn run(&self, target: &Project, catalog: &Catalog) -> Result<(), Fault> {
+        // install the project
         let result = Self::install(&target, &catalog.get_cache_path(), self.force, true)?;
         match result {
-            Some(_) => (),
+            // move the project the downloads folder if installation was successful
+            Some(_) => {
+                let (_, _) = Download::move_to_download_dir(
+                    &target.get_root(),
+                    catalog.get_downloads_path(),
+                    Some(
+                        &target
+                            .get_man()
+                            .get_project()
+                            .into_project_id_spec()
+                            .to_partial_project_id_spec(),
+                    ),
+                )?;
+            }
             None => crate::info!(
                 "project {} is already installed",
                 target.get_man().get_project().into_project_id_spec()

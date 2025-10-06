@@ -8,21 +8,22 @@ use ieee.numeric_std.all;
 library work;
 use work.hamm_pkg.all;
 
---- Generic hamming-code encoder that takes a message `message` and packages
---- it with corresponding parity bits into an `encoding` for extended 
---- hamming code (SECDED).
----
---- Implemented in purely combinational logic. Parity bits are set in the
---- indices corresponding to powers of 2 (0, 1, 2, 4, 8, ...).
+-- Generic hamming-code encoder that takes a message `message` and packages
+-- it with corresponding parity bits into an `encoding` for extended 
+-- hamming code (SECDED).
+--
+-- # Details
+-- Implemented in purely combinational logic. Parity bits are set in the
+-- indices corresponding to powers of 2 (0, 1, 2, 4, 8, ...).
 entity hamm_enc is 
     generic (
-        --- Number of parity bits to encode (excluding 0th DED bit)
+        -- Number of parity bits to encode (excluding 0th DED bit)
         PARITY_BITS : positive range 2 to positive'high 
     );
     port (
-        --- Incoming message
+        -- Incoming message
         message  : in  logics(data_size(PARITY_BITS)-1 downto 0);
-        --- Outgoing encoding
+        -- Outgoing encoding
         encoding : out logics(block_size(PARITY_BITS)-1 downto 0)
     );
 end entity hamm_enc;

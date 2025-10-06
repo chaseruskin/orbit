@@ -478,6 +478,13 @@ impl LangIdentifier {
         }
     }
 
+    pub fn as_sv_name(&self) -> Option<&SystemVerilogIdentifier> {
+        match &self {
+            Self::SystemVerilog(name) => Some(name),
+            _ => None,
+        }
+    }
+
     pub fn as_verilog_name(&self) -> Option<&VerilogIdentifier> {
         match &self {
             Self::Verilog(name) => Some(name),

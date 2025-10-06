@@ -1298,6 +1298,10 @@ impl VerilogSymbol {
                 if tnext.as_ref().check_delimiter(&Operator::ParenR) {
                     break;
                 }
+                // don't consume a comment
+                if tnext.as_ref().as_comment().is_some() {
+                    break;
+                }
             }
 
             if t.as_type().as_comment().is_some() {

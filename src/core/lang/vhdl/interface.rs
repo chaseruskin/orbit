@@ -89,6 +89,10 @@ impl IdentifierList {
 pub struct SubtypeIndication(Vec<VhdlToken>);
 
 impl SubtypeIndication {
+    pub fn to_norm_string(&self) -> String {
+        tokens_to_string(&self.0).into_all_bland()
+    }
+
     fn from_tokens<I>(tokens: &mut Peekable<I>) -> Self
     where
         I: Iterator<Item = lexer::Token<VhdlToken>>,
@@ -253,6 +257,13 @@ impl Mode {
     pub fn as_keyword(&self) -> &Option<Keyword> {
         &self.0
     }
+
+    pub fn to_norm_string(&self) -> String {
+        match &self.0 {
+            Some(kw) => kw.to_string().to_lowercase(),
+            None => Keyword::In.to_string().to_lowercase(),
+        }
+    }
 }
 
 impl Serialize for Mode {
@@ -290,6 +301,13 @@ impl Expr {
         match &self.0 {
             Some(e) => Some(&e.0),
             None => None,
+        }
+    }
+
+    pub fn to_norm_string(&self) -> String {
+        match &self.0 {
+            Some(e) => tokens_to_string(&e.0).into_all_bland(),
+            None => String::new(),
         }
     }
 }

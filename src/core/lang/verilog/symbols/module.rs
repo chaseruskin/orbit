@@ -77,6 +77,14 @@ impl Module {
     pub fn extend_refs(&mut self, refs: RefSet) {
         self.refs.extend(refs);
     }
+
+    pub fn get_params(&self) -> &ParamList {
+        &self.parameters
+    }
+
+    pub fn get_ports(&self) -> &PortList {
+        &self.ports
+    }
 }
 
 impl Module {

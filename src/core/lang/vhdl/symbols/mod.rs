@@ -424,6 +424,14 @@ impl Statement {
     fn get_tokens_mut(&mut self) -> &mut Vec<Token<VhdlToken>> {
         &mut self.0
     }
+
+    /// Gets the line where the last token in the statement lies.
+    pub fn get_ending_line_no(&self) -> usize {
+        match self.0.last() {
+            Some(t) => t.locate().line(),
+            None => 0,
+        }
+    }
 }
 
 impl std::fmt::Display for Statement {
@@ -605,6 +613,23 @@ impl Statement {
     /// Checks if the statement is a subtype
     pub fn is_subtype(&self) -> bool {
         self.starts_with_kw(Keyword::Subtype)
+    }
+
+    /// Checks if this statement can be identified by `name`.
+    ///
+    /// Stops searching after finding a `:` token.
+    pub fn has_matching_id(&self, name: &Identifier) -> bool {
+        for tokens in &self.0 {
+            if let Some(t) = tokens.as_ref().as_identifier() {
+                if t == name {
+                    return true;
+                }
+            }
+            if tokens.as_ref().check_delimiter(&Delimiter::Colon) {
+                return false;
+            }
+        }
+        false
     }
 }
 
@@ -1344,6 +1369,11 @@ impl VhdlSymbol {
                 return clause;
             } else {
                 clause.get_tokens_mut().push(t);
+            }
+            if let Some(tpeek) = tokens.peek() {
+                if tpeek.as_ref().as_comment().is_some() {
+                    return clause;
+                }
             }
         }
         // println!("{:?}", clause);

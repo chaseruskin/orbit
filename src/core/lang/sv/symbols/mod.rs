@@ -55,6 +55,13 @@ impl Statement {
     pub fn new() -> Self {
         Self(Vec::new())
     }
+
+    pub fn get_ending_line_no(&self) -> usize {
+        match self.0.last() {
+            Some(t) => t.locate().line(),
+            None => 0,
+        }
+    }
 }
 
 impl Statement {
@@ -168,6 +175,25 @@ impl Statement {
                         return true;
                     }
                 }
+            }
+        }
+        false
+    }
+
+    /// Checks if this statement can be identified by `name`.
+    ///
+    /// Stops searching after finding a `=` or `,`.
+    pub fn has_matching_id(&self, name: &Identifier) -> bool {
+        for tokens in &self.0 {
+            if let Some(t) = tokens.as_ref().as_identifier() {
+                if t == name {
+                    return true;
+                }
+            }
+            if tokens.as_ref().check_delimiter(&Operator::BlockAssign)
+                || tokens.as_ref().check_delimiter(&Operator::Comma)
+            {
+                return false;
             }
         }
         false

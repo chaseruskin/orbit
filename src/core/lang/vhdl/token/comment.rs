@@ -38,19 +38,25 @@ impl Comment {
 
     /// Returns the inner comment string as it's raw doc comment if it is a doc comment, otherwise returns None.
     pub fn into_doc_comment(&self) -> Option<String> {
+        // all comments (-- ...)
         match self {
-            Self::Single(s) => match s.starts_with("- ") || s == "-" {
-                true => {
-                    if s == "-" {
-                        Some(String::from("\n"))
-                    } else {
-                        Some(String::from(s.split_once("- ")?.1) + "\n")
-                    }
-                }
-                false => None,
-            },
+            Self::Single(s) => Some(String::from(s.trim_start().to_owned() + "\n")),
             _ => None,
         }
+        // only triple marked comments (--- ...)
+        // match self {
+        //     Self::Single(s) => match s.starts_with("- ") || s == "-" {
+        //         true => {
+        //             if s == "-" {
+        //                 Some(String::from("\n"))
+        //             } else {
+        //                 Some(String::from(s.split_once("- ")?.1) + "\n")
+        //             }
+        //         }
+        //         false => None,
+        //     },
+        //     _ => None,
+        // }
     }
 
     /// Computes the ending position the cursor ends up in.

@@ -675,19 +675,25 @@ impl ToColor for Comment {
 impl Comment {
     /// Returns the inner comment string as it's raw doc comment if it is a doc comment, otherwise returns None.
     pub fn into_doc_comment(&self) -> Option<String> {
+        // all single-line comments are docs (// ...)
         match self {
-            Self::OneLine(s) => match s.starts_with("/ ") || s == "/" {
-                true => {
-                    if s == "/" {
-                        Some(String::from("\n"))
-                    } else {
-                        Some(String::from(s.split_once("/ ")?.1) + "\n")
-                    }
-                }
-                false => None,
-            },
+            Self::OneLine(s) => Some(String::from(s.trim_start().to_owned() + "\n")),
             _ => None,
         }
+        // only triple marked comments (/// ...)
+        // match self {
+        //     Self::OneLine(s) => match s.starts_with("/ ") || s == "/" {
+        //         true => {
+        //             if s == "/" {
+        //                 Some(String::from("\n"))
+        //             } else {
+        //                 Some(String::from(s.split_once("/ ")?.1) + "\n")
+        //             }
+        //         }
+        //         false => None,
+        //     },
+        //     _ => None,
+        // }
     }
 
     fn as_str(&self) -> &str {

@@ -1,6 +1,7 @@
 [project]
 name = "docu"
 version = "0.1.0"
+description = "An example of how documentation can be generated"
 uuid = "61kfbsth23uk2tgxgwljeo29t"
 ignore = [
     "ignore"

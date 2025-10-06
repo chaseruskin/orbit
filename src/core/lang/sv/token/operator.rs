@@ -66,6 +66,7 @@ pub enum Operator {
     BrackL,
     BrackR,
     Pound,
+    /// =
     BlockAssign,
     At,
     AttrL,

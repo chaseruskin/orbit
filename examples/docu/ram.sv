@@ -1,22 +1,25 @@
-
-/// Single-port random access memory with configurable address and data widths.
-///
-/// This module creates a memory to read and write data.
+// Single-port random access memory with configurable address and data widths.
+//
+// This module creates a memory to read and write data.
 module ram 
 #(
+    // Number of bits to represent the address lines
     parameter int ADDR_WIDTH,
+    // Number of bits for each piece of data
     parameter int DATA_WIDTH
 ) (
-    input logic clk,
+    input logic clk, // global clock
     input logic rst,
-    /// Provide where to read/write data
+    // Provide where to read/write data
+    // 
+    // This is a long description.
     input logic[ADDR_WIDTH-1:0] waddr,
     input logic[ADDR_WIDTH-1:0] raddr,
-    /// Set this bit to issue a write
+    // Set this bit to issue a write
     input logic wen,
-    /// Provide data only when writing
+    // Provide data only when writing
     input logic[DATA_WIDTH-1:0] wdata,
-    /// The outgoing data fetched from the ram
+    // The outgoing data fetched from the ram
     output logic[DATA_WIDTH-1:0] rdata
 );
 

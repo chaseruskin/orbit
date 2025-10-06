@@ -41,6 +41,13 @@ impl Expr {
     pub fn as_static_expr(&self) -> &Option<Vec<SystemVerilogToken>> {
         &self.0
     }
+
+    pub fn to_norm_string(&self) -> String {
+        match &self.0 {
+            Some(expr) => tokens_to_string(&expr).into_all_bland(),
+            None => String::new(),
+        }
+    }
 }
 
 impl serde::Serialize for Expr {
@@ -398,6 +405,20 @@ impl DataType {
         match result.len() {
             0 => None,
             _ => Some(result),
+        }
+    }
+
+    pub fn to_norm_string(&self) -> String {
+        let mut result = String::new();
+        if let Some(dt) = &self.data {
+            result.push_str(&dt.to_string());
+        }
+        if let Some(rg) = &self.range.0 {
+            result.push_str(&tokens_to_string(rg).into_all_bland());
+        }
+        match result.len() {
+            0 => String::new(),
+            _ => result,
         }
     }
 }

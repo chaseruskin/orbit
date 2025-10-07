@@ -108,6 +108,13 @@ impl VhdlSymbol {
         }
     }
 
+    pub fn as_entity_mut(&mut self) -> Option<&mut Entity> {
+        match self {
+            Self::Entity(e) => Some(e),
+            _ => None,
+        }
+    }
+
     /// Casts `self` to configuration.
     pub fn as_configuration(&self) -> Option<&Configuration> {
         match self {

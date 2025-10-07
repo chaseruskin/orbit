@@ -12,7 +12,6 @@ use work.hamm_pkg.all;
 -- it with corresponding parity bits into an `encoding` for extended 
 -- hamming code (SECDED).
 --
--- # Details
 -- Implemented in purely combinational logic. Parity bits are set in the
 -- indices corresponding to powers of 2 (0, 1, 2, 4, 8, ...).
 entity hamm_enc is 
@@ -28,8 +27,7 @@ entity hamm_enc is
     );
 end entity hamm_enc;
 
---- # RTL
---- My basic architecture.
+-- My basic architecture.
 architecture rtl of hamm_enc is
     constant EVEN_PARITY : boolean := true;
 

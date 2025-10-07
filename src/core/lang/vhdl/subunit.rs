@@ -47,6 +47,20 @@ impl SubUnit {
         }
     }
 
+    pub fn is_arch(&self) -> bool {
+        match &self {
+            Self::Architecture(_) => true,
+            _ => false,
+        }
+    }
+
+    pub fn into_arch(self) -> Option<symbols::architecture::Architecture> {
+        match self {
+            Self::Architecture(a) => Some(a),
+            _ => None,
+        }
+    }
+
     /// Returns an ordered list of compound indentifiers for consist graph building.
     pub fn get_edge_list(&self) -> Vec<&CompoundIdentifier> {
         let mut list = Vec::with_capacity(self.get_refs().len());

@@ -163,6 +163,16 @@ impl Lang {
             Self::Verilog => "vlog",
         })
     }
+
+    /// Returns the name of the language, with proper capitalization.
+    pub fn to_proper_name(&self) -> String {
+        match &self {
+            Self::Verilog => "Verilog",
+            Self::Vhdl => "VHDL",
+            Self::SystemVerilog => "SystemVerilog",
+        }
+        .to_owned()
+    }
 }
 
 impl FromStr for Lang {

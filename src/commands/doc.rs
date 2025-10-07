@@ -38,6 +38,7 @@ use crate::error::LastError;
 use crate::info;
 use crate::util::anyerror::Fault;
 use crate::util::filesystem::LockZone;
+use crate::util::sha256;
 use crate::warn;
 use std::collections::HashMap;
 
@@ -167,10 +168,65 @@ impl<'a> DocProject<'a> {
         });
         // try to collect all design units
         let unit_map = self.project.collect_units(false, false, false)?;
+
+        let doc_subus: Vec<&DocUnit> = self
+            .doc_units
+            .iter()
+            .filter(|f| f.get_name().is_some() && f.as_parent_name().is_some())
+            .collect();
+
+        for ds in &doc_subus {
+            Self::import_hdl_source_to_md(output_path, &ds.get_source())?;
+        }
+
         for du in source_dus {
-            self.write_source_file(output_path, du, &unit_map)?;
+            let unit_subus: Vec<&&DocUnit> = doc_subus
+                .iter()
+                .filter(|f| f.as_parent_name() == du.get_name())
+                .collect();
+            self.write_source_file(output_path, du, &unit_map, unit_subus)?;
         }
         Ok(())
+    }
+
+    fn get_hdl_source_md_name(src_file: &str) -> (String, Lang) {
+        let src_src_path = src_file;
+        let lang = match is_systemverilog(src_src_path) {
+            true => Lang::SystemVerilog,
+            false => match is_vhdl(src_src_path) {
+                true => Lang::Vhdl,
+                false => Lang::Verilog,
+            },
+        };
+        let sha = sha256::compute_sha256(src_src_path.as_bytes()).to_string_short();
+        let ext = match lang {
+            Lang::SystemVerilog => "sv",
+            Lang::Vhdl => "vhd",
+            Lang::Verilog => "v",
+        };
+
+        let src_path = std::path::PathBuf::from(src_src_path);
+        let file_name = src_path.file_stem().unwrap_or_default().to_string_lossy();
+        let md_src_file = format!("{}.{}.{}.md", file_name, ext, sha);
+        (md_src_file, lang)
+    }
+
+    fn import_hdl_source_to_md(output_path: &PathBuf, src_file: &str) -> Result<String, Fault> {
+        // copy the source file contents to a new markdown file
+        let (md_src_file, lang) = Self::get_hdl_source_md_name(src_file);
+        let tar_src_path = output_path.join(&md_src_file);
+        // only write the contents if the file does not exist
+        if tar_src_path.exists() == false {
+            let md_lang = match lang {
+                Lang::SystemVerilog => "sv",
+                Lang::Vhdl => "vhdl",
+                Lang::Verilog => "verilog",
+            };
+            let raw_src = lang::read_to_string(&src_file)?;
+            let src_contents = format!("``` {}\n{}\n```\n", md_lang, raw_src);
+            std::fs::write(tar_src_path, src_contents)?;
+        }
+        Ok(md_src_file)
     }
 
     fn write_source_file(
@@ -178,6 +234,7 @@ impl<'a> DocProject<'a> {
         output_path: &PathBuf,
         du: &DocUnit,
         unit_map: &UnitMap,
+        unit_subus: Vec<&&DocUnit>,
     ) -> Result<(), Fault> {
         let du_name = du.get_name().unwrap();
         let unit_path = output_path.join(&format!("{}.md", du_name));
@@ -185,31 +242,15 @@ impl<'a> DocProject<'a> {
         let mut contents = String::new();
         // try to find the source file
         let src_file = match unit_map.get(du_name) {
-            Some(lu) => {
-                // copy the source file contents to a new markdown file
-                let src_src_path = lu.get_source_file();
-                let ext = match lu.get_lang() {
-                    Lang::SystemVerilog => "sv",
-                    Lang::Vhdl => "vhd",
-                    Lang::Verilog => "v",
-                };
-                let md_lang = match lu.get_lang() {
-                    Lang::SystemVerilog => "sv",
-                    Lang::Vhdl => "vhdl",
-                    Lang::Verilog => "verilog",
-                };
-                let md_src_file = format!("{}.{}.md", du_name, ext);
-                let tar_src_path = output_path.join(&md_src_file);
-                let raw_src = lang::read_to_string(&src_src_path)?;
-                let src_contents = format!("``` {}\n{}\n```\n", md_lang, raw_src);
-                std::fs::write(tar_src_path, src_contents)?;
-                Some(md_src_file)
-            }
+            Some(lu) => Some(Self::import_hdl_source_to_md(
+                output_path,
+                lu.get_source_file(),
+            )?),
             None => None,
         };
 
         if let Some(lu) = unit_map.get(du_name) {
-            contents.push_str(&du.to_markdown(src_file, lu));
+            contents.push_str(&du.to_markdown(src_file, lu, unit_subus));
         }
 
         std::fs::write(&unit_path, contents)?;
@@ -413,6 +454,7 @@ impl Doc {
                     doc_units.push(du);
                 }
                 cur_doc_unit = Some(DocUnit::from_sv_stmt(
+                    src.to_string(),
                     name,
                     None,
                     doc_comment,
@@ -425,6 +467,7 @@ impl Doc {
                     doc_units.push(du);
                 }
                 cur_doc_unit = Some(DocUnit::from_sv_stmt(
+                    src.to_string(),
                     name,
                     None,
                     doc_comment,
@@ -509,6 +552,7 @@ impl Doc {
                     doc_units.push(du);
                 }
                 cur_doc_unit = Some(DocUnit::from_vhdl_stmt(
+                    src.to_string(),
                     name,
                     None,
                     doc_comment,
@@ -521,6 +565,7 @@ impl Doc {
                     doc_units.push(du);
                 }
                 cur_doc_unit = Some(DocUnit::from_vhdl_stmt(
+                    src.to_string(),
                     arch_name,
                     Some(ent_name),
                     doc_comment,
@@ -533,6 +578,7 @@ impl Doc {
                     doc_units.push(du);
                 }
                 cur_doc_unit = Some(DocUnit::from_vhdl_stmt(
+                    src.to_string(),
                     name,
                     None,
                     doc_comment,
@@ -665,6 +711,7 @@ impl DocItem {
 #[derive(Debug, PartialEq)]
 struct DocUnit {
     // state is used to help internally track/identify certain statements
+    src: String,
     state: DocState,
     unit: DocItem,
     items: Vec<DocItem>,
@@ -673,10 +720,15 @@ struct DocUnit {
 impl DocUnit {
     pub fn new() -> Self {
         Self {
+            src: String::new(),
             state: DocState::Norm,
             unit: DocItem::new(),
             items: Vec::new(),
         }
+    }
+
+    pub fn get_source(&self) -> &String {
+        &self.src
     }
 
     pub fn get_name(&self) -> Option<&LangIdentifier> {
@@ -698,7 +750,12 @@ impl DocUnit {
     }
 
     /// Writes the unit to it's markdown formatted string.
-    pub fn to_markdown(&self, src_file: Option<String>, unit: &LangUnit) -> String {
+    pub fn to_markdown(
+        &self,
+        src_file: Option<String>,
+        unit: &LangUnit,
+        subs: Vec<&&DocUnit>,
+    ) -> String {
         let mut contents = String::new();
 
         // write the header
@@ -710,8 +767,14 @@ impl DocUnit {
 
         // link to the source file
         if let Some(src) = src_file {
-            contents.push_str(&format!("[Source]({})\n\n", src));
+            contents.push_str(&format!(
+                "[Source ({})]({})\n\n",
+                unit.get_lang().to_proper_name(),
+                src
+            ));
         }
+
+        // @todo: write the correct syntax for how it would be defined
 
         // write the full documentation comment
         contents.push_str(&format!(
@@ -724,6 +787,52 @@ impl DocUnit {
 
         // write out any ports
         contents.push_str(&self.add_port_table(&unit));
+
+        // write out any architectures
+        contents.push_str(&self.add_arch_section(&unit, &subs));
+
+        contents
+    }
+
+    /// Adds the architecture section for VHDL entities.
+    ///
+    /// NOTE: This section still needs to have a source link to it as architectures can be
+    /// found in different files from the primrary entity.
+    fn add_arch_section(&self, unit: &LangUnit, subs: &Vec<&&DocUnit>) -> String {
+        let mut contents = String::new();
+        let filtered_subs: Vec<&&&DocUnit> = subs
+            .iter()
+            .filter(|f| f.is_type(DocType::Architecture))
+            .collect();
+        let section = "Architectures";
+
+        if let Some(vhd) = unit.get_vhdl_symbol() {
+            if let Some(ent) = vhd.as_entity() {
+                let archs = ent.get_architectures().inner();
+                if archs.len() == 0 {
+                    return String::new();
+                }
+                contents.push_str(&format!("## {}\n\n", section));
+                for arch in archs {
+                    contents.push_str(&format!("### Architecture {}\n", arch.get_name()));
+                    // find this architecture within the doc comments
+                    let sel_du = filtered_subs.iter().find(|f| {
+                        f.get_name().unwrap() == &LangIdentifier::Vhdl(arch.get_name().clone())
+                    });
+                    if let Some(du_arch) = sel_du {
+                        contents.push_str(&format!(
+                            "[Source (VHDL)]({})\n\n",
+                            DocProject::get_hdl_source_md_name(du_arch.get_source()).0
+                        ));
+                        contents.push_str(&format!(
+                            "{}\n\n",
+                            du_arch.unit.get_docs().unwrap_or(&String::new())
+                        ));
+                    }
+                }
+                contents.push_str("\n");
+            }
+        }
 
         contents
     }
@@ -846,7 +955,7 @@ impl DocUnit {
 
         contents.push_str(&format!("## {}\n", section));
         contents.push_str(&format!(
-            "Name | Type | Mode | Default | Description \n-- | -- | -- | -- | --\n"
+            "Name | Mode | Type | Description \n-- | -- | -- | --\n"
         ));
 
         if let Some(vhdl) = unit.get_vhdl_symbol() {
@@ -870,11 +979,10 @@ impl DocUnit {
                     None => String::new(),
                 };
                 contents.push_str(&format!(
-                    "{} | {} | {} | {} | {}\n",
+                    "{} | {} | {} | {}\n",
                     port.get_name(),
-                    port.get_type().to_norm_string(),
                     port.get_mode().to_norm_string(),
-                    port.get_default().to_norm_string(),
+                    port.get_type().to_norm_string(),
                     comment.replace("\n", "<br>")
                 ));
             }
@@ -899,14 +1007,13 @@ impl DocUnit {
                     None => String::new(),
                 };
                 contents.push_str(&format!(
-                    "{} | {} | {} | {} | {}\n",
+                    "{} | {} | {} | {}\n",
                     port.get_name(),
-                    port.get_datatype().to_norm_string(),
                     port.get_mode()
                         .as_ref()
                         .unwrap_or(&SvKeyword::Input)
                         .to_string(),
-                    port.get_default().to_norm_string(),
+                    port.get_datatype().to_norm_string(),
                     comment.replace("\n", "<br>")
                 ));
             }
@@ -931,14 +1038,13 @@ impl DocUnit {
                     None => String::new(),
                 };
                 contents.push_str(&format!(
-                    "{} | {} | {} | {} | {}\n",
+                    "{} | {} | {} | {}\n",
                     port.get_name(),
-                    port.get_datatype().to_norm_string(),
                     port.get_mode()
                         .as_ref()
                         .unwrap_or(&SvKeyword::Input)
                         .to_string(),
-                    port.get_default().to_norm_string(),
+                    port.get_datatype().to_norm_string(),
                     comment.replace("\n", "<br>")
                 ));
             }
@@ -953,6 +1059,7 @@ impl DocUnit {
 // VHDL-specific functions
 impl DocUnit {
     pub fn from_vhdl_stmt(
+        src: String,
         name: LangIdentifier,
         parent: Option<LangIdentifier>,
         cmt: Option<String>,
@@ -961,6 +1068,7 @@ impl DocUnit {
     ) -> Self {
         Self {
             state: DocState::Norm,
+            src: src,
             unit: DocItem {
                 name: Some(name),
                 parent: parent,
@@ -1051,6 +1159,7 @@ impl DocUnit {
 // Verilog/SV-specific functions
 impl DocUnit {
     pub fn from_sv_stmt(
+        src: String,
         name: LangIdentifier,
         parent: Option<LangIdentifier>,
         cmt: Option<String>,
@@ -1058,6 +1167,7 @@ impl DocUnit {
         form: DocType,
     ) -> Self {
         Self {
+            src: src,
             state: DocState::Port,
             unit: DocItem {
                 name: Some(name),

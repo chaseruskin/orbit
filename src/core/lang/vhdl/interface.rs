@@ -40,6 +40,10 @@ impl<'a> Architectures<'a> {
     pub fn new(archs: &'a Vec<super::symbols::architecture::Architecture>) -> Self {
         Self(archs)
     }
+
+    pub fn inner(&self) -> &'a Vec<super::symbols::architecture::Architecture> {
+        &self.0
+    }
 }
 
 impl<'a> std::fmt::Display for Architectures<'a> {

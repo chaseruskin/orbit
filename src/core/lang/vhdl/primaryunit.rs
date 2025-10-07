@@ -20,6 +20,7 @@ use super::subunit::SubUnit;
 use super::symbols::VhdlSymbol;
 use crate::core::lang;
 use crate::core::lang::reference::RefSet;
+use crate::core::lang::vhdl::symbols::architecture::Architecture;
 use crate::core::lang::vhdl::symbols::VHDLParser;
 use crate::core::lang::vhdl::token::identifier::Identifier;
 use crate::util::anyerror::CodeFault;
@@ -54,8 +55,24 @@ impl PrimaryUnit {
         &self.unit
     }
 
+    pub fn is_entity(&self) -> bool {
+        match self.unit.get_symbol() {
+            Some(u) => u.as_entity().is_some(),
+            _ => false,
+        }
+    }
+
     pub fn steal_refs(&mut self, refs: RefSet) -> () {
         let _ = &self.unit.get_symbol_mut().unwrap().steal_refs(refs);
+    }
+
+    pub fn try_add_arch(&mut self, arch: Architecture) -> Option<()> {
+        let _ = self
+            .unit
+            .get_symbol_mut()?
+            .as_entity_mut()?
+            .link_architecture(arch);
+        Some(())
     }
 
     /// Serializes the data into a toml inline table
@@ -156,9 +173,11 @@ impl Eq for Unit {}
 
 // use rayon::prelude::*;
 
-fn analyze(source_file: &str) -> Result<HashMap<Identifier, PrimaryUnit>, CodeFault> {
+fn analyze(
+    source_file: &str,
+) -> Result<(HashMap<Identifier, PrimaryUnit>, Vec<SubUnit>), CodeFault> {
     if crate::core::fileset::is_vhdl(&source_file) == false {
-        return Ok(HashMap::new());
+        return Ok((HashMap::new(), Vec::new()));
     }
     // parse text into VHDL symbols
     // println!("parsing vhdl: {}", &source_file);
@@ -206,6 +225,8 @@ fn analyze(source_file: &str) -> Result<HashMap<Identifier, PrimaryUnit>, CodeFa
         })
         .collect();
 
+    let mut post_sub_nodes = Vec::new();
+
     // assemble secondary nodes
     sub_nodes
         .into_iter()
@@ -216,22 +237,33 @@ fn analyze(source_file: &str) -> Result<HashMap<Identifier, PrimaryUnit>, CodeFa
         })
         .for_each(|n| {
             if let Some(owner) = pri_units.get_mut(n.get_entity()) {
-                owner.steal_refs(n.into_refs());
+                if n.is_arch() && owner.is_entity() {
+                    owner.steal_refs(n.get_refs().clone());
+                    // adding the architecture to this entity
+                    let _ = owner.try_add_arch(n.into_arch().unwrap());
+                } else {
+                    owner.steal_refs(n.into_refs());
+                }
+            } else {
+                // postponed for a different source file
+                post_sub_nodes.push(n);
             }
         });
 
-    Ok(pri_units)
+    Ok((pri_units, post_sub_nodes))
 }
 
 pub fn collect_units(files: &Vec<String>) -> Result<HashMap<Identifier, PrimaryUnit>, CodeFault> {
     let mut all_result: HashMap<Identifier, PrimaryUnit> = HashMap::new();
     // iterate through all source files
-    let divided_results: Result<Vec<_>, _> = files
+    let divided_results: Result<(Vec<_>, Vec<_>), _> = files
         .iter()
         .map(|source_file| analyze(source_file))
         .collect();
 
-    for pri_unit in divided_results? {
+    let (pri_units, all_sub_nodes) = divided_results?;
+
+    for pri_unit in pri_units {
         for (_key, primary) in pri_unit {
             let pri_src = PathBuf::from(primary.get_unit().get_source_file());
             let pri_pos = primary
@@ -261,6 +293,21 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<Identifier, PrimaryU
                 ))?;
             }
         }
+    }
+
+    // connect architectures and other postponed secondary nodes
+    for sub_nodes in all_sub_nodes {
+        sub_nodes.into_iter().for_each(|n| {
+            if let Some(owner) = all_result.get_mut(n.get_entity()) {
+                if n.is_arch() && owner.is_entity() {
+                    owner.steal_refs(n.get_refs().clone());
+                    // adding the architecture to this entity
+                    let _ = owner.try_add_arch(n.into_arch().unwrap());
+                } else {
+                    owner.steal_refs(n.into_refs());
+                }
+            }
+        });
     }
 
     Ok(all_result)

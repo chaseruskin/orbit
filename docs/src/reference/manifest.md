@@ -90,7 +90,7 @@ description = "A short description of the project"
 
 ### The `documentation` field
 
-The documentation field specifies a URL to a website hosting the project’s documentation.
+The documentation field specifies a URL to a website hosting the project's documentation.
 
 ``` toml
 [project]

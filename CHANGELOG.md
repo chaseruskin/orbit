@@ -21,6 +21,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - Correctly captures list of architectures for `orbit get` subcommand when working with VHDL entities
 - Fixes issue when Orbit.toml and Orbit.lock files were not always included during an installation when ignore rules were ignoring those files
 - Projects installed from their local path now also get moved into the catalog's archive upon successful installation
+- Fixes VHDL parsing functions within package bodies with declaration sections to properly exit primary design unit
 
 ## 0.26.3
 

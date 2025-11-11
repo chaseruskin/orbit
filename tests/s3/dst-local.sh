@@ -18,9 +18,11 @@ cd ip-c
 orbit lock --force
 
 # # verify DST runs without error
-# STDOUT=$(orbit tree --root entity_c)
+# STDOUT=$(orbit tree entity_c)
 
-orbit b --top entity_c --target gee -- --lint
+# orbit t --dut entity_c --target ghdl -- --run com
+
+orbit tree entity_c
 
 orbit remove ip-b --force
 orbit remove ip-a --force

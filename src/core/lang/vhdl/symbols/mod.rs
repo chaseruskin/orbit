@@ -364,6 +364,7 @@ impl Parse<VhdlToken> for VHDLParser {
                         Ok(mut pack) => {
                             global_refs = pack.steal_refs(global_refs);
                             // crate::info!("detected {}", pack);
+                            // println!("{:?}", tokens.peek());
                             Ok(Symbol::new(pack))
                         }
                         Err(e) => Err(e),
@@ -1973,7 +1974,7 @@ impl VhdlSymbol {
         while let Some(t) = tokens.peek() {
             if t.as_type().check_keyword(&Keyword::End) == true {
                 let (clause, _c_refs) = Self::parse_statement(tokens);
-                // println!("IN BODY AT END: {:?}", stmt);
+                // println!("IN BODY AT END: {:?} {:?}", clause, is_subprogram);
                 if eval_exit(&clause) == true {
                     break;
                 }
@@ -1987,8 +1988,18 @@ impl VhdlSymbol {
                     true => Self::is_subprogram_ending,
                     false => Self::is_sub_ending,
                 };
-                let (_clause, c_refs) = Self::parse_statement(tokens);
-                // println!("ENTERING SUBPROGRAM {:?}", _clause);
+                let (clause, c_refs) = Self::parse_statement(tokens);
+                if clause.0.len() == 1
+                    && clause
+                        .0
+                        .first()
+                        .unwrap()
+                        .as_ref()
+                        .check_keyword(&Keyword::Begin)
+                {
+                    continue;
+                }
+                // println!("ENTERING SUBPROGRAM {:?}", clause);
                 // catch any references in the given statement
                 refs.extend(c_refs);
 

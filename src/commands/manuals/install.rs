@@ -67,7 +67,7 @@ OPTIONS
         Install the project regardless of the cache slot occupancy
 
     --offline
-        Skip checking coherency with source
+        Skip checking coherency with repository
 
     --list, -l
         View available protocols and exit

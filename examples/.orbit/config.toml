@@ -45,7 +45,7 @@ fileset.TEXT = { patterns = ["a.txt", "b.txt"] }
 name = "gitit"
 description = "Simple git protocol"
 patterns = ["*.git"]
-command = ["git", "clone", "{{ orbit.project.source }}"]
+command = ["git", "clone", "{{ orbit.project.repository }}"]
 
 [[protocol]]
 name = "bar"

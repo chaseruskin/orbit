@@ -30,7 +30,7 @@ DESCRIPTION
     First, the project must have an up to date lockfile with no relative 
     dependencies. The project's manifest must also have a value for the source 
     field. In addition, Orbit must be able to construct the HDL source code graph 
-    without errors. Finally, the project is downloaded from its source url and 
+    without errors. Finally, the project is downloaded from its repository url and 
     temporarily installed to verify its contents match those of the local project.
     
     Posting a project to a channel involves copying the project's manifest file to 

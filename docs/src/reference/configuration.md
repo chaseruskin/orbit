@@ -168,7 +168,7 @@ The optional `default-protocol` field can be used to specify which protocol shou
 default-protocol = "git"
 ```
 
-If the default protocol has patterns configured and none of the patterns match the given project's source URL, then it is not used. If the default protocol is set to be used and its name cannot be found among the known protocols, the installation process will error.
+If the default protocol has patterns configured and none of the patterns match the given project's repository URL, then it is not used. If the default protocol is set to be used and its name cannot be found among the known protocols, the installation process will error.
 
 ### The `[vhdl-format]` section
 
@@ -378,7 +378,7 @@ The `command` entry for a protocol is a string or an array of strings ([program 
 ``` toml
 [[protocol]]
 # ...
-command = ["git", "clone", "{{orbit.project.source}}", "-b", "{{orbit.project.version}}"]
+command = ["git", "clone", "{{orbit.project.repository}}", "-b", "{{orbit.project.version}}"]
 ```
 
 This field is required when configuring a protocol.

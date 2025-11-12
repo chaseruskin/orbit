@@ -16,7 +16,7 @@ Every manifest file consists of the following sections:
     - [documentation](#the-documentation-field) - URL of the project documentation.
     - [authors](#the-authors-field) - The authors of the project.
     - [library](#the-library-field) - The HDL library for the design units within the project.
-    - [source](#the-source-field) - The URL of the project source repository.
+    - [repository](#the-repository-field) - The URL of the project source repository.
     - [public](#the-public-field) - Source files to be visible to other project.
     - [keywords](#the-keywords-field) - A list of simple words categorizing the project.
     - [channels](#the-channels-field) - The channels to update when publishing the project.
@@ -119,14 +119,16 @@ The optional `library` entry is an identifier used to denote the HDL library for
 library = "axi"
 ```
 
-### The `source` field
+### The `repository` field
 
-The `source` entry is a string that represents the URL where this project is stored on the internet.
+The `repository` entry is a string that represents the URL where this project is stored on the internet. 
+
+It is encouraged that this value is used among protocols, so it is important that an exact state of the project can be retreived using this field (and potentially other fields, such as `version`).
 
 ``` toml
 [project]
 # ...
-source = "https://github.com/chaseruskin/orbit/archive/refs/tags/1.0.0.zip"
+repository = "https://github.com/chaseruskin/orbit/archive/refs/tags/1.0.0.zip"
 ```
 
 ### The `public` field

@@ -58,7 +58,7 @@ version = "1.0.0"
 ``` toml
 [project]
 # ...
-source = "https://github.com/chaseruskin/gates/archive/{{orbit.project.version}}.zip"
+repository = "https://github.com/chaseruskin/gates/archive/{{orbit.project.version}}.zip"
 ```
 
 3. Specify what source files in the project are public using the project manifest's `public` field:

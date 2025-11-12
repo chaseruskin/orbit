@@ -17,6 +17,9 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 ## 0.26.4 - unreleased
 
+### Changes
+- Renames `source` field to `repository` field within a project's manifest
+
 ### Fixes
 - Correctly captures list of architectures for `orbit get` subcommand when working with VHDL entities
 - Fixes issue when Orbit.toml and Orbit.lock files were not always included during an installation when ignore rules were ignoring those files

@@ -32,7 +32,7 @@ The following lists the instances when a string is permitted to perform string s
 
 ### Manifest files
 
-The string pattern for a project's `project.source` field is allowed to contain any of the following keys:
+The string pattern for a project's `project.repository` field is allowed to contain any of the following keys:
 
 - `orbit.project.name`: The name of the project being downloaded.
 - `orbit.project.version`: The version of the project being downloaded.
@@ -53,7 +53,7 @@ The argument list defined in a protocol's configuration is allowed to contain an
 
 - `orbit.project.name`: The name of the project being downloaded.
 - `orbit.project.version`: The version of the project being downloaded.
-- `orbit.project.source`: The URL for the project being downloaded.
+- `orbit.project.repository`: The URL for the project being downloaded.
 - `*`: Any environment variables loaded from configuration files.
 
 ### Target arguments
@@ -79,10 +79,10 @@ Consider a project with the following manifest data:
 [project]
 name = "foo"
 version = "1.2.0"
-source = "https://github.com/hyperspace-labs/foo/archive/refs/tags/{{orbit.project.version}}.zip
+repository = "https://github.com/hyperspace-labs/foo/archive/refs/tags/{{orbit.project.version}}.zip
 ```
 
-The `source` field of a project's manifest is one string that is allowed to string swap. For its string, we specify a key, "orbit.project.version", by enclosing it in double curly brackets. This tells Orbit that any time it uses this string, it should replace `{{orbit.project.version}}` with `1.2.0`, the value associated with that key.
+The `repository` field of a project's manifest is one string that is allowed to string swap. For its string, we specify a key, "orbit.project.version", by enclosing it in double curly brackets. This tells Orbit that any time it uses this string, it should replace `{{orbit.project.version}}` with `1.2.0`, the value associated with that key.
 
 By using string swapping, we can reduce the amount of times redundant information has to be maintained, or delay providing information when we may not know the value until runtime.
 

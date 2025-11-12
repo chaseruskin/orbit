@@ -16,7 +16,7 @@ If your requirements for how you point a project's source contents will not work
 
 Users can configure their own processes to run when trying to download a project from the internet by adding a new `[[protocol]]` entry in an Orbit configuration file.
 
-Orbit will start the custom protocol's process in a temporary directory for the custom protocol to try to download the project's contents from its provided source URL. Orbit removes the temporary directory after a project is successfully or unsuccessfully downloaded and creates a new temporary directory for each project download.
+Orbit will start the custom protocol's process in a temporary directory for the custom protocol to try to download the project's contents from its provided repository URL. Orbit removes the temporary directory after a project is successfully or unsuccessfully downloaded and creates a new temporary directory for each project download.
 
 ## Examples
 
@@ -27,7 +27,7 @@ Filename: config.toml
 [[protocol]]
 name = "gitit"
 summary = "Access packages through git to handle remote repositories"
-command = ["git", "clone", "-b", "{{orbit.project.version}}", "{{orbit.project.source}}"]
+command = ["git", "clone", "-b", "{{ orbit.project.version }}", "{{ orbit.project.repository }}"]
 patterns = ["*.git"]
 ```
 

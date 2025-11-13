@@ -250,7 +250,7 @@ fn graph_project<'a>(
                                     g.add_edge_by_index(s, num, ());
                                     processing.push((s, cached_prj));
                                 }
-                                // todo: try to use the lock file to fill in missing pieces
+                                // TODO: try to use the lock file to fill in missing pieces
                                 None => {
                                     return Err(CodeFault(
                                         None,

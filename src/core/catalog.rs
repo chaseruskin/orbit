@@ -350,13 +350,15 @@ impl<'a> Catalog<'a> {
     /// Searches the `path` for projects installed.
     pub fn installations(mut self, path: &'a PathBuf) -> Result<Self, Fault> {
         self.cache = Some(&path);
-        self.detect(path, &ProjectLevel::add_install, ProjectState::Installation)
+        self.detect(path, &ProjectLevel::add_install, ProjectState::Installation)?;
+        Ok(self)
     }
 
     /// Searches the `path` for projects downloaded.
     pub fn downloads(mut self, path: &'a PathBuf) -> Result<Self, Fault> {
         self.downloads = Some(&path);
-        self.detect(path, &ProjectLevel::add_download, ProjectState::Downloaded)
+        self.detect(path, &ProjectLevel::add_download, ProjectState::Downloaded)?;
+        Ok(self)
     }
 
     /// Searches the `path` for projects available.
@@ -365,7 +367,7 @@ impl<'a> Catalog<'a> {
         // update the availables
         for (&name, &chan) in channels {
             map.insert(name, chan.get_root());
-            self = self.detect(
+            self.detect(
                 map.get(name).unwrap(),
                 &ProjectLevel::add_available,
                 ProjectState::Available,
@@ -478,15 +480,31 @@ impl<'a> Catalog<'a> {
         todo!()
     }
 
+    /// Searches the `path` for projects installed.
+    pub fn refresh_installations(&mut self) -> Result<(), Fault> {
+        if let Some(path) = self.cache {
+            self.detect(path, &ProjectLevel::add_install, ProjectState::Installation)?;
+        }
+        Ok(())
+    }
+
+    /// Searches the `path` for projects downloaded.
+    pub fn refresh_downloads(&mut self) -> Result<(), Fault> {
+        if let Some(path) = self.downloads {
+            self.detect(path, &ProjectLevel::add_download, ProjectState::Downloaded)?;
+        }
+        Ok(())
+    }
+
     /// Finds all `Orbit.toml` manifest files (markings of a project) within the provided `path`.
     ///
     /// This function is generic enough to be used to catch projects at all 3 levels: dev, install, and available.
     fn detect(
-        mut self,
+        &mut self,
         path: &PathBuf,
         add: &dyn Fn(&mut ProjectLevel, Project) -> bool,
         lvl: ProjectState,
-    ) -> Result<Self, Fault> {
+    ) -> Result<(), Fault> {
         match lvl {
             ProjectState::Installation => Project::detect_all(path, false),
             ProjectState::Available => ProjectPointer::detect_all(path),
@@ -526,7 +544,7 @@ impl<'a> Catalog<'a> {
                 }
             }
         });
-        Ok(self)
+        Ok(())
     }
 
     pub fn get_cache_path(&self) -> &PathBuf {

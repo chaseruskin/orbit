@@ -3,7 +3,15 @@
 version = 1
 
 [[project]]
+name = "gates"
+version = "2.0.0"
+uuid = "agduyk4nls7aw0tdc5946fzde"
+checksum = "f0f0f289f880403bf8836c16e5275f4916e909996b60a4c964845452525424ff"
+source = "https://github.com/hyperspace-labs/gates.git"
+dependencies = []
+
+[[project]]
 name = "vhdl-examples"
 version = "0.0.9"
 uuid = "ecj831jmc018hhhgl1d4rzgw8"
-dependencies = []
+dependencies = ["gates+agduyk4nls7aw0tdc5946fzde:2"]

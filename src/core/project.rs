@@ -54,9 +54,13 @@ use toml_edit::Document;
 // add state to `root` (make enum) to determine if is real path or not
 #[derive(Debug, PartialEq)]
 pub enum Mapping {
+    /// Installed
     Physical,
+    /// Downloaded (a set of compressed bytes)
     Virtual(Vec<u8>),
+    /// Local development version (all files are there)
     Relative(PathBuf),
+    /// Available (acts as a pointer to project's repository)
     Imaginary,
 }
 

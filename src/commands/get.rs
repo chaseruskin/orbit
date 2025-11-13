@@ -141,11 +141,11 @@ impl Subcommand<Context> for Get {
             false,
         )?;
 
-        // load the catalog
+        // gather the catalog
         let catalog = Catalog::new()
-            // .store(c.get_store_path())
-            // .development(c.get_development_path().unwrap())?
-            .installations(c.get_cache_path())?;
+            .installations(c.get_cache_path())?
+            .downloads(c.get_downloads_path())?
+            .available(&c.get_config().get_channels())?;
 
         let mut is_local_ip = false;
         // try to auto-determine the ip (check if in a working ip)
@@ -154,6 +154,16 @@ impl Subcommand<Context> for Get {
             if let Some(lvl) = catalog.translate_name(&spec.to_pkg_name())? {
                 if let Some(slot) = lvl.get_install(spec.get_version()) {
                     slot.get_root().clone()
+                } else if let Some(_) = lvl.get_download(spec.get_version()) {
+                    return Err(AnyError(format!(
+                        "project {} is downloaded but not installed: install the project to use this command",
+                        spec
+                    )))?;
+                } else if let Some(_) = lvl.get_available(spec.get_version()) {
+                    return Err(AnyError(format!(
+                        "project {} is available but not installed: install the project to use this command",
+                        spec
+                    )))?;
                 } else {
                     return Err(AnyError(format!(
                         "project {} does not exist in the cache",

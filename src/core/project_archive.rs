@@ -268,13 +268,3 @@ impl ProjectArchive {
             .collect()
     }
 }
-
-// #[cfg(test)]
-// mod test {
-//     use super::*;
-
-//     #[test]
-//     fn write_and_read() {
-
-//     }
-// }

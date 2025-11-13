@@ -22,6 +22,9 @@ entity fa is
 end entity;
 
 architecture bhv of fa is
+
+    signal foo: std_logic_vector(0 downto 0);
+    
 begin
     --triggered when an odd amount of inputs bits are high
     sum <= (carry_in and ((input1 nor input2) or (input1 and input2))) or

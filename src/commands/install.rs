@@ -291,7 +291,7 @@ impl Subcommand<Context> for Install {
         };
 
         // update the downloads
-        catalog = catalog.downloads(c.get_downloads_path())?;
+        catalog.refresh_downloads()?;
 
         // use the catalog (if no path is provided)
         let target = if self.path.is_none() == true && (self.url.is_some() || self.prj.is_some()) {
@@ -321,10 +321,11 @@ impl Subcommand<Context> for Install {
                         } else if slot.get_mapping().is_pointer() {
                             // println!("{}", "using pointer");
                             match slot.get_man().get_project().get_source() {
-                                Some(sour) => Some(self.download_target_from_source(
+                                Some(sour) => Some(Self::download_target_from_source(
                                     c,
                                     sour,
                                     slot.get_man().get_project().into_project_id_spec(),
+                                    self.force,
                                 )?),
                                 None => {
                                     return Err(Error::Custom(format!(
@@ -405,7 +406,7 @@ impl Subcommand<Context> for Install {
 
         // now load the installations if previously not loaded
         if self.force == true {
-            catalog = catalog.installations(c.get_cache_path())?;
+            catalog.refresh_installations()?;
         }
 
         // verify all-public is only used when target is local and has no public list
@@ -498,7 +499,7 @@ impl Subcommand<Context> for Install {
 
 impl Install {
     fn run_ip_checkpoints<'c>(
-        local_ip: &Project,
+        local_prj: &Project,
         catalog: Catalog<'c>,
         force: bool,
         c: &'c Context,
@@ -511,31 +512,31 @@ impl Install {
         if force == false {
             crate::info!("{}", "verifying lockfile is up to date ...");
             // TODO: use catalog to find the uuids of all dependencies to fill in
-            if local_ip.can_use_lock(&catalog) == false {
+            if local_prj.can_use_lock(&catalog) == false {
                 return Err(Box::new(Error::PublishMissingLockfile(Hint::MakeLock)));
             }
         // create the lockfile
-        } else if local_ip.can_use_lock(&catalog) == false {
-            let ip_graph = algo::compute_final_project_graph(
-                &local_ip,
+        } else if local_prj.can_use_lock(&catalog) == false {
+            let prj_graph = algo::compute_final_project_graph(
+                &local_prj,
                 Some(&catalog),
                 c.are_units_private_by_default(),
             )?;
-            Plan::write_lockfile(&local_ip, &ip_graph, true, true, &catalog)?;
+            Plan::write_lockfile(&local_prj, &prj_graph, true, true, &catalog)?;
         }
 
         crate::info!("{}", "reading dependencies from lockfile ...");
         let env = Environment::new()
             .from_config(c.get_config())?
-            .from_project(&local_ip)?;
+            .from_project(&local_prj)?;
 
         let vtable = StrSwapTable::new().load_environment(&env)?;
 
-        let le = LockEntry::from((local_ip, true));
+        let le = LockEntry::from((local_prj, true));
 
-        let lf = local_ip
+        let lf = local_prj
             .get_lock()
-            .keep_dev_dep_entries(&local_ip, all_deps);
+            .keep_dev_dep_entries(&local_prj, all_deps);
 
         plan::download_missing_deps(
             vtable,
@@ -547,15 +548,20 @@ impl Install {
         )?;
 
         // recollect the queued items to update the catalog
-        catalog = catalog.downloads(c.get_downloads_path())?;
+        catalog.refresh_downloads()?;
 
         plan::install_missing_deps(&lf, &le, &catalog)?;
         // recollect the installations and queued items to update the catalog
-        catalog = catalog.installations(c.get_cache_path())?;
+        catalog.refresh_installations()?;
 
         // verify the ip has zero relative dependencies
         crate::info!("{}", "verifying all dependencies are stable ...");
-        if let Some(dep) = local_ip.get_lock().inner().iter().find(|f| f.is_relative()) {
+        if let Some(dep) = local_prj
+            .get_lock()
+            .inner()
+            .iter()
+            .find(|f| f.is_relative())
+        {
             return Err(Box::new(Error::PublishRelativeDepExists(
                 dep.get_name().clone(),
             )));
@@ -564,7 +570,7 @@ impl Install {
         // verify internal design unit visibility
         crate::info!("verifying source file visibility ...");
         if let Err(e) = Publish::check_design_unit_visibility_okay(
-            &local_ip,
+            &local_prj,
             c.are_units_private_by_default(),
             all_pub,
         ) {
@@ -576,7 +582,7 @@ impl Install {
         // verify the graph build with no errors
         crate::info!("verifying hardware graph construction ...");
         if let Err(e) =
-            Publish::check_graph_builds_okay(&local_ip, &catalog, c.are_units_private_by_default())
+            Publish::check_graph_builds_okay(&local_prj, &catalog, c.are_units_private_by_default())
         {
             return Err(Box::new(Error::PublishHdlGraphFailed(LastError(
                 e.to_string(),
@@ -613,11 +619,11 @@ impl Install {
         Ok((name, bytes))
     }
 
-    fn download_target_from_source(
-        &self,
+    pub fn download_target_from_source(
         c: &Context,
         source: &Source,
         spec: ProjectIdSpec,
+        force: bool,
     ) -> Result<Project, Fault> {
         let env = Environment::new()
             // read config.toml for setting any env variables
@@ -635,7 +641,7 @@ impl Install {
             c.get_downloads_path(),
             c.get_default_protocol(),
             &protocols,
-            self.force,
+            force,
         )?;
 
         let dir = tempfile::tempdir()?.into_path();

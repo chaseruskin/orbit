@@ -15,12 +15,14 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
-## 0.26.4 - unreleased
+## 0.27.0 - unreleased
 
 ### Changes
 - Renames `source` field to `repository` field within a project's manifest
 
 ### Fixes
+- Correctly searches channels within catalog for `orbit build`, `orbit test`, and `orbit tree` subcommands
+- Fixes coherency issue between manifest and lockfile to automatically synchronize the state of the catalog and lockfile based on any changes to the manifest before performing the requested operation when invoking `orbit build`, `orbit test`, or `orbit tree` (Fixes issue #12)
 - Correctly captures list of architectures for `orbit get` subcommand when working with VHDL entities
 - Fixes issue when Orbit.toml and Orbit.lock files were not always included during an installation when ignore rules were ignoring those files
 - Projects installed from their local path now also get moved into the catalog's archive upon successful installation

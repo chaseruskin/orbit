@@ -144,7 +144,11 @@ impl Download {
 
         match sel_protocol {
             Some((&name, &proto)) => {
-                crate::info!("downloading project using protocol {}", name.green());
+                if let Some(sp) = spec {
+                    crate::info!("downloading project {} using protocol {}", sp, name.green());
+                } else {
+                    crate::info!("downloading project using protocol {}", name.green());
+                }
                 Environment::new()
                     .add(EnvVar::new().key(ORBIT_PROTOCOL).value(name))
                     .initialize();
@@ -156,7 +160,11 @@ impl Download {
                 }
             }
             None => {
-                crate::info!("downloading project using standard protocol");
+                if let Some(sp) = spec {
+                    crate::info!("downloading project {} using standard protocol", sp);
+                } else {
+                    crate::info!("downloading project using standard protocol");
+                }
                 // potential to use --force here to avoid this error and try with default but not currently implemented that way
                 if let Err(err) = Protocol::single_download(processed_src.get_url(), &queue) {
                     fs::remove_dir_all(queue)?;

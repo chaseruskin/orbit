@@ -147,7 +147,8 @@ impl Subcommand<Context> for Test {
         // gather the catalog and resolve any missing dependencies
         let catalog = Catalog::new()
             .installations(c.get_cache_path())?
-            .downloads(c.get_downloads_path())?;
+            .downloads(c.get_downloads_path())?
+            .available(&c.get_config().get_channels())?;
         let catalog = plan::resolve_missing_deps(c, &current_project, catalog, self.force)?;
 
         let envs = Environment::new()

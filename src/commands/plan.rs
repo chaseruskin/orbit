@@ -16,6 +16,7 @@
 //
 
 use crate::commands::download::Download;
+use crate::commands::lock;
 use crate::core::blueprint::{Blueprint, Entry, Scheme};
 use crate::core::context::{self, Context};
 use crate::core::fileset::Fileset;
@@ -585,38 +586,21 @@ impl Plan {
 
 pub fn resolve_missing_deps<'a>(
     c: &'a Context,
-    working_project: &'a Project,
+    working_project: &Project,
     mut catalog: Catalog<'a>,
     force: bool,
 ) -> Result<Catalog<'a>, Fault> {
+    // update lock file if manifest changed (will need to download and install)
+    if working_project.can_use_lock(&catalog) == false {
+        crate::info!("synchronizing lockfile with manifest...");
+        lock::synchronize_state_with_manifest(c, working_project, &mut catalog)?;
+    }
     // this code is only ran if the lock file matches the manifest and we aren't force to recompute
     if working_project.can_use_lock(&catalog) == true && force == false {
-        let le: LockEntry = LockEntry::from((working_project, true));
-        let lf = working_project.get_lock();
-
-        let env = Environment::new()
-            // read config.toml for setting any env variables
-            .from_config(c.get_config())?;
-        let vtable = StrSwapTable::new().load_environment(&env)?;
-        env.initialize();
-
-        download_missing_deps(
-            vtable,
-            &lf,
-            &le,
-            &catalog,
-            c.get_default_protocol(),
-            &c.get_config().get_protocols(),
-        )?;
-        // recollect the downloaded items to update the catalog for installations
-        catalog = catalog.downloads(c.get_downloads_path())?;
-
-        install_missing_deps(&lf, &le, &catalog)?;
-        // recollect the installations to update the catalog for dependency graphing
-        catalog.installations(c.get_cache_path())
-    } else {
-        Ok(catalog)
+        lock::synchronize_state_with_lockfile(c, working_project, &mut catalog)?;
     }
+
+    Ok(catalog)
 }
 
 pub fn download_missing_deps(
@@ -726,7 +710,12 @@ pub fn install_missing_deps(lf: &LockFile, le: &LockEntry, catalog: &Catalog) ->
                                         dep.get_man().get_project().into_project_id_spec()
                                     );
                                     // perform extra work if the Ip is virtual (from downloads)
-                                    install_ip_from_downloads(&dep, &catalog, true)?
+                                    if let Some(bytes) = dep.get_mapping().as_bytes() {
+                                        let _ = install_ip_from_downloads(&bytes, &catalog, true)?;
+                                        ()
+                                    } else {
+                                        panic!("trying to download from non virtual path")
+                                    }
                                 }
                                 None => {
                                     // failed to get the install from the queue
@@ -743,7 +732,12 @@ pub fn install_missing_deps(lf: &LockFile, le: &LockEntry, catalog: &Catalog) ->
                         match status.get_download(&ver) {
                             Some(dep) => {
                                 // perform extra work if the Ip is virtual (from downloads)
-                                install_ip_from_downloads(&dep, &catalog, false)?
+                                if let Some(bytes) = dep.get_mapping().as_bytes() {
+                                    let _ = install_ip_from_downloads(&bytes, &catalog, false)?;
+                                    ()
+                                } else {
+                                    panic!("trying to download from non virtual path")
+                                }
                             }
                             None => {
                                 return Err(Box::new(Error::EntryNotQueued(
@@ -762,36 +756,35 @@ pub fn install_missing_deps(lf: &LockFile, le: &LockEntry, catalog: &Catalog) ->
     Ok(())
 }
 
-fn install_ip_from_downloads(dep: &Project, catalog: &Catalog, force: bool) -> Result<(), Fault> {
-    // perform extra work if the Ip is virtual (from downloads)
-    if let Some(bytes) = dep.get_mapping().as_bytes() {
-        // place the dependency into a temporary directory
-        let dir = tempfile::tempdir()?.into_path();
-        if let Err(e) = ProjectArchive::extract(&bytes, &dir) {
+pub fn install_ip_from_downloads(
+    dep_bytes: &Vec<u8>,
+    catalog: &Catalog,
+    force: bool,
+) -> Result<Option<Project>, Fault> {
+    // place the dependency into a temporary directory
+    let dir = tempfile::tempdir()?.into_path();
+    if let Err(e) = ProjectArchive::extract(&dep_bytes, &dir) {
+        fs::remove_dir_all(dir)?;
+        return Err(e);
+    }
+    // load the project
+    let unzipped_dep = match Project::load(dir.clone(), false, false) {
+        Ok(x) => x,
+        Err(e) => {
             fs::remove_dir_all(dir)?;
             return Err(e);
         }
-        // load the project
-        let unzipped_dep = match Project::load(dir.clone(), false, false) {
-            Ok(x) => x,
-            Err(e) => {
-                fs::remove_dir_all(dir)?;
-                return Err(e);
-            }
-        };
-        // install from the unzipp ip
-        match Install::install(&unzipped_dep, catalog.get_cache_path(), force, true) {
-            Ok(_) => {}
-            Err(e) => {
-                fs::remove_dir_all(dir)?;
-                return Err(e);
-            }
+    };
+    // install from the unzipp ip
+    let p = match Install::install(&unzipped_dep, catalog.get_cache_path(), force, true) {
+        Ok(p) => p,
+        Err(e) => {
+            fs::remove_dir_all(dir)?;
+            return Err(e);
         }
-        fs::remove_dir_all(unzipped_dep.get_root())?;
-    } else {
-        panic!("trying to download from a physical path")
-    }
-    Ok(())
+    };
+    fs::remove_dir_all(unzipped_dep.get_root())?;
+    Ok(p)
 }
 
 use crate::util::anyerror::AnyError;

@@ -17,6 +17,7 @@
 
 use super::plan::PlanError;
 use crate::commands::helps::tree;
+use crate::commands::plan;
 use crate::commands::plan::Plan;
 use crate::core::algo;
 use crate::core::algo::ProjectFileNode;
@@ -212,8 +213,12 @@ impl Subcommand<Context> for Tree {
             false,
         )?;
 
-        // gather the catalog
-        let catalog = Catalog::new().installations(c.get_cache_path())?;
+        // gather the catalog and resolve any missing dependencies
+        let catalog = Catalog::new()
+            .installations(c.get_cache_path())?
+            .downloads(c.get_downloads_path())?
+            .available(&c.get_config().get_channels())?;
+        let catalog = plan::resolve_missing_deps(c, &project, catalog, false)?;
 
         let result = self.run(project, catalog, c.are_units_private_by_default());
         // release our "APPEND" action to the cache

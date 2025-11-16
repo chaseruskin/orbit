@@ -16,19 +16,18 @@
 //
 
 use super::plan::{self, Plan};
-use crate::commands::download::Download;
 use crate::commands::helps::lock;
+use crate::commands::install::Install;
 use crate::core::algo;
 use crate::core::catalog::Catalog;
 use crate::core::catalog::PkgName;
 use crate::core::context::Context;
 use crate::core::lockfile::LockEntry;
+use crate::core::manifest::Dependency;
 use crate::core::name::Name;
 use crate::core::project::Project;
 use crate::core::swap::StrSwapTable;
-use crate::core::uuid::Uuid;
 use crate::core::version::AnyVersion;
-use crate::core::version::PartialVersion;
 use crate::util::anyerror::Fault;
 use crate::util::environment::Environment;
 use crate::util::filesystem::LockZone;
@@ -134,8 +133,6 @@ pub fn synchronize_state_with_lockfile(
     Ok(())
 }
 
-type PrjId = (Name, Option<Uuid>, PartialVersion);
-
 /// Synchronizes the state of the catalog system based on the state of the manifest.
 ///
 /// This function assumes the lockfile is out of date (stale) in comparison to the manifest. It will
@@ -145,108 +142,49 @@ pub fn synchronize_state_with_manifest(
     working_ip: &Project,
     catalog: &mut Catalog,
 ) -> Result<(), Fault> {
-    // Re-look at all dependencies
-    let env = Environment::new()
-        // read config.toml for setting any env variables
-        .from_config(c.get_config())?;
-    let mut vtable = StrSwapTable::new().load_environment(&env)?;
-    env.initialize();
-
-    let mut reqs: Vec<PrjId> = working_ip
+    // Re-look at all direct dependencies (filter out the relative dependencies)
+    let mut direct_deps: Vec<(&Name, &Dependency)> = working_ip
         .get_man()
         .get_deps_list(true, true)
         .into_iter()
-        .map(|(n, d)| {
-            (
-                n.clone(),
-                match d.as_uuid() {
-                    Some(u) => Some(u.clone()),
-                    None => None,
-                },
-                d.get_version().clone(),
-            )
-        })
+        .filter(|(_, d)| d.is_relative() == false)
         .collect();
 
-    let mut prjs_to_download = Vec::new();
-    let mut prjs_to_install = Vec::new();
+    let mut direct_deps_to_download = Vec::new();
+    let mut lfs_to_process = Vec::new();
 
-    // iterate through all dependencies (and add on as we go if we find more dependencies of dependencies...)
-    while let Some((name, uuid, ver)) = reqs.pop() {
+    // iterate through all direct dependencies of the current project
+    while let Some((name, dep)) = direct_deps.pop() {
         // try to look up this project in the catalog
-        let pkg_name = PkgName::new(&name, uuid.as_ref());
+        let pkg_name = PkgName::new(&name, dep.as_uuid());
         match catalog.translate_name(&pkg_name)? {
             // check what the current status is of the project in the catalog
             Some(status) => {
-                let any_ver = AnyVersion::Specific(ver.clone());
+                let any_ver = AnyVersion::Specific(dep.get_version().clone());
                 // Take no action if the project is alread installed
                 if let Some(_) = status.get_install(&any_ver) {
                     continue;
                 // Install the missing project
                 } else if let Some(dep_prj) = status.get_download(&any_ver) {
                     // perform extra work if the Ip is virtual (from downloads)
-                    if let Some(bytes) = dep_prj.get_mapping().as_bytes() {
-                        prjs_to_install.push((name, uuid, ver, bytes.clone()));
+                    if dep_prj.can_use_lock(catalog) {
+                        lfs_to_process.push(dep_prj.get_lock().clone());
                     } else {
-                        panic!("trying to download from non virtual path")
+                        panic!("unstable lockfile found in downloads")
                     }
-                    // add this dependency's requirements to the list of ones to check
-                    let mut dep_reqs: Vec<(Name, Option<Uuid>, PartialVersion)> = dep_prj
-                        .get_man()
-                        .get_deps_list(false, true)
-                        .into_iter()
-                        .map(|(n, d)| {
-                            (
-                                n.clone(),
-                                match d.as_uuid() {
-                                    Some(u) => Some(u.clone()),
-                                    None => None,
-                                },
-                                d.get_version().clone(),
-                            )
-                        })
-                        .collect();
-                    dep_reqs.extend(reqs.into_iter());
-                    reqs = dep_reqs;
-                // Download and install the missing project
+                // Collect all missing direct dependencies that need to be downloaded still
                 } else if let Some(dep_prj) = status.get_available(&any_ver) {
-                    // prjs_to_install.push(dep_prj);
                     match dep_prj.get_man().get_project().get_source() {
                         Some(src) => {
-                            prjs_to_download.push((
-                                name,
-                                uuid,
-                                ver,
+                            direct_deps_to_download.push((
                                 src.clone(),
-                                dep_prj
-                                    .get_man()
-                                    .get_project()
-                                    .into_project_id_spec()
-                                    .to_partial_project_id_spec(),
+                                dep_prj.get_man().get_project().into_project_id_spec(),
                             ));
                         }
                         None => {
                             panic!("missing repository field for a project in a channel: please open a bug report");
                         }
                     }
-                    // add this dependency's requirements to the list of ones to check
-                    let mut dep_reqs: Vec<(Name, Option<Uuid>, PartialVersion)> = dep_prj
-                        .get_man()
-                        .get_deps_list(false, true)
-                        .into_iter()
-                        .map(|(n, d)| {
-                            (
-                                n.clone(),
-                                match d.as_uuid() {
-                                    Some(u) => Some(u.clone()),
-                                    None => None,
-                                },
-                                d.get_version().clone(),
-                            )
-                        })
-                        .collect();
-                    dep_reqs.extend(reqs.into_iter());
-                    reqs = dep_reqs;
                 }
             }
             None => {
@@ -255,52 +193,80 @@ pub fn synchronize_state_with_manifest(
         }
     }
 
-    // download all projects missing at the archive level
-    for (name, uuid, ver, repo, spec) in prjs_to_download {
-        let pkg_name = PkgName::new(&name, uuid.as_ref());
-        match catalog.translate_name(&pkg_name)? {
-            Some(stat) => {
-                let any_ver = AnyVersion::Specific(ver.clone());
-                if stat.get_download(&any_ver).is_none() {
-                    let (_, bytes) = Download::download(
-                        &mut vtable,
-                        Some(&spec),
-                        &repo,
-                        catalog.get_downloads_path(),
-                        c.get_default_protocol(),
-                        &c.get_config().get_protocols(),
-                        true,
-                    )?;
-                    // add this project to the list of projects to install
-                    prjs_to_install.push((name, uuid, ver, bytes));
-                }
-            }
-            None => {
-                continue;
-            }
+    // download all missing direct dependencies
+    for (src, spec) in direct_deps_to_download {
+        let direct_dep = Install::download_target_from_source(c, &src, spec, true)?;
+        // Add this direct dependency's lockfile to the list to process
+        if direct_dep.can_use_lock(catalog) == true {
+            lfs_to_process.push(direct_dep.get_lock().clone());
+        } else {
+            panic!("unstable lockfile found in downloads")
         }
-        // recollect the downloaded items to update the catalog for installations
-        catalog.refresh_downloads()?;
     }
 
-    // install all projects missing at the cache level
-    for (name, uuid, ver, bytes) in prjs_to_install {
-        let pkg_name = PkgName::new(&name, uuid.as_ref());
-        match catalog.translate_name(&pkg_name)? {
-            Some(stat) => {
-                let any_ver = AnyVersion::Specific(ver.clone());
-                if stat.get_install(&any_ver).is_none() {
-                    plan::install_ip_from_downloads(&bytes, &catalog, true)?;
+    catalog.refresh_downloads()?;
+
+    // process the entries in each collected dependency lockfile (perform all downloads first)
+    for lf in &lfs_to_process {
+        for le in lf.inner() {
+            let must_download = match catalog.inner().get(le.get_uuid()) {
+                Some(status) => {
+                    let any_ver = AnyVersion::Specific(le.get_version().to_partial_version());
+                    // Take no action if the project is alread installed or downloaded
+                    if let Some(_) = status.get_install(&any_ver) {
+                        false
+                    } else if let Some(_) = status.get_download(&any_ver) {
+                        false
+                    } else {
+                        true
+                    }
+                }
+                // Does not exist in catalog, must perform download + install
+                None => true,
+            };
+            if must_download == true {
+                if let Some(src) = le.get_source() {
+                    Install::download_target_from_source(c, src, le.to_project_id_spec(), true)?;
+                } else {
+                    panic!("missing repository field from a known released version maintained in a lockfile");
                 }
             }
-            None => {
-                continue;
-            }
+            catalog.refresh_downloads()?;
         }
-        // recollect the installations to update the catalog for dependency graphing
-        catalog.refresh_installations()?;
     }
 
+    // process the entries in each collected dependency lockfile (perform all installs)
+    for lf in &lfs_to_process {
+        for le in lf.inner() {
+            let dwnld_bytes = match catalog.inner().get(le.get_uuid()) {
+                Some(status) => {
+                    let any_ver = AnyVersion::Specific(le.get_version().to_partial_version());
+                    // Take no action if the project is alread installed
+                    if let Some(_) = status.get_install(&any_ver) {
+                        None
+                    } else if let Some(dwnld) = status.get_download(&any_ver) {
+                        if let Some(bytes) = dwnld.get_mapping().as_bytes() {
+                            Some(bytes)
+                        } else {
+                            panic!("incorrect project mapping found in archive")
+                        }
+                    } else {
+                        panic!("entry should have already been downloaded during synchronization")
+                    }
+                }
+                // Does not exist in catalog, must have been downloaded in previous step!
+                None => {
+                    panic!("entry should have already been downloaded during synchronization but not found in catalog")
+                }
+            };
+            if let Some(bytes) = dwnld_bytes {
+                plan::install_ip_from_downloads(&bytes, &catalog, true)?;
+            }
+            catalog.refresh_installations()?;
+        }
+    }
+
+    // Write the new lockfile
     update_lockfile(
         &working_ip,
         &catalog,

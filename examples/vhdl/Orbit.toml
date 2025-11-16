@@ -8,4 +8,5 @@ ignore = ["fa_tb.vhd"]
 
 [dependencies]
 gates = "2"
+# b = { version = "0.1.0", path = "../b" }
 # serdes = { version = "1.0.0", uuid = "" }

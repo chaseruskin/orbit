@@ -23,6 +23,7 @@ use crate::core::catalog::Catalog;
 use crate::core::catalog::PkgName;
 use crate::core::context::Context;
 use crate::core::lockfile::LockEntry;
+use crate::core::lockfile::LockFile;
 use crate::core::manifest::Dependency;
 use crate::core::name::Name;
 use crate::core::project::Project;
@@ -78,13 +79,13 @@ impl Subcommand<Context> for Lock {
             .available(&c.get_config().get_channels())?;
 
         // update lock file if manifest changed (will need to download and install)
-        if working_ip.can_use_lock(&catalog) == false {
+        if working_ip.can_use_lock() == false {
             crate::info!("synchronizing lockfile with manifest...");
             synchronize_state_with_manifest(&c, &working_ip, &mut catalog)?;
         }
 
         // this code is only ran if the lock file matches the manifest and we aren't force to recompute
-        if working_ip.can_use_lock(&catalog) == true && self.force == false {
+        if working_ip.can_use_lock() == true && self.force == false {
             synchronize_state_with_lockfile(&c, &working_ip, &mut catalog)?;
         }
 
@@ -137,11 +138,13 @@ pub fn synchronize_state_with_lockfile(
 ///
 /// This function assumes the lockfile is out of date (stale) in comparison to the manifest. It will
 /// also automatically update the lockfile.
+///
+/// If the lockfile was updated, then returns the updated lockfile, otherwise returns None.
 pub fn synchronize_state_with_manifest(
     c: &Context,
     working_ip: &Project,
     catalog: &mut Catalog,
-) -> Result<(), Fault> {
+) -> Result<Option<LockFile>, Fault> {
     // Re-look at all direct dependencies (filter out the relative dependencies)
     let mut direct_deps: Vec<(&Name, &Dependency)> = working_ip
         .get_man()
@@ -167,7 +170,7 @@ pub fn synchronize_state_with_manifest(
                 // Install the missing project
                 } else if let Some(dep_prj) = status.get_download(&any_ver) {
                     // perform extra work if the Ip is virtual (from downloads)
-                    if dep_prj.can_use_lock(catalog) {
+                    if dep_prj.can_use_lock() {
                         lfs_to_process.push(dep_prj.get_lock().clone());
                     } else {
                         panic!("unstable lockfile found in downloads")
@@ -197,7 +200,7 @@ pub fn synchronize_state_with_manifest(
     for (src, spec) in direct_deps_to_download {
         let direct_dep = Install::download_target_from_source(c, &src, spec, true)?;
         // Add this direct dependency's lockfile to the list to process
-        if direct_dep.can_use_lock(catalog) == true {
+        if direct_dep.can_use_lock() == true {
             lfs_to_process.push(direct_dep.get_lock().clone());
         } else {
             panic!("unstable lockfile found in downloads")
@@ -267,13 +270,13 @@ pub fn synchronize_state_with_manifest(
     }
 
     // Write the new lockfile
-    update_lockfile(
+    let lf = update_lockfile(
         &working_ip,
         &catalog,
         true,
         c.are_units_private_by_default(),
     )?;
-    Ok(())
+    Ok(lf)
 }
 
 pub fn update_lockfile(
@@ -281,10 +284,10 @@ pub fn update_lockfile(
     catalog: &Catalog,
     force: bool,
     priv_by_def: bool,
-) -> Result<(), Fault> {
+) -> Result<Option<LockFile>, Fault> {
     let prj_graph = algo::compute_final_project_graph(&local_prj, Some(&catalog), priv_by_def)?;
-    Plan::write_lockfile(&local_prj, &prj_graph, force, true, &catalog)?;
-    Ok(())
+    let lf = Plan::write_lockfile(&local_prj, &prj_graph, force, true)?;
+    Ok(lf)
 }
 
 impl Lock {
@@ -295,7 +298,7 @@ impl Lock {
         force: bool,
         priv_by_def: bool,
     ) -> Result<(), Fault> {
-        if working_ip.can_use_lock(catalog) == true {
+        if working_ip.can_use_lock() == true {
             update_lockfile(working_ip, catalog, force, priv_by_def)?;
         }
         Ok(())
@@ -320,7 +323,7 @@ impl Lock {
                     false => return Err(e)?,
                 },
             };
-        Plan::write_lockfile(&local_ip, &ip_graph, true, false, &catalog)?;
+        Plan::write_lockfile(&local_ip, &ip_graph, true, false)?;
         Ok(())
     }
 }

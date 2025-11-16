@@ -511,18 +511,18 @@ impl Install {
         // verify the lock file is generated and up to date
         if force == false {
             crate::info!("{}", "verifying lockfile is up to date ...");
-            // TODO: use catalog to find the uuids of all dependencies to fill in
-            if local_prj.can_use_lock(&catalog) == false {
+            // TODO: use catalog to find the uuids of all dependencies to fill in?
+            if local_prj.can_use_lock() == false {
                 return Err(Box::new(Error::PublishMissingLockfile(Hint::MakeLock)));
             }
         // create the lockfile
-        } else if local_prj.can_use_lock(&catalog) == false {
+        } else if local_prj.can_use_lock() == false {
             let prj_graph = algo::compute_final_project_graph(
                 &local_prj,
                 Some(&catalog),
                 c.are_units_private_by_default(),
             )?;
-            Plan::write_lockfile(&local_prj, &prj_graph, true, true, &catalog)?;
+            Plan::write_lockfile(&local_prj, &prj_graph, true, true)?;
         }
 
         crate::info!("{}", "reading dependencies from lockfile ...");

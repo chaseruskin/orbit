@@ -16,8 +16,11 @@
 //
 
 use std::path::PathBuf;
+use std::process::Command;
 
 use crate::commands::helps::doc;
+use crate::commands::plan;
+use crate::core::catalog::Catalog;
 use crate::core::context;
 use crate::core::context::Context;
 use crate::core::fileset::is_systemverilog;
@@ -32,15 +35,22 @@ use crate::core::lang::vhdl::token::VhdlTokenizer;
 use crate::core::lang::Lang;
 use crate::core::lang::LangIdentifier;
 use crate::core::lang::LangUnit;
+use crate::core::lockfile::LockEntry;
+use crate::core::lockfile::LockFile;
 use crate::core::project::Project;
+use crate::core::version::AnyVersion;
 use crate::error::Error;
 use crate::error::LastError;
 use crate::info;
 use crate::util::anyerror::Fault;
+use crate::util::environment;
 use crate::util::filesystem::LockZone;
+use crate::util::filesystem::{PRJ_CATALOG_EX_LOCK_NAME, PRJ_CATALOG_SH_LOCK_NAME};
 use crate::util::sha256;
 use crate::warn;
+use markdown;
 use std::collections::HashMap;
+use std::path::Path;
 
 use cliproc::{cli, proc, stage::*};
 use cliproc::{Arg, Cli, Help, Subcommand};
@@ -50,12 +60,19 @@ type UnitMap = HashMap<LangIdentifier, LangUnit>;
 #[derive(Debug, PartialEq)]
 pub struct Doc {
     target_dir: Option<String>,
+    doc_priv_items: bool,
+    no_deps: bool,
+    open_browser: bool,
+    // IDEA: add option to select output format (HTML, MD)?
 }
 
 impl Subcommand<Context> for Doc {
     fn interpret(cli: &mut Cli<Memory>) -> cli::Result<Self> {
         cli.help(Help::with(doc::HELP))?;
         let command = Ok(Doc {
+            no_deps: cli.check(Arg::flag("no-deps"))?,
+            open_browser: cli.check(Arg::flag("open"))?,
+            doc_priv_items: cli.check(Arg::flag("document-private-items"))?,
             target_dir: cli.get(Arg::option("target-dir").value("dir"))?,
         });
         command
@@ -72,6 +89,21 @@ impl Subcommand<Context> for Doc {
 
         let target_name = "doc";
 
+        // verify the browser env variable exists
+        let browser = if self.open_browser == true {
+            match std::env::var(environment::BROWSER) {
+                Ok(browser) => Some(browser),
+                Err(e) => match e {
+                    std::env::VarError::NotPresent => {
+                        return Err(Box::new(Error::BrowserEnvVarMissing))
+                    }
+                    _ => return Err(Box::new(e)),
+                },
+            }
+        } else {
+            None
+        };
+
         // get the output path where we will generate the documentation
         let default_target_dir = c.get_target_dir();
         let target_dir = self.target_dir.as_ref().unwrap_or(&default_target_dir);
@@ -82,6 +114,22 @@ impl Subcommand<Context> for Doc {
         // path where the documentation will be kept
         let output_path = current_project.get_root().join(&target_dir).join(out_dir);
 
+        // before we gather the catalog, request an "APPEND" action to the cache
+        let (_cache_ap_path, cache_ap_lock) = crate::util::filesystem::acquire_lock(
+            c.get_home_path(),
+            LockZone::ProjectCatalog,
+            Some(PRJ_CATALOG_EX_LOCK_NAME),
+            false,
+        )?;
+
+        // gather the catalog and resolve any missing dependencies
+        let mut catalog = Catalog::new()
+            .installations(c.get_cache_path())?
+            .downloads(c.get_downloads_path())?
+            .available(&c.get_config().get_channels())?;
+        let updated_lf = plan::resolve_missing_deps(c, &current_project, &mut catalog, false)?;
+        let catalog = catalog;
+
         // try to acquire a lock to only allow one orbit process access to the target output directory
         let (lockpath, _lockfd) = crate::util::filesystem::acquire_lock(
             &target_path,
@@ -90,8 +138,31 @@ impl Subcommand<Context> for Doc {
             false,
         )?;
 
+        // before we read the source files in our process, request a shared "READ" action to the cache
+        let (_cache_rd_path, cache_rd_lock) = crate::util::filesystem::acquire_lock(
+            c.get_home_path(),
+            LockZone::ProjectCatalog,
+            Some(PRJ_CATALOG_SH_LOCK_NAME),
+            true,
+        )?;
+
+        // release our "APPEND" action to the cache
+        crate::util::filesystem::release_lock(&cache_ap_lock)?;
+
         // outputs to a target/doc folder
-        let result = self.run(&current_project, &output_path, true);
+        crate::info!("executing target {}", target_name.green());
+        let result = self.run(
+            &current_project,
+            &updated_lf,
+            &catalog,
+            &output_path,
+            true,
+            c.are_units_private_by_default(),
+            browser,
+        );
+
+        // release our "READ" action to the cache
+        crate::util::filesystem::release_lock(&cache_rd_lock)?;
 
         // unlock the target output directory
         match std::fs::remove_file(&lockpath) {
@@ -113,61 +184,147 @@ impl Subcommand<Context> for Doc {
 impl Doc {
     fn run(
         &self,
-        p: &Project,
+        prj: &Project,
+        updated_lf: &Option<LockFile>,
+        catalog: &Catalog,
         output_path: &PathBuf,
         clean: bool,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+        priv_by_default: bool,
+        browser: Option<String>,
+    ) -> Result<(), Fault> {
         // check if to clean the target output directory (but keep the file lock!!)
         if clean == true && Path::exists(&output_path) == true {
             std::fs::remove_dir_all(&output_path)?;
         }
 
-        // println!("{}", "generating documentation...");
-        let mut all_dps = Vec::new();
+        // Pick the most up-to-date lockfile
+        let lf = match updated_lf {
+            Some(lf) => lf,
+            None => prj.get_lock(),
+        };
 
-        let dp = DocProject::from_project(&p)?;
-        all_dps.push(dp);
+        let mut all_doc_prjs = Vec::new();
+        // generate documentation for all dependencies
+        for entry in lf.inner() {
+            let prj_to_doc = match entry.matches_target(&LockEntry::from((prj, true))) {
+                // use the local project
+                true => Some(prj),
+                false => {
+                    // skip all other projects if no dependencies is specified as an option
+                    if self.no_deps == true {
+                        continue;
+                    }
+                    // identify if it is a relative path entry
+                    match entry.is_relative() {
+                        true => prj
+                            .get_man()
+                            .get_deps()
+                            .get(entry.get_name())
+                            .unwrap()
+                            .as_project(),
+                        false => {
+                            let any_ver =
+                                AnyVersion::Specific(entry.get_version().to_partial_version());
+                            match catalog.inner().get(entry.get_uuid()) {
+                                Some(stat) => stat.get_install(&any_ver),
+                                None => None,
+                            }
+                        }
+                    }
+                }
+            };
+            // generate the documentation for this project
+            if let Some(doc_prj) = prj_to_doc {
+                // skip dynamic projects
+                if doc_prj.is_dynamic() {
+                    continue;
+                }
+                info!("documenting {}", entry.to_project_id_spec());
+                let doc_prj = DocProject::from_project(&doc_prj)?;
+                all_doc_prjs.push(doc_prj);
+            }
+        }
 
-        self.save(output_path, all_dps)?;
+        let index_path = self.save(
+            output_path,
+            all_doc_prjs,
+            self.doc_priv_items,
+            priv_by_default,
+        )?;
+
         info!(
             "documentation generated at: {:?}",
-            crate::util::filesystem::into_std_str(output_path.to_path_buf())
+            crate::util::filesystem::into_std_str(index_path.clone())
         );
+
+        if let Some(browser) = browser {
+            let _ = Command::new(browser).arg(index_path).spawn()?;
+        }
+
         Ok(())
     }
 }
-use std::path::Path;
+
 struct DocProject<'a> {
     doc_units: Vec<DocUnit>,
     project: &'a Project,
 }
 
+/// Converts Markdown syntax (GFM) into valid HTML.
+///
+/// See GFM specification: https://github.github.com/gfm/.
+pub fn to_html(s: &str) -> String {
+    markdown::to_html_with_options(s, &markdown::Options::gfm()).unwrap()
+}
+
 impl<'a> DocProject<'a> {
+    /// Generates the project's unique string for the directory where it shall store all of its contents.
+    pub fn into_out_name(&self) -> String {
+        let prj_tbl = self.project.get_man().get_project();
+        format!(
+            "{0}-{1}-{2}",
+            prj_tbl.get_name(),
+            prj_tbl.get_version(),
+            prj_tbl.get_uuid()
+        )
+    }
+
     /// Writes the project documentation to files.
     ///
     /// Assumes `output_path` is the directory where to create the doc project's
     /// artifacts.
-    pub fn save(&self, output_path: &PathBuf) -> Result<(), Fault> {
-        let root_dir =
-            output_path.join(self.project.get_man().get_project().get_name().to_string());
+    pub fn save(
+        &self,
+        output_path: &PathBuf,
+        doc_priv_items: bool,
+        priv_by_default: bool,
+    ) -> Result<(), Fault> {
+        // use a unique name to avoid path conflicts of same project, multiple version
+        let root_dir = output_path.join(self.into_out_name());
         // create the root directory
         std::fs::create_dir_all(&root_dir)?;
+        // try to collect all design units (force to ensure we apply the correct private visibility capture)
+        let prj_unit_map =
+            self.project
+                .collect_units(true, doc_priv_items == false, priv_by_default)?;
         // write the project's main index file
-        self.write_index_file(&root_dir)?;
+        self.write_index_file(&root_dir, &prj_unit_map)?;
         // write all source files
-        self.write_source_files(&root_dir)?;
+        self.write_source_files(&root_dir, &prj_unit_map)?;
         Ok(())
     }
 
-    fn write_source_files(&self, output_path: &PathBuf) -> Result<(), Fault> {
+    fn write_source_files(
+        &self,
+        output_path: &PathBuf,
+        prj_unit_map: &HashMap<LangIdentifier, LangUnit>,
+    ) -> Result<(), Fault> {
         let source_dus = self.doc_units.iter().filter(|f| {
             f.get_name().is_some()
                 && (f.is_type(DocType::Entity)
                     | f.is_type(DocType::Package)
                     | f.is_type(DocType::Module))
         });
-        // try to collect all design units
-        let unit_map = self.project.collect_units(false, false, false)?;
 
         let doc_subus: Vec<&DocUnit> = self
             .doc_units
@@ -184,7 +341,7 @@ impl<'a> DocProject<'a> {
                 .iter()
                 .filter(|f| f.as_parent_name() == du.get_name())
                 .collect();
-            self.write_source_file(output_path, du, &unit_map, unit_subus)?;
+            self.write_source_file(output_path, du, &prj_unit_map, unit_subus)?;
         }
         Ok(())
     }
@@ -207,7 +364,7 @@ impl<'a> DocProject<'a> {
 
         let src_path = std::path::PathBuf::from(src_src_path);
         let file_name = src_path.file_stem().unwrap_or_default().to_string_lossy();
-        let md_src_file = format!("{}.{}.{}.md", file_name, ext, sha);
+        let md_src_file = format!("{}.{}.{}.html", file_name, ext, sha);
         (md_src_file, lang)
     }
 
@@ -223,8 +380,8 @@ impl<'a> DocProject<'a> {
                 Lang::Verilog => "verilog",
             };
             let raw_src = lang::read_to_string(&src_file)?;
-            let src_contents = format!("``` {}\n{}\n```\n", md_lang, raw_src);
-            std::fs::write(tar_src_path, src_contents)?;
+            let src_contents = format!("``` {}\n{}\n\n```\n", md_lang, raw_src);
+            std::fs::write(tar_src_path, to_html(&src_contents))?;
         }
         Ok(md_src_file)
     }
@@ -237,7 +394,7 @@ impl<'a> DocProject<'a> {
         unit_subus: Vec<&&DocUnit>,
     ) -> Result<(), Fault> {
         let du_name = du.get_name().unwrap();
-        let unit_path = output_path.join(&format!("{}.md", du_name));
+        let unit_path = output_path.join(&format!("{}.html", du_name));
 
         let mut contents = String::new();
         // try to find the source file
@@ -250,7 +407,7 @@ impl<'a> DocProject<'a> {
         };
 
         if let Some(lu) = unit_map.get(du_name) {
-            contents.push_str(&du.to_markdown(src_file, lu, unit_subus));
+            contents.push_str(&to_html(&du.to_markdown(src_file, lu, unit_subus)));
         }
 
         std::fs::write(&unit_path, contents)?;
@@ -258,12 +415,22 @@ impl<'a> DocProject<'a> {
     }
 
     /// Adds a section list for the project's overall index file.
-    fn add_index_section(&self, section: &str, dtype: DocType) -> String {
+    fn add_index_section(
+        &self,
+        section: &str,
+        dtype: DocType,
+        prj_unit_map: &HashMap<LangIdentifier, LangUnit>,
+    ) -> String {
         let mut contents = String::new();
         let filtered_dus = self.doc_units.iter().filter(|f| f.is_type(dtype));
         let mut said_title = false;
         for du in filtered_dus {
             if let Some(name) = du.get_name() {
+                // Skip if the unit does not have the right visibility
+                if prj_unit_map.get(name).is_none() {
+                    continue;
+                }
+                // Start with saying the title of the section
                 if said_title == false {
                     contents.push_str(&format!("## {}\n", section));
                     said_title = true;
@@ -273,7 +440,7 @@ impl<'a> DocProject<'a> {
                     Some(sum) => format!(": {}", Doc::fix_sentence(&sum)),
                     None => String::new(),
                 };
-                contents.push_str(&format!("- [__{}__]({}.md){}\n", name, name, desc));
+                contents.push_str(&format!("- [__{}__]({}.html){}\n", name, name, desc));
             }
         }
         if said_title == true {
@@ -282,8 +449,12 @@ impl<'a> DocProject<'a> {
         contents
     }
 
-    fn write_index_file(&self, output_path: &PathBuf) -> Result<(), Fault> {
-        let index_path = output_path.join("index.md");
+    fn write_index_file(
+        &self,
+        output_path: &PathBuf,
+        prj_unit_map: &HashMap<LangIdentifier, LangUnit>,
+    ) -> Result<(), Fault> {
+        let index_path = output_path.join("index.html");
         let name = self.project.get_man().get_project().get_name().to_string();
         let desc = self
             .project
@@ -297,27 +468,26 @@ impl<'a> DocProject<'a> {
         let mut contents = String::new();
         // add start to the document
         contents.push_str(&format!(
-            "# Project {}\n\n{}\n\n",
+            "# Project {}\n{}\n\n",
             name,
             Doc::fix_sentence(&desc)
         ));
 
         // Add entity list
-        contents.push_str(&self.add_index_section("Entities", DocType::Entity));
+        contents.push_str(&self.add_index_section("Entities", DocType::Entity, prj_unit_map));
 
         // Add module list
-        contents.push_str(&self.add_index_section("Modules", DocType::Module));
+        contents.push_str(&self.add_index_section("Modules", DocType::Module, prj_unit_map));
 
         // Add package list
-        contents.push_str(&self.add_index_section("Packages", DocType::Package));
+        contents.push_str(&self.add_index_section("Packages", DocType::Package, prj_unit_map));
 
-        std::fs::write(&index_path, contents)?;
+        std::fs::write(&index_path, to_html(&contents))?;
         Ok(())
     }
 
     /// Takes in a project and produces the project's documentation.
     pub fn from_project(prj: &'a Project) -> Result<DocProject<'a>, Fault> {
-        // let units = prj.collect_units(false, false, false)?;
         let doc_units = Doc::collect_doc_units(prj)?;
         Ok(Self {
             doc_units: doc_units,
@@ -354,18 +524,47 @@ impl Doc {
         )
     }
 
-    fn save(&self, output_path: &PathBuf, doc_projects: Vec<DocProject>) -> Result<(), Fault> {
+    /// Saves all the provided Documentation projects and returns the single entry INDEX file path.
+    fn save(
+        &self,
+        output_path: &PathBuf,
+        doc_projects: Vec<DocProject>,
+        doc_priv_items: bool,
+        priv_by_default: bool,
+    ) -> Result<PathBuf, Fault> {
         std::fs::create_dir_all(&output_path)?;
         // create a cache tag file if does not exist
         match Context::is_cache_tag_valid(&output_path.parent().unwrap().to_path_buf()) {
             Ok(_) => (),
             Err(e) => std::fs::write(&e, context::CACHE_TAG)?,
         }
+        // track the contents for the entry index file
+        let index_path = output_path.join("index.html");
+        let mut index_data = String::new();
+        index_data.push_str(&format!("# Projects\n"));
         // save each project
         for dp in doc_projects {
-            dp.save(output_path)?
+            dp.save(output_path, doc_priv_items, priv_by_default)?;
+            index_data.push_str(&format!(
+                "- [__{0}__ __{1}__ ({2})]({4}/index.html){3}\n",
+                dp.project.get_man().get_project().get_name(),
+                dp.project.get_man().get_project().get_version(),
+                dp.project.get_man().get_project().get_uuid(),
+                {
+                    if let Some(desc) = dp.project.get_man().get_project().get_description() {
+                        format!(": {}", Doc::fix_sentence(&desc))
+                    } else {
+                        String::new()
+                    }
+                },
+                dp.into_out_name(),
+            ));
         }
-        Ok(())
+
+        // write the entry index file
+        std::fs::write(&index_path, to_html(&index_data))?;
+
+        Ok(index_path)
     }
 
     fn collect_doc_units(prj: &Project) -> Result<Vec<DocUnit>, Fault> {
@@ -848,7 +1047,7 @@ impl DocUnit {
 
         contents.push_str(&format!("## {}\n", section));
         contents.push_str(&format!(
-            "Name | Type | Default | Description \n-- | -- | -- | --\n"
+            "| Name | Type | Default | Description |\n| :--: | :--: | :--: | :-- |\n"
         ));
 
         if let Some(vhdl) = unit.get_vhdl_symbol() {
@@ -872,7 +1071,7 @@ impl DocUnit {
                     None => String::new(),
                 };
                 contents.push_str(&format!(
-                    "{} | {} | {} | {}\n",
+                    "| {} | {} | {} | {} |\n",
                     generic.get_name(),
                     generic.get_type().to_norm_string(),
                     generic.get_default().to_norm_string(),
@@ -901,7 +1100,7 @@ impl DocUnit {
                     None => String::new(),
                 };
                 contents.push_str(&format!(
-                    "{} | {} | {} | {}\n",
+                    "| {} | {} | {} | {} |\n",
                     generic.get_name(),
                     generic.get_datatype().to_norm_string(),
                     generic.get_default().to_norm_string(),
@@ -930,7 +1129,7 @@ impl DocUnit {
                     None => String::new(),
                 };
                 contents.push_str(&format!(
-                    "{} | {} | {} | {}\n",
+                    "| {} | {} | {} | {} |\n",
                     generic.get_name(),
                     generic.get_datatype().to_norm_string(),
                     generic.get_default().to_norm_string(),
@@ -955,7 +1154,7 @@ impl DocUnit {
 
         contents.push_str(&format!("## {}\n", section));
         contents.push_str(&format!(
-            "Name | Mode | Type | Description \n-- | -- | -- | --\n"
+            "| Name | Mode | Type | Description |\n| :--: | :--: | :--: | :-- |\n"
         ));
 
         if let Some(vhdl) = unit.get_vhdl_symbol() {
@@ -979,7 +1178,7 @@ impl DocUnit {
                     None => String::new(),
                 };
                 contents.push_str(&format!(
-                    "{} | {} | {} | {}\n",
+                    "| {} | {} | {} | {} |\n",
                     port.get_name(),
                     port.get_mode().to_norm_string(),
                     port.get_type().to_norm_string(),
@@ -1007,7 +1206,7 @@ impl DocUnit {
                     None => String::new(),
                 };
                 contents.push_str(&format!(
-                    "{} | {} | {} | {}\n",
+                    "| {} | {} | {} | {} |\n",
                     port.get_name(),
                     port.get_mode()
                         .as_ref()
@@ -1038,7 +1237,7 @@ impl DocUnit {
                     None => String::new(),
                 };
                 contents.push_str(&format!(
-                    "{} | {} | {} | {}\n",
+                    "| {} | {} | {} | {} |\n",
                     port.get_name(),
                     port.get_mode()
                         .as_ref()

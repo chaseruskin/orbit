@@ -249,8 +249,8 @@ impl Plan {
             // return Err(Error::TestbenchRequired)?;
         }
 
-        // [!] write the lock file
-        Self::write_lockfile(&working_project, &prj_graph, true, true, &catalog)?;
+        // Write the lock file
+        Self::write_lockfile(&working_project, &prj_graph, true, true)?;
 
         // compute minimal topological ordering
         let min_order = match all {
@@ -584,23 +584,33 @@ impl Plan {
     }
 }
 
+/// This method performs the necessary actions to fix up the state of the catalog based on the state defined in the current project's
+/// manifest and/or lockfile.
+///
+/// If the lockfile is out of date with the manifest, then it will automatically fix up the state of the catalog to
+/// match the manifest as well as then write the new lockfile.
+///
+/// If the lockfile is up to date, then it will check the state of the catalog and perform all necessary actions to fix up the
+/// state of the catalog to match that of the lockfile.
 pub fn resolve_missing_deps<'a>(
     c: &'a Context,
     working_project: &Project,
-    mut catalog: Catalog<'a>,
+    catalog: &mut Catalog<'a>,
     force: bool,
-) -> Result<Catalog<'a>, Fault> {
+) -> Result<Option<LockFile>, Fault> {
     // update lock file if manifest changed (will need to download and install)
-    if working_project.can_use_lock(&catalog) == false {
+    if working_project.can_use_lock() == false {
         crate::info!("synchronizing lockfile with manifest...");
-        lock::synchronize_state_with_manifest(c, working_project, &mut catalog)?;
+        let lf = lock::synchronize_state_with_manifest(c, working_project, catalog)?;
+        return Ok(lf);
     }
     // this code is only ran if the lock file matches the manifest and we aren't force to recompute
-    if working_project.can_use_lock(&catalog) == true && force == false {
-        lock::synchronize_state_with_lockfile(c, working_project, &mut catalog)?;
+    if working_project.can_use_lock() == true && force == false {
+        lock::synchronize_state_with_lockfile(c, working_project, catalog)?;
+        return Ok(None);
     }
 
-    Ok(catalog)
+    Ok(None)
 }
 
 pub fn download_missing_deps(
@@ -615,7 +625,7 @@ pub fn download_missing_deps(
     // fetch all non-downloaded packages
     for entry in lf.inner() {
         // skip the current project's project entry or any project already in the downloads/
-        if entry.matches_target(le, &catalog) == true
+        if entry.matches_target(le) == true
             || catalog.is_downloaded_slot(&entry.to_download_slot_key()) == true
             || entry.is_relative() == true
         {
@@ -687,7 +697,7 @@ pub fn install_missing_deps(lf: &LockFile, le: &LockEntry, catalog: &Catalog) ->
     // fill in the catalog with missing modules according the lock file if available
     for entry in lf.inner() {
         // skip the current project's project entry or any relative listings
-        if entry.matches_target(&le, &catalog) || entry.is_relative() {
+        if entry.matches_target(&le) || entry.is_relative() {
             continue;
         }
 
@@ -1262,10 +1272,9 @@ impl Plan {
         project_graph: &GraphMap<ProjectIdSpec, ProjectNode, ()>,
         force: bool,
         verbose: bool,
-        catalog: &Catalog<'c>,
-    ) -> Result<(), Fault> {
+    ) -> Result<Option<LockFile>, Fault> {
         // only modify the lockfile if it is out-of-date
-        if target.can_use_lock(&catalog) == false || force == true {
+        if target.can_use_lock() == false || force == true {
             // create build list
             let build_list: Vec<&Project> = project_graph
                 .get_map()
@@ -1284,12 +1293,13 @@ impl Plan {
                     crate::info!("lockfile experienced no changes");
                 }
             }
+            Ok(Some(lock))
         } else {
             if verbose == true {
                 crate::info!("lockfile experienced no changes");
             }
+            Ok(None)
         }
-        Ok(())
     }
 
     /// Maps the local index to the global index between two different maps.

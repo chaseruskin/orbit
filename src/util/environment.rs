@@ -466,6 +466,7 @@ pub const DOT_ENV_FILE: &str = ".env";
 
 pub const ORBIT_HOME: &str = "ORBIT_HOME";
 pub const NO_COLOR: &str = "NO_COLOR";
+pub const BROWSER: &str = "BROWSER";
 pub const ORBIT_WIN_LITERAL_CMD: &str = "ORBIT_WIN_LITERAL_CMD";
 
 pub const ORBIT: &str = "ORBIT";

@@ -89,7 +89,7 @@ fn graph_project<'a>(
     let mut processing = vec![(t, root)];
 
     // check if we can use the lockfile (is synced with user's manifest)
-    let able_to_use_lockfile = root.can_use_lock(catalog);
+    let able_to_use_lockfile = root.can_use_lock();
 
     // add root's identifiers and parse files according to the correct language settings
     let mut unit_map = root.collect_units(true, false, private_by_default)?;

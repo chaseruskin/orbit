@@ -64,6 +64,9 @@ impl Subcommand<Context> for Env {
             EnvVar::new()
                 .key(environment::NO_COLOR)
                 .value(&std::env::var(environment::NO_COLOR).unwrap_or(String::new())),
+            EnvVar::new()
+                .key(environment::BROWSER)
+                .value(&std::env::var(environment::BROWSER).unwrap_or(String::new())),
         ])
         .from_config(c.get_config())?;
 

@@ -6,6 +6,8 @@ Orbit's configuration can be customized with the setting of specific environment
 
 - `NO_COLOR` - If set, do not print colorized output to the terminal.
 
+- `BROWSER` - The command to use to open generated HTML documentation.
+
 - `ORBIT_WIN_LITERAL_CMD` - If set, disables the default behavior of checking for programs ending with ".exe" then ".bat" when a program name without extension is not found on Windows systems.
 
 ## Runtime environment variables

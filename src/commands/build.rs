@@ -139,11 +139,12 @@ impl Subcommand<Context> for Build {
         )?;
 
         // gather the catalog and resolve any missing dependencies
-        let catalog = Catalog::new()
+        let mut catalog = Catalog::new()
             .installations(c.get_cache_path())?
             .downloads(c.get_downloads_path())?
             .available(&c.get_config().get_channels())?;
-        let catalog = plan::resolve_missing_deps(c, &current_project, catalog, self.force)?;
+        plan::resolve_missing_deps(c, &current_project, &mut catalog, self.force)?;
+        let catalog = catalog;
 
         let envs = Environment::new()
             // read config.toml for setting any env variables

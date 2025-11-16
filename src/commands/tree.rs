@@ -214,11 +214,12 @@ impl Subcommand<Context> for Tree {
         )?;
 
         // gather the catalog and resolve any missing dependencies
-        let catalog = Catalog::new()
+        let mut catalog = Catalog::new()
             .installations(c.get_cache_path())?
             .downloads(c.get_downloads_path())?
             .available(&c.get_config().get_channels())?;
-        let catalog = plan::resolve_missing_deps(c, &project, catalog, false)?;
+        plan::resolve_missing_deps(c, &project, &mut catalog, false)?;
+        let catalog = catalog;
 
         let result = self.run(project, catalog, c.are_units_private_by_default());
         // release our "APPEND" action to the cache

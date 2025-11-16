@@ -23,7 +23,6 @@ use crate::util::anyerror::CodeFault;
 use crate::util::anyerror::Fault;
 use std::path::PathBuf;
 
-use super::catalog::Catalog;
 use super::catalog::PkgName;
 use super::lang;
 use super::lang::LangIdentifier;
@@ -451,7 +450,7 @@ impl Project {
     /// This determines if the lock file's data matches the Orbit.toml manifest data,
     /// indicating it is safe to pull data from the lock file and no changes would be
     /// made to the lock file.
-    pub fn can_use_lock(&self, catalog: &Catalog) -> bool {
+    pub fn can_use_lock(&self) -> bool {
         let target = self.get_lock().get(
             self.get_man().get_project().get_name(),
             &self
@@ -461,7 +460,7 @@ impl Project {
                 .to_partial_version(),
         );
         let target_is_ok = match target {
-            Some(entry) => entry.matches_target(&LockEntry::from((self, true)), &catalog),
+            Some(entry) => entry.matches_target(&LockEntry::from((self, true))),
             None => false,
         };
         if target_is_ok == false {

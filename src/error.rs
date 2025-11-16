@@ -37,6 +37,8 @@ pub enum Error {
     PathAlreadyExists(PathBuf, Hint),
     #[error("directory {0:?} is an invalid project name: {1}{2}")]
     CannotAutoExtractNameFromPath(String, LastError, Hint),
+    #[error("environment variable \"BROWSER\" is required to open docs, but is not set")]
+    BrowserEnvVarMissing,
     #[error("file system path {0:?} is missing a name{1}")]
     MissingFileSystemPathName(PathBuf, Hint),
     #[error("process failed to unlock file {0:?}: {1}")]

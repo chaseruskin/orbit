@@ -458,13 +458,21 @@ name = "doc"
 summary = "generate a project's documentation"
 synopsis = "orbit doc [options]"
 description = """
-Generates a project's documentation from inline markdown comments.
+Generates documentation for a project and all of its dependencies based on 
+inline markdown comments.
+
+The BROWSER environment variable is required to be set when using the `--open`
+flag.
 """
 
+options."--open" = "Open the docs in a browser after the operation"
+options."--no-deps" = "Don't build documentation for dependencies"
+options."--document-private-items" = "Document private items"
 options."--target-dir <dir>" = "Directory for all generated artifacts and intermediate files"
 
 examples = """
 orbit doc
+orbit doc --no-deps
 """
 
 # ------------------------------------------------------------------------------

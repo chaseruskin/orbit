@@ -430,7 +430,7 @@ pub mod v1 {
         ///
         /// Ignores the checksum comparison because the target project should not have its
         /// checksum computed in the .lock file.
-        pub fn matches_target<'c>(&self, other: &LockEntry, _catalog: &Catalog<'c>) -> bool {
+        pub fn matches_target<'c>(&self, other: &LockEntry) -> bool {
             self.get_name() == other.get_name()
                 && self.get_version() == other.get_version()
                 && self.get_uuid() == other.get_uuid()

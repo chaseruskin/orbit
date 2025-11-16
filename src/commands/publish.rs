@@ -252,7 +252,7 @@ impl Publish {
     ) -> Result<(), Fault> {
         // verify the lock file is generated and up to date
         crate::info!("verifying lockfile is up to date ...");
-        if local_ip.can_use_lock(&catalog) == false {
+        if local_ip.can_use_lock() == false {
             return Err(Box::new(Error::PublishMissingLockfile(Hint::MakeLock)));
         }
 

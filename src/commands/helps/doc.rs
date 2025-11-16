@@ -22,6 +22,10 @@ Usage:
     orbit doc [options]
 
 Options:
+    --open                open the docs in a browser after the operation
+    --no-deps             don't build documentation for dependencies
+    --document-private-items
+                          document private items
     --target-dir <dir>    directory for all generated artifacts and intermediate files
 
 Use 'orbit help doc' to read more about the command."#;

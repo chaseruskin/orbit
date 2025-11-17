@@ -19,7 +19,7 @@ use super::super::highlight;
 use super::super::highlight::ColorVec;
 use super::format::VhdlFormat;
 use super::token::identifier::Identifier;
-use crate::core::lang::highlight::ToColor;
+use crate::core::lang::{highlight::ToColor, vhdl::symbols::Statement};
 
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 use serde_derive::Serialize;
@@ -94,7 +94,7 @@ pub struct SubtypeIndication(Vec<VhdlToken>);
 
 impl SubtypeIndication {
     pub fn to_norm_string(&self) -> String {
-        tokens_to_string(&self.0).into_all_bland()
+        Statement::into_color_vec(&self.0).into_all_bland()
     }
 
     fn from_tokens<I>(tokens: &mut Peekable<I>) -> Self
@@ -197,7 +197,7 @@ impl Serialize for SubtypeIndication {
     where
         S: Serializer,
     {
-        serializer.serialize_str(&tokens_to_string(&self.0).into_all_bland())
+        serializer.serialize_str(&Statement::into_color_vec(&self.0).into_all_bland())
     }
 }
 
@@ -217,7 +217,7 @@ impl StaticExpression {
         let mut result = ColorVec::new();
         result.push_color(Delimiter::VarAssign.to_color());
         result.push_str(" ");
-        result.append(tokens_to_string(&self.0));
+        result.append(Statement::into_color_vec(&self.0));
         result
     }
 }
@@ -250,7 +250,12 @@ impl Ports {
 
 impl std::fmt::Display for StaticExpression {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} {}", Delimiter::VarAssign, tokens_to_string(&self.0))
+        write!(
+            f,
+            "{} {}",
+            Delimiter::VarAssign,
+            Statement::into_color_vec(&self.0)
+        )
     }
 }
 
@@ -294,7 +299,9 @@ impl Serialize for Expr {
         S: Serializer,
     {
         match &self.0 {
-            Some(expr) => serializer.serialize_str(&tokens_to_string(&expr.0).into_all_bland()),
+            Some(expr) => {
+                serializer.serialize_str(&Statement::into_color_vec(&expr.0).into_all_bland())
+            }
             None => serializer.serialize_none(),
         }
     }
@@ -310,7 +317,7 @@ impl Expr {
 
     pub fn to_norm_string(&self) -> String {
         match &self.0 {
-            Some(e) => tokens_to_string(&e.0).into_all_bland(),
+            Some(e) => Statement::into_color_vec(&e.0).into_all_bland(),
             None => String::new(),
         }
     }
@@ -330,58 +337,6 @@ pub struct InterfaceDeclaration {
     initial_keyword: Option<Keyword>,
     #[serde(skip_serializing)]
     bus_present: bool,
-}
-
-pub fn tokens_to_string(tokens: &Vec<VhdlToken>) -> ColorVec {
-    let mut result = ColorVec::new();
-    // determine which delimiters to not add trailing spaces to
-    let is_spaced_token = |d: &Delimiter| match d {
-        Delimiter::ParenL
-        | Delimiter::ParenR
-        | Delimiter::Dot
-        | Delimiter::SingleQuote
-        | Delimiter::DoubleStar
-        | Delimiter::Dash
-        | Delimiter::Plus
-        | Delimiter::Star
-        | Delimiter::FwdSlash => false,
-        _ => true,
-    };
-    // determine which delimiters to not add have whitespace preceed
-    let no_preceeding_whitespace = |d: &Delimiter| match d {
-        Delimiter::DoubleStar | Delimiter::Comma => true,
-        _ => false,
-    };
-    // iterate through the tokens
-    let mut iter = tokens.iter().peekable();
-    while let Some(t) = iter.next() {
-        // determine if to add trailing space after the token
-        let trailing_space = match t {
-            VhdlToken::Delimiter(d) => is_spaced_token(d),
-            _ => {
-                // make sure the next token is not a tight token (no-spaced)
-                if let Some(m) = iter.peek() {
-                    match m {
-                        VhdlToken::Delimiter(d) => is_spaced_token(d),
-                        _ => true,
-                    }
-                } else {
-                    true
-                }
-            }
-        };
-        result.push_color(t.to_color());
-        if trailing_space == true && iter.peek().is_some() {
-            if let Some(d) = iter.peek().unwrap().as_delimiter() {
-                // skip whitespace addition
-                if no_preceeding_whitespace(d) == true {
-                    continue;
-                }
-            }
-            result.push_str(" ");
-        }
-    }
-    result
 }
 
 impl InterfaceDeclaration {
@@ -424,7 +379,7 @@ impl InterfaceDeclaration {
             result.push_str(" ");
         }
         // data type
-        result.append(tokens_to_string(&self.datatype.0).swap(0, highlight::DATA_TYPE));
+        result.append(Statement::into_color_vec(&self.datatype.0).swap(0, highlight::DATA_TYPE));
         // optional bus keyword
         if self.bus_present == true {
             result.push_str(" ");
@@ -472,7 +427,7 @@ impl InterfaceDeclaration {
         result.push_color(Delimiter::Colon.to_color());
         result.push_str(" ");
         // data type
-        result.append(tokens_to_string(&self.datatype.0).swap(0, highlight::DATA_TYPE));
+        result.append(Statement::into_color_vec(&self.datatype.0).swap(0, highlight::DATA_TYPE));
         // optional bus keyword
         if self.bus_present == true {
             result.push_str(" ");

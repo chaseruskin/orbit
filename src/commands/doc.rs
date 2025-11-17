@@ -48,6 +48,7 @@ use crate::util::filesystem::LockZone;
 use crate::util::filesystem::{PRJ_CATALOG_EX_LOCK_NAME, PRJ_CATALOG_SH_LOCK_NAME};
 use crate::util::sha256;
 use crate::warn;
+use ansi_to_html::Converter;
 use markdown;
 use std::collections::HashMap;
 use std::path::Path;
@@ -72,7 +73,7 @@ impl Subcommand<Context> for Doc {
         let command = Ok(Doc {
             no_deps: cli.check(Arg::flag("no-deps"))?,
             open_browser: cli.check(Arg::flag("open"))?,
-            doc_priv_items: cli.check(Arg::flag("document-private-items"))?,
+            doc_priv_items: cli.check(Arg::flag("document-private-units"))?,
             target_dir: cli.get(Arg::option("target-dir").value("dir"))?,
         });
         command
@@ -274,7 +275,30 @@ struct DocProject<'a> {
 ///
 /// See GFM specification: https://github.github.com/gfm/.
 pub fn to_html(s: &str) -> String {
-    markdown::to_html_with_options(s, &markdown::Options::gfm()).unwrap()
+    inject_css_style(&markdown::to_html_with_options(s, &markdown::Options::gfm()).unwrap())
+}
+
+/// Accepts an HTML formatted string `s` and adds certain styling options to the HTML
+/// using inline CSS.
+fn inject_css_style(s: &str) -> String {
+    let result = s.replace(
+        "<table>",
+        r#"<table style="width: 100%; border-collapse: collapse;">"#,
+    );
+    let result = result.replace(
+        "<td ",
+        r#"<td style="border: 1px solid black; padding: 8px;""#,
+    );
+    let result = result.replace(
+        "<th ",
+        r#"<th style="border: 1px solid black; padding: 8px;""#,
+    );
+    // Fix broken newlines
+    let result = result.replace("&lt;br&gt;", "<br>");
+    // apply ASNI to HTML color conversion
+    let converter = Converter::new().skip_escape(true).skip_optimize(true);
+    let result = converter.convert(&result).unwrap();
+    result
 }
 
 impl<'a> DocProject<'a> {
@@ -306,9 +330,9 @@ impl<'a> DocProject<'a> {
         // try to collect all design units (force to ensure we apply the correct private visibility capture)
         let prj_unit_map =
             self.project
-                .collect_units(true, doc_priv_items == false, priv_by_default)?;
+                .collect_units(false, doc_priv_items == false, priv_by_default)?;
         // write the project's main index file
-        self.write_index_file(&root_dir, &prj_unit_map)?;
+        self.write_index_file(&root_dir, &prj_unit_map, doc_priv_items)?;
         // write all source files
         self.write_source_files(&root_dir, &prj_unit_map)?;
         Ok(())
@@ -332,10 +356,12 @@ impl<'a> DocProject<'a> {
             .filter(|f| f.get_name().is_some() && f.as_parent_name().is_some())
             .collect();
 
+        // Write each source code file into the documentation
         for ds in &doc_subus {
             Self::import_hdl_source_to_md(output_path, &ds.get_source())?;
         }
 
+        // Write each primary design unit as its own documentation page
         for du in source_dus {
             let unit_subus: Vec<&&DocUnit> = doc_subus
                 .iter()
@@ -346,6 +372,7 @@ impl<'a> DocProject<'a> {
         Ok(())
     }
 
+    /// Returns the name of the file that will contain the raw HDL source code for the documentation generation.
     fn get_hdl_source_md_name(src_file: &str) -> (String, Lang) {
         let src_src_path = src_file;
         let lang = match is_systemverilog(src_src_path) {
@@ -368,6 +395,10 @@ impl<'a> DocProject<'a> {
         (md_src_file, lang)
     }
 
+    /// Writes the raw HDL source file to a dedicated document file such that the contents can be inspected in HTML in the
+    /// browser.
+    ///
+    /// Returns the path to the destination source file.
     fn import_hdl_source_to_md(output_path: &PathBuf, src_file: &str) -> Result<String, Fault> {
         // copy the source file contents to a new markdown file
         let (md_src_file, lang) = Self::get_hdl_source_md_name(src_file);
@@ -386,6 +417,7 @@ impl<'a> DocProject<'a> {
         Ok(md_src_file)
     }
 
+    /// Writes the documentation page for the given design unit.
     fn write_source_file(
         &self,
         output_path: &PathBuf,
@@ -420,14 +452,22 @@ impl<'a> DocProject<'a> {
         section: &str,
         dtype: DocType,
         prj_unit_map: &HashMap<LangIdentifier, LangUnit>,
+        doc_priv_items: bool,
     ) -> String {
         let mut contents = String::new();
         let filtered_dus = self.doc_units.iter().filter(|f| f.is_type(dtype));
         let mut said_title = false;
         for du in filtered_dus {
             if let Some(name) = du.get_name() {
-                // Skip if the unit does not have the right visibility
-                if prj_unit_map.get(name).is_none() {
+                // Skip if the unit does not have the right visibility (and we don't want to show private items)
+                if doc_priv_items == false
+                    && (prj_unit_map.get(name).is_none()
+                        || prj_unit_map
+                            .get(name)
+                            .unwrap()
+                            .get_visibility()
+                            .is_private())
+                {
                     continue;
                 }
                 // Start with saying the title of the section
@@ -453,6 +493,7 @@ impl<'a> DocProject<'a> {
         &self,
         output_path: &PathBuf,
         prj_unit_map: &HashMap<LangIdentifier, LangUnit>,
+        doc_priv_items: bool,
     ) -> Result<(), Fault> {
         let index_path = output_path.join("index.html");
         let name = self.project.get_man().get_project().get_name().to_string();
@@ -474,13 +515,28 @@ impl<'a> DocProject<'a> {
         ));
 
         // Add entity list
-        contents.push_str(&self.add_index_section("Entities", DocType::Entity, prj_unit_map));
+        contents.push_str(&self.add_index_section(
+            "Entities",
+            DocType::Entity,
+            prj_unit_map,
+            doc_priv_items,
+        ));
 
         // Add module list
-        contents.push_str(&self.add_index_section("Modules", DocType::Module, prj_unit_map));
+        contents.push_str(&self.add_index_section(
+            "Modules",
+            DocType::Module,
+            prj_unit_map,
+            doc_priv_items,
+        ));
 
         // Add package list
-        contents.push_str(&self.add_index_section("Packages", DocType::Package, prj_unit_map));
+        contents.push_str(&self.add_index_section(
+            "Packages",
+            DocType::Package,
+            prj_unit_map,
+            doc_priv_items,
+        ));
 
         std::fs::write(&index_path, to_html(&contents))?;
         Ok(())
@@ -869,6 +925,16 @@ impl Statement {
     }
 }
 
+impl std::fmt::Display for Statement {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Vhdl(stmt) => write!(f, "{}", stmt.to_colored_string()),
+            Self::Verilog(stmt) => write!(f, "{}", stmt.to_colored_string()),
+            Self::SystemVerilog(stmt) => write!(f, "{}", stmt.to_colored_string()),
+        }
+    }
+}
+
 impl DocItem {
     pub fn new() -> Self {
         Self {
@@ -973,8 +1039,6 @@ impl DocUnit {
             ));
         }
 
-        // @todo: write the correct syntax for how it would be defined
-
         // write the full documentation comment
         contents.push_str(&format!(
             "{}\n\n",
@@ -990,6 +1054,62 @@ impl DocUnit {
         // write out any architectures
         contents.push_str(&self.add_arch_section(&unit, &subs));
 
+        match &self.unit.form {
+            DocType::Package => {
+                contents.push_str(&self.add_types_section());
+                contents.push_str(&self.add_fn_section());
+            }
+            _ => (),
+        }
+
+        contents
+    }
+
+    /// Adds the types/subtypes section for VHDL packages.
+    fn add_types_section(&self) -> String {
+        let mut contents = String::new();
+        let type_items: Vec<&DocItem> = self
+            .items
+            .iter()
+            .filter(|f| f.form == DocType::Subtype || f.form == DocType::Type)
+            .collect();
+        let section = "Types";
+        if type_items.len() > 0 {
+            contents.push_str(&format!("## {}\n\n", section));
+        }
+        for item in type_items {
+            contents.push_str(&format!("``` vhdl\n{}\n```\n\n{}\n\n", item.stmt, {
+                if let Some(docs) = item.get_docs() {
+                    format!("> {}", docs.replace("\n", "\n> "))
+                } else {
+                    String::new()
+                }
+            }));
+        }
+        contents
+    }
+
+    /// Adds the functions section for VHDL packages.
+    fn add_fn_section(&self) -> String {
+        let mut contents = String::new();
+        let type_items: Vec<&DocItem> = self
+            .items
+            .iter()
+            .filter(|f| f.form == DocType::Function)
+            .collect();
+        let section = "Functions";
+        if type_items.len() > 0 {
+            contents.push_str(&format!("## {}\n\n", section));
+        }
+        for item in type_items {
+            contents.push_str(&format!("``` vhdl\n{}\n```\n\n{}\n\n", item.stmt, {
+                if let Some(docs) = item.get_docs() {
+                    format!("> {}", docs.replace("\n", "\n> "))
+                } else {
+                    String::new()
+                }
+            }));
+        }
         contents
     }
 
@@ -1071,10 +1191,16 @@ impl DocUnit {
                     None => String::new(),
                 };
                 contents.push_str(&format!(
-                    "| {} | {} | {} | {} |\n",
+                    "| `{}` | `{}` | {} | {} |\n",
                     generic.get_name(),
                     generic.get_type().to_norm_string(),
-                    generic.get_default().to_norm_string(),
+                    {
+                        if generic.get_default().to_norm_string().len() > 0 {
+                            format!("`{}`", generic.get_default().to_norm_string())
+                        } else {
+                            String::new()
+                        }
+                    },
                     comment.replace("\n", "<br>")
                 ));
             }
@@ -1100,10 +1226,16 @@ impl DocUnit {
                     None => String::new(),
                 };
                 contents.push_str(&format!(
-                    "| {} | {} | {} | {} |\n",
+                    "| `{}` | `{}` | {} | {} |\n",
                     generic.get_name(),
                     generic.get_datatype().to_norm_string(),
-                    generic.get_default().to_norm_string(),
+                    {
+                        if generic.get_default().to_norm_string().len() > 0 {
+                            format!("`{}`", generic.get_default().to_norm_string())
+                        } else {
+                            String::new()
+                        }
+                    },
                     comment.replace("\n", "<br>")
                 ));
             }
@@ -1129,10 +1261,16 @@ impl DocUnit {
                     None => String::new(),
                 };
                 contents.push_str(&format!(
-                    "| {} | {} | {} | {} |\n",
+                    "| `{}` | `{}` | {} | {} |\n",
                     generic.get_name(),
                     generic.get_datatype().to_norm_string(),
-                    generic.get_default().to_norm_string(),
+                    {
+                        if generic.get_default().to_norm_string().len() > 0 {
+                            format!("`{}`", generic.get_default().to_norm_string())
+                        } else {
+                            String::new()
+                        }
+                    },
                     comment.replace("\n", "<br>")
                 ));
             }
@@ -1178,7 +1316,7 @@ impl DocUnit {
                     None => String::new(),
                 };
                 contents.push_str(&format!(
-                    "| {} | {} | {} | {} |\n",
+                    "| `{}` | `{}` | `{}` | {} |\n",
                     port.get_name(),
                     port.get_mode().to_norm_string(),
                     port.get_type().to_norm_string(),
@@ -1206,7 +1344,7 @@ impl DocUnit {
                     None => String::new(),
                 };
                 contents.push_str(&format!(
-                    "| {} | {} | {} | {} |\n",
+                    "| `{}` | `{}` | `{}` | {} |\n",
                     port.get_name(),
                     port.get_mode()
                         .as_ref()
@@ -1237,7 +1375,7 @@ impl DocUnit {
                     None => String::new(),
                 };
                 contents.push_str(&format!(
-                    "| {} | {} | {} | {} |\n",
+                    "| `{}` | `{}` | `{}` | {} |\n",
                     port.get_name(),
                     port.get_mode()
                         .as_ref()

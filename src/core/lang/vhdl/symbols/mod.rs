@@ -444,20 +444,35 @@ impl Statement {
 
 impl std::fmt::Display for Statement {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.to_colored_string().into_all_bland())
+    }
+}
+
+use crate::core::lang::highlight::ColorVec;
+use crate::core::lang::highlight::ToColor;
+
+impl Statement {
+    pub fn to_colored_string(&self) -> ColorVec {
+        Self::into_color_vec(&self.0.iter().map(|i| i.as_ref().clone()).collect())
+    }
+
+    pub fn into_color_vec(tokens: &Vec<VhdlToken>) -> ColorVec {
+        let mut result = ColorVec::new();
         // determine which delimiters to not add trailing spaces to
         let is_spaced_token = |d: &Delimiter| match d {
             Delimiter::ParenL | Delimiter::ParenR => false,
+            Delimiter::SingleQuote | Delimiter::Dash => false,
             _ => true,
         };
         // iterate through the tokens
-        let mut iter = self.0.iter().peekable();
+        let mut iter = tokens.iter().peekable();
         while let Some(t) = iter.next() {
-            let trailing_space = match t.as_ref() {
+            let this_trailing_space = match t {
                 VhdlToken::Delimiter(d) => is_spaced_token(d),
                 _ => {
                     // make sure the next token is not a tight token (no-spaced)
                     if let Some(m) = iter.peek() {
-                        match m.as_ref() {
+                        match m {
                             VhdlToken::Delimiter(d) => is_spaced_token(d),
                             _ => true,
                         }
@@ -466,12 +481,47 @@ impl std::fmt::Display for Statement {
                     }
                 }
             };
-            write!(f, "{}", t.as_ref().to_string())?;
-            if trailing_space == true && iter.peek().is_some() {
-                write!(f, " ")?
+            let next_preceding_space = if let Some(m) = iter.peek() {
+                match m {
+                    VhdlToken::Keyword(k) => match k {
+                        // Constant can appear right after a left paren symbol
+                        Keyword::Constant | Keyword::Variable | Keyword::Signal => false,
+                        _ => true,
+                    },
+                    VhdlToken::Delimiter(d) => match d {
+                        Delimiter::Colon => true,
+                        Delimiter::Dash => t.as_keyword().is_some(),
+                        _ => false,
+                    },
+                    _ => false,
+                }
+            } else {
+                false
+            };
+            // Sets precedence for the current token if a space should sit between the current token
+            // and the next token
+            let next_is_tight_token = if let Some(m) = iter.peek() {
+                match m {
+                    VhdlToken::Delimiter(d) => match d {
+                        Delimiter::Colon => true,
+                        Delimiter::Terminator => true,
+                        Delimiter::ParenL | Delimiter::ParenR => true,
+                        _ => false,
+                    },
+                    _ => false,
+                }
+            } else {
+                false
+            };
+            result.push_color(t.to_color());
+            if next_is_tight_token == false
+                && (this_trailing_space || next_preceding_space)
+                && iter.peek().is_some()
+            {
+                result.push_str(" ");
             }
         }
-        Ok(())
+        result
     }
 }
 
@@ -1334,16 +1384,20 @@ impl VhdlSymbol {
                 }
             // exit upon encountering terminator ';'
             } else if t.as_type().check_delimiter(&Delimiter::Terminator) {
-                // println!("{:?}", clause);
-                // fix the ending of a last constant/signal in a entity declaration?
+                // println!("{} {:?}", gp_paren_count, clause);
+                // fix the ending of a last constant/signal in an entity declaration
                 if gp_paren_count == -1 {
                     if let Some(pr) = clause.0.last() {
                         if pr.as_ref().check_delimiter(&Delimiter::ParenR) {
                             clause.0.pop();
                         }
                     }
+                    return clause;
+                } else if gp_paren_count == 0 {
+                    return clause;
+                } else {
+                    clause.get_tokens_mut().push(t);
                 }
-                return clause;
             // take generic and its leading parenthesis
             } else if t.as_type().check_keyword(&Keyword::Generic)
                 || t.as_type().check_keyword(&Keyword::Port)
@@ -1372,14 +1426,20 @@ impl VhdlSymbol {
                     && t.as_type().check_delimiter(&Delimiter::Arrow))
             {
                 // add the breaking token to the statement before exiting
-                clause.get_tokens_mut().push(t);
+                if t.as_ref().as_comment().is_none() {
+                    clause.get_tokens_mut().push(t);
+                    return clause;
+                } else if gp_paren_count == 0 {
+                    return clause;
+                }
                 // println!("{:?}", clause);
-                return clause;
             } else {
-                clause.get_tokens_mut().push(t);
+                if t.as_ref().as_comment().is_none() {
+                    clause.get_tokens_mut().push(t);
+                }
             }
             if let Some(tpeek) = tokens.peek() {
-                if tpeek.as_ref().as_comment().is_some() {
+                if tpeek.as_ref().as_comment().is_some() && gp_paren_count == 0 {
                     return clause;
                 }
             }

@@ -23,6 +23,7 @@ use super::super::sv::token::{
 };
 use crate::core::lang::highlight::ColorVec;
 use crate::core::lang::highlight::ToColor;
+use crate::core::lang::sv::symbols::Statement;
 use serde_derive::Serialize;
 
 #[derive(Debug, PartialEq)]
@@ -44,7 +45,7 @@ impl Expr {
 
     pub fn to_norm_string(&self) -> String {
         match &self.0 {
-            Some(expr) => tokens_to_string(&expr).into_all_bland(),
+            Some(expr) => Statement::into_color_vec(&expr).into_all_bland(),
             None => String::new(),
         }
     }
@@ -56,7 +57,9 @@ impl serde::Serialize for Expr {
         S: serde::Serializer,
     {
         match &self.0 {
-            Some(expr) => serializer.serialize_str(&tokens_to_string(&expr).into_all_bland()),
+            Some(expr) => {
+                serializer.serialize_str(&Statement::into_color_vec(&expr).into_all_bland())
+            }
             None => serializer.serialize_none(),
         }
     }
@@ -71,83 +74,6 @@ pub fn does_exist(ports: &Vec<Port>, name: &Identifier) -> bool {
         .map(|f| f.get_name())
         .find(|p| p == &name)
         .is_some()
-}
-
-pub fn tokens_to_string(tokens: &Vec<SystemVerilogToken>) -> ColorVec {
-    let mut result = ColorVec::new();
-    // determine which delimiters to not add trailing spaces to
-    let is_spaced_token = |d: &Operator| match d {
-        Operator::ParenL
-        | Operator::ParenR
-        | Operator::BrackL
-        | Operator::BrackR
-        | Operator::Dot
-        | Operator::Pow
-        | Operator::Minus
-        | Operator::Plus
-        | Operator::Mult
-        | Operator::Colon
-        | Operator::ScopeResolution
-        | Operator::SingleQuote
-        | Operator::Div => false,
-        _ => true,
-    };
-
-    // determine which delimiters to not add have whitespace preceed
-    let no_preceeding_whitespace = |d: &Operator| match d {
-        Operator::Pow | Operator::Comma | Operator::BrackL => true,
-        _ => false,
-    };
-
-    let force_trailing_whitespace = |d: &Operator| match d {
-        Operator::Gt | Operator::Gte | Operator::Lt | Operator::Lte => true,
-        _ => false,
-    };
-
-    // iterate through the tokens
-    let mut iter = tokens.iter().peekable();
-
-    while let Some(t) = iter.next() {
-        let mut force_space = false;
-        // determine if to add trailing space after the token
-        let trailing_space = match t {
-            SystemVerilogToken::Operator(d) => {
-                force_space = force_trailing_whitespace(d);
-                force_space || is_spaced_token(d)
-            }
-            SystemVerilogToken::Number(_) => false,
-            _ => {
-                // make sure the next token is not a tight token (no-spaced)
-                if let Some(m) = iter.peek() {
-                    match m {
-                        SystemVerilogToken::Operator(d) => is_spaced_token(d),
-                        _ => true,
-                    }
-                } else {
-                    true
-                }
-            }
-        };
-
-        // push the token to the string
-        result.push_color(t.to_color());
-        // handle adding whitespace after the token
-        if trailing_space == true && iter.peek().is_some() {
-            if force_space == false {
-                // check what the next token is to determine if whitespace should be added before it
-                if let Some(d) = iter.peek().unwrap().as_delimiter() {
-                    // skip whitespace addition
-                    if no_preceeding_whitespace(d) == true {
-                        continue;
-                    }
-                } else if let Some(_n) = iter.peek().unwrap().as_number() {
-                    continue;
-                }
-            }
-            result.push_str(" ");
-        }
-    }
-    result
 }
 
 /// Determines the length of the longest port declaration (mode, type, range).
@@ -414,7 +340,7 @@ impl DataType {
             result.push_str(&dt.to_string());
         }
         if let Some(rg) = &self.range.0 {
-            result.push_str(&tokens_to_string(rg).into_all_bland());
+            result.push_str(&Statement::into_color_vec(rg).into_all_bland());
         }
         match result.len() {
             0 => String::new(),
@@ -446,7 +372,7 @@ impl serde::Serialize for DataType {
             result.push_str(&dt.to_string());
         }
         if let Some(rg) = &self.range.0 {
-            result.push_str(&tokens_to_string(rg).into_all_bland());
+            result.push_str(&Statement::into_color_vec(rg).into_all_bland());
         }
         match result.len() {
             0 => serializer.serialize_none(),
@@ -592,7 +518,7 @@ impl Port {
             for _ in 0..fmt.get_range_offset() as usize {
                 result.push_str(" ");
             }
-            result.append(tokens_to_string(r));
+            result.append(Statement::into_color_vec(r));
             result.push_str(" ");
         }
         result
@@ -635,7 +561,7 @@ impl Port {
             for _ in 0..fmt.get_range_offset() as usize {
                 result.push_str(" ");
             }
-            result.append(tokens_to_string(up));
+            result.append(Statement::into_color_vec(up));
         }
 
         // display the default value
@@ -643,7 +569,7 @@ impl Port {
             result.push_str(" ");
             result.push_color(Operator::BlockAssign.to_color());
             result.push_str(" ");
-            result.append(tokens_to_string(v));
+            result.append(Statement::into_color_vec(v));
         }
 
         result

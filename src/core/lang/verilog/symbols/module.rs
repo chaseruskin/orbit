@@ -294,8 +294,9 @@ impl Module {
     }
 }
 
+use crate::core::lang::verilog::symbols::Statement as SvStatement;
+
 use crate::core::lang::lexer::Tokenize;
-use crate::core::lang::verilog::interface::tokens_to_string;
 use crate::core::lang::vhdl::error::VhdlError;
 use crate::core::lang::vhdl::symbols::entity::Entity;
 use crate::core::lang::vhdl::token::delimiter::Delimiter as VhDelimiter;
@@ -555,7 +556,7 @@ impl Module {
         tokens.push(Self::vh(Vvt::Delimiter(VhDelimiter::ParenL)));
 
         // left side of range
-        VhdlTokenizer::tokenize(&tokens_to_string(&lhs).into_all_bland())
+        VhdlTokenizer::tokenize(&SvStatement::into_color_vec(&lhs).into_all_bland())
             .into_iter()
             .filter_map(|r| match r {
                 Ok(r) => Some(r),
@@ -570,7 +571,7 @@ impl Module {
         tokens.push(Self::vh(Vvt::Keyword(VhKeyword::Downto)));
 
         // right side of range
-        VhdlTokenizer::tokenize(&tokens_to_string(&rhs).into_all_bland())
+        VhdlTokenizer::tokenize(&SvStatement::into_color_vec(&rhs).into_all_bland())
             .into_iter()
             .filter_map(|r| match r {
                 Ok(r) => Some(r),
@@ -606,7 +607,7 @@ impl Module {
             return tokens;
         }
 
-        VhdlTokenizer::tokenize(&tokens_to_string(&expr).into_all_bland())
+        VhdlTokenizer::tokenize(&SvStatement::into_color_vec(&expr).into_all_bland())
             .into_iter()
             .filter_map(|r| match r {
                 Ok(r) => Some(r),

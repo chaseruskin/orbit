@@ -13,19 +13,32 @@ use ieee.numeric_std.all;
 --- Hamming code package consisting of helper functions.
 package hamm_pkg is
 
+    -- Basic logic scalar type.
     subtype logic is std_ulogic;
+
+    -- Fundamental logic vector type.
     subtype logics is std_ulogic_vector;
 
-    --- Determines if the `num` is a power of 2. 
-    ---
-    --- Includes values of 0 and 1.
-    function is_pow_2(num: natural) return boolean;
+    subtype i8 is integer range -128 to 127; 
 
-    --- Computes the number of data bits for a hamming-code block.
+    -- Determines if the `num` is a power of 2. 
+    --
+    -- Includes values of 0 and 1.
+    function is_pow_2(constant num: natural) return boolean;
+
+    -- Computes the number of data bits for a hamming-code block.
     function data_size(parity_bits: positive range 2 to positive'high) return positive;
 
-    --- Computes the number of bits in the entire hamming-code block.
+    -- Computes the number of bits in the entire hamming-code block.
     function block_size(parity_bits: positive range 2 to positive'high) return positive;
+
+    -- Takes two numbers and adds them together (`x` + `y`).
+    function add_nums(
+        -- This is X.
+        x: in integer;
+        -- This is Y.
+        y: in integer
+    ) return integer;
 
 end package hamm_pkg;
 

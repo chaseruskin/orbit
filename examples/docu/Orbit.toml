@@ -6,5 +6,6 @@ uuid = "61kfbsth23uk2tgxgwljeo29t"
 ignore = [
     "ignore"
 ]
+public = ["*"]
 
 [dependencies]

@@ -339,7 +339,7 @@ impl Entity {
     }
 }
 
-use crate::core::lang::vhdl::symbols::tokens_to_string;
+use crate::core::lang::vhdl::symbols::Statement as VhdlStatement;
 
 use crate::core::lang::lexer::Tokenize;
 use crate::core::lang::sv::token::token::SystemVerilogToken as Svt;
@@ -531,7 +531,7 @@ impl Entity {
         tokens.push(Self::sv(Svt::Operator(SvOp::BrackL)));
 
         // left side of range
-        SystemVerilogTokenizer::tokenize(&tokens_to_string(&lhs).into_all_bland())
+        SystemVerilogTokenizer::tokenize(&VhdlStatement::into_color_vec(&lhs).into_all_bland())
             .into_iter()
             .filter_map(|r| match r {
                 Ok(r) => Some(r),
@@ -546,7 +546,7 @@ impl Entity {
         tokens.push(Self::sv(Svt::Operator(SvOp::Colon)));
 
         // right side of range
-        SystemVerilogTokenizer::tokenize(&tokens_to_string(&rhs).into_all_bland())
+        SystemVerilogTokenizer::tokenize(&VhdlStatement::into_color_vec(&rhs).into_all_bland())
             .into_iter()
             .filter_map(|r| match r {
                 Ok(r) => Some(r),
@@ -623,16 +623,18 @@ impl Entity {
         }
 
         if already_checked == false {
-            SystemVerilogTokenizer::tokenize(&tokens_to_string(&expr).into_all_bland())
-                .into_iter()
-                .filter_map(|r| match r {
-                    Ok(r) => Some(r),
-                    Err(_) => None,
-                })
-                .filter(|r| r.as_type().is_eof() == false)
-                .for_each(|t| {
-                    tokens.push(t);
-                });
+            SystemVerilogTokenizer::tokenize(
+                &VhdlStatement::into_color_vec(&expr).into_all_bland(),
+            )
+            .into_iter()
+            .filter_map(|r| match r {
+                Ok(r) => Some(r),
+                Err(_) => None,
+            })
+            .filter(|r| r.as_type().is_eof() == false)
+            .for_each(|t| {
+                tokens.push(t);
+            });
         }
 
         // only introduce the '=' token if we successfully transfered the VHDL to SV

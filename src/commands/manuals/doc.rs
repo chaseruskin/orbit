@@ -26,6 +26,13 @@ DESCRIPTION
     Generates documentation for a project and all of its dependencies based on
     inline markdown comments.
     
+    Documentation is extracted from comments embedded in the source code. A
+    comment on the immediate line above a documentable item will be treated as 
+    that item's documentation, unless a comment is found on the exact line of the
+    documentable item. Multiple lines of comments can represent a documentable
+    item as long as there are no lines between the comments that is not a comment.
+    Comments used for document generation are interpreted as Markdown.
+    
     The BROWSER environment variable is required to be set when using the '--open'
     flag.
 
@@ -36,8 +43,8 @@ OPTIONS
     --no-deps
         Don't build documentation for dependencies
 
-    --document-private-items
-        Document private items
+    --document-private-units
+        Document private units
 
     --target-dir <dir>
         Directory for all generated artifacts and intermediate files

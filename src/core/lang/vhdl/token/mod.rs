@@ -520,7 +520,7 @@ impl VhdlToken {
                     },
                     '<' => match c {
                         // move on to next round (could be a len-3 delimiter)
-                        '=' => delim.push(train.consume().unwrap()),
+                        '=' | '>' => delim.push(train.consume().unwrap()),
                         _ => return Ok(Self::match_delimiter(&delim).expect("invalid token")),
                     },
                     _ => {

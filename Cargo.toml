@@ -11,6 +11,7 @@ edition = "2021"
 license = "GPL-3.0-or-later"
 
 [dependencies]
+ansi-to-html = "0.2.2"
 cliproc = "2"
 colored = "2"
 curl = { version = "0.4.44", features = ["static-ssl"] }

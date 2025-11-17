@@ -15,10 +15,10 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
-## 0.27.0 - unreleased
+## 0.27.0
 
 ### Features
-- Adds new subcommand: `orbit doc` - generate documentation from source code comments for a project and its dependencies (limited support)
+- Adds new subcommand: `orbit doc` - generate documentation from source code comments for a project and its dependencies (initial support)
 
 ### Changes
 - Renames `source` field to `repository` field within a project's manifest

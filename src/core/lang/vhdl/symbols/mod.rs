@@ -462,6 +462,7 @@ impl Statement {
         let is_spaced_token = |d: &Delimiter| match d {
             Delimiter::ParenL | Delimiter::ParenR => false,
             Delimiter::SingleQuote | Delimiter::Dash => false,
+            Delimiter::DoubleStar => false,
             _ => true,
         };
         // iterate through the tokens

@@ -2212,7 +2212,7 @@ constant Delay: TIME := 1 ms;";
         tokens.next(); // take PORT
         let ports = VhdlSymbol::parse_interface_list(&mut tokens).unwrap();
         let ports: Vec<String> = ports.into_iter().map(|m| m.0.to_string()).collect();
-        assert_eq!(ports, vec!["P1 , P2 : inout BIT",]);
+        assert_eq!(ports, vec!["P1 , P2: inout BIT",]);
         assert_eq!(
             tokens.next().unwrap().as_type(),
             &VhdlToken::Keyword(Keyword::Constant)
@@ -2237,7 +2237,7 @@ end;";
         let generics = VhdlSymbol::parse_interface_list(&mut tokens).unwrap();
         // convert to strings for easier verification
         let generics: Vec<String> = generics.into_iter().map(|m| m.0.to_string()).collect();
-        assert_eq!(generics, vec!["N : positive",]);
+        assert_eq!(generics, vec!["N: positive",]);
         // take PORT
         tokens.next();
         let ports = VhdlSymbol::parse_interface_list(&mut tokens).unwrap();
@@ -2246,9 +2246,9 @@ end;";
         assert_eq!(
             ports,
             vec![
-                "a : in std_logic_vector(N - 1 downto 0)",
-                "b : in std_logic_vector(N - 1 downto 0)",
-                "c : out std_logic_vector(N - 1 downto 0)",
+                "a: in std_logic_vector(N-1 downto 0)",
+                "b: in std_logic_vector(N-1 downto 0)",
+                "c: out std_logic_vector(N-1 downto 0)",
             ]
         );
         assert_eq!(
@@ -2271,7 +2271,7 @@ end;";
         let generics = VhdlSymbol::parse_interface_list(&mut tokens).unwrap();
         // convert to strings for easier verification
         let generics: Vec<String> = generics.into_iter().map(|m| m.0.to_string()).collect();
-        assert_eq!(generics, vec!["N : positive",]);
+        assert_eq!(generics, vec!["N: positive",]);
         assert_eq!(
             tokens.next().unwrap().as_type(),
             &VhdlToken::Keyword(Keyword::Begin)
@@ -2521,7 +2521,7 @@ end entity nor_gate;";
         let tokens = VhdlTokenizer::from_source_code(&s).into_tokens();
         let mut iter = tokens.into_iter().peekable();
         let st = VhdlSymbol::parse_statement(&mut iter);
-        assert_eq!(st.0.to_string(), "a : in std_logic_vector(3 downto 0)");
+        assert_eq!(st.0.to_string(), "a: in std_logic_vector(3 downto 0)");
     }
 
     #[test]

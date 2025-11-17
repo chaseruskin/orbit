@@ -205,7 +205,7 @@
 <pre><code class="language-toml">[[protocol]]
 name = "gitit"
 description = "Download projects using git"
-command = ["git", "clone", "{{orbit.project.source}}", "-b", "{{orbit.project.version}}"]
+command = ["git", "clone", "{{orbit.project.repository}}", "-b", "{{orbit.project.version}}"]
 patterns = ["*.git"]
 </code></pre>
 <p>A protocol may be as simple as a list of known command-line arguments, or may require invoking a script written in a scripting language such as Python or Tcl.</p>
@@ -213,7 +213,7 @@ patterns = ["*.git"]
 <p><strong>Tip</strong>: The strings within the array for the <code>args</code> field of a protocol support string variables. See <a href="./../topic/swapping.html#protocol-arguments">String Swapping</a> to view what variables are allowed.</p>
 </blockquote>
 <h2 id="configuring-a-protocol-as-default"><a class="header" href="#configuring-a-protocol-as-default">Configuring a protocol as default</a></h2>
-<p>This guide walks through how to configure an existing protocol to be the first to check if it can be used for a given project's source URL.</p>
+<p>This guide walks through how to configure an existing protocol to be the first to check if it can be used for a given project's repository URL.</p>
 <ol>
 <li>
 <p>Open an Orbit configuration file.</p>
@@ -244,14 +244,14 @@ default-protocol = "gitit"
 <p>Open the current project's manifest file.</p>
 </li>
 <li>
-<p>Add the <code>source</code> field to the project's manifest, which contains a string of the project's git repository:</p>
+<p>Add the <code>repository</code> field to the project's manifest, which contains a string of the project's git repository:</p>
 </li>
 </ol>
 <pre><code class="language-toml">[project]
 # ...
-source = "https://github.com/chaseruskin/gates.git"
+repository = "https://github.com/chaseruskin/gates.git"
 </code></pre>
-<p>Since this source ends with <code>.git</code>, it matches the pattern for the previously configured <code>gitit</code> protocol, so Orbit will use the <code>gitit</code> command and arguments to download the project.</p>
+<p>Since this repository ends with <code>.git</code>, it matches the pattern for the previously configured <code>gitit</code> protocol, so Orbit will use the <code>gitit</code> command and arguments to download the project.</p>
 
                     </main>
 

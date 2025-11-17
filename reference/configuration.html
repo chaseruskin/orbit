@@ -329,7 +329,7 @@ default-channels = ["hyperspace-labs"]
 <pre><code class="language-toml">[install]
 default-protocol = "git"
 </code></pre>
-<p>If the default protocol has patterns configured and none of the patterns match the given project's source URL, then it is not used. If the default protocol is set to be used and its name cannot be found among the known protocols, the installation process will error.</p>
+<p>If the default protocol has patterns configured and none of the patterns match the given project's repository URL, then it is not used. If the default protocol is set to be used and its name cannot be found among the known protocols, the installation process will error.</p>
 <h3 id="the-vhdl-format-section"><a class="header" href="#the-vhdl-format-section">The <code>[vhdl-format]</code> section</a></h3>
 <p>The currently supported entries are demonstrated in the following code snippet. Entries not present will be set to their default values.</p>
 <pre><code class="language-toml">[vhdl-format]
@@ -462,7 +462,7 @@ patterns = ["*.git"]
 <p>The <code>command</code> entry for a protocol is a string or an array of strings (<a href="#executable-paths-with-arguments">program path with args</a>) used to specify the external program and additional arguments (if they exist) to run for the download phase of the installation process.</p>
 <pre><code class="language-toml">[[protocol]]
 # ...
-command = ["git", "clone", "{{orbit.project.source}}", "-b", "{{orbit.project.version}}"]
+command = ["git", "clone", "{{orbit.project.repository}}", "-b", "{{orbit.project.version}}"]
 </code></pre>
 <p>This field is required when configuring a protocol.</p>
 <p>This field supports <a href="./../topic/swapping.html"><em>string swapping</em></a>.</p>

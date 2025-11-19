@@ -95,7 +95,7 @@ impl Download {
         _force: bool,
     ) -> Result<(ProjectIdSpec, Vec<u8>), Fault> {
         // use a temporary directory the download process
-        let queue = TempDir::into_path(TempDir::new()?);
+        let queue = TempDir::new()?.keep();
 
         if let Some(project_id_spec) = spec {
             // update variable table for this lock entry

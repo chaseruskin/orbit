@@ -174,7 +174,7 @@ impl FromStr for Style {
 
 use serde::de::{self};
 use serde::Serializer;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize as Ser};
 use std::fmt;
 
 impl<'de> Deserialize<'de> for Style {
@@ -206,7 +206,7 @@ impl<'de> Deserialize<'de> for Style {
     }
 }
 
-impl Serialize for Style {
+impl Ser for Style {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -264,7 +264,7 @@ impl<'de> Deserialize<'de> for UrlStyle {
     }
 }
 
-impl Serialize for UrlStyle {
+impl Ser for UrlStyle {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,

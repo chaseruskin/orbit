@@ -772,7 +772,7 @@ pub fn install_ip_from_downloads(
     force: bool,
 ) -> Result<Option<Project>, Fault> {
     // place the dependency into a temporary directory
-    let dir = tempfile::tempdir()?.into_path();
+    let dir = tempfile::tempdir()?.keep();
     if let Err(e) = ProjectArchive::extract(&dep_bytes, &dir) {
         fs::remove_dir_all(dir)?;
         return Err(e);

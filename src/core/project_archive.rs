@@ -169,7 +169,7 @@ impl ProjectArchive {
     /// compression algorithm and new data gets stored in the header.
     pub fn repair(archive: &[u8], path: &PathBuf) -> Result<Vec<u8>, Fault> {
         // place the dependency into a temporary directory
-        let dir = tempfile::tempdir()?.into_path();
+        let dir = tempfile::tempdir()?.keep();
         if let Err(e) = ProjectArchive::extract(&archive, &dir) {
             fs::remove_dir_all(dir)?;
             return Err(e);

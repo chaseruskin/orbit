@@ -317,7 +317,7 @@ impl Publish {
         )?
         .1;
         // try to extract the ip from the archives
-        let tmp_archive_staging_dir = tempfile::tempdir()?.into_path();
+        let tmp_archive_staging_dir = tempfile::tempdir()?.keep();
         if let Err(e) = ProjectArchive::extract(&bytes, &tmp_archive_staging_dir) {
             fs::remove_dir_all(tmp_archive_staging_dir)?;
             return Err(e);

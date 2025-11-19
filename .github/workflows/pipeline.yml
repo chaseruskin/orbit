@@ -44,7 +44,7 @@ jobs:
 
   release:
     uses: chaseruskin/orbit/.github/workflows/release.yml@trunk
-    if: ${{ needs.check-release.outputs.ready == '1' }} && ${{ github.ref == 'refs/heads/trunk' }}
+    if: ${{ needs.check-release.outputs.ready == '1' && github.ref == 'refs/heads/trunk' }}
     needs: [check-release, system-test, docker-build]
     with:
       version: ${{ needs.check-release.outputs.version }}

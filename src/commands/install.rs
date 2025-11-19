@@ -190,11 +190,11 @@ impl Subcommand<Context> for Install {
             let temp_dir_for_zip = if let Some(ext) = search_dir.extension() {
                 if search_dir.is_file() == true && ext.eq_ignore_ascii_case("zip") {
                     // decompress zip file to a temporary directory
-                    let temp_dir = tempfile::tempdir()?;
+                    let temp_dir = tempfile::tempdir()?.keep();
                     let zip_file = File::open(&search_dir)?;
                     let mut zip_archive = ZipArchive::new(zip_file)?;
                     zip_archive.extract(&temp_dir)?;
-                    Some(temp_dir.into_path())
+                    Some(temp_dir)
                 } else {
                     None
                 }
@@ -303,7 +303,7 @@ impl Subcommand<Context> for Install {
                             // println!("{} {}", "using archive", slot.get_man().get_ip().into_ip_spec());
                             // place the dependency into a temporary directory
                             // @MARK: fix this to cleanup manually since we forced it into_path.
-                            let dir = tempfile::tempdir()?.into_path();
+                            let dir = tempfile::tempdir()?.keep();
                             if let Err(e) = ProjectArchive::extract(&bytes, &dir) {
                                 fs::remove_dir_all(dir)?;
                                 return Err(e);
@@ -644,7 +644,7 @@ impl Install {
             force,
         )?;
 
-        let dir = tempfile::tempdir()?.into_path();
+        let dir = tempfile::tempdir()?.keep();
         if let Err(e) = ProjectArchive::extract(&bytes, &dir) {
             fs::remove_dir_all(dir)?;
             return Err(e);
@@ -682,7 +682,7 @@ impl Install {
         verbose: bool,
     ) -> Result<Option<Project>, Fault> {
         // temporary destination to move files for processing and manipulation
-        let dest = tempfile::tempdir()?.into_path();
+        let dest = tempfile::tempdir()?.keep();
         filesystem::copy(src.get_root(), &dest, true, Some(src.get_files_to_keep()))?;
 
         // lookup the package name in the index to see if the UUIDs match

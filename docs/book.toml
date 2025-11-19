@@ -1,6 +1,18 @@
 [book]
+title = "The Orbit Book"
 authors = ["Chase Ruskin"]
 language = "en"
-multilingual = false
 src = "src"
-title = "The Orbit Book"
+
+[build]
+create-missing = false
+
+[output.html]
+smart-punctuation = true
+definition-lists = true
+admonitions = true
+theme = "./theme"
+no-section-label = false
+git-repository-url = "https://github.com/chaseruskin/orbit"
+git-repository-icon = "fab-github"
+sidebar-header-nav = false

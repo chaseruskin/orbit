@@ -34,6 +34,7 @@ jobs:
   docker-build:
     uses: chaseruskin/orbit/.github/workflows/docker.yml@trunk
     needs: [check-release, system-test]
+    if: ${{ github.ref == 'refs/heads/trunk' }}
     secrets:
       DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
       DOCKER_HUB_ACCESS_TOKEN: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
@@ -43,7 +44,7 @@ jobs:
 
   release:
     uses: chaseruskin/orbit/.github/workflows/release.yml@trunk
-    if: ${{ needs.check-release.outputs.ready == '1' }}
+    if: ${{ needs.check-release.outputs.ready == '1' }} && ${{ github.ref == 'refs/heads/trunk' }}
     needs: [check-release, system-test, docker-build]
     with:
       version: ${{ needs.check-release.outputs.version }}

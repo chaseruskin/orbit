@@ -378,7 +378,7 @@ The `command` entry for a protocol is a string or an array of strings ([program 
 ``` toml
 [[protocol]]
 # ...
-command = ["git", "clone", "{{orbit.project.repository}}", "-b", "{{orbit.project.version}}"]
+command = ["git", "clone", "{{ orbit.project.source }}", "-b", "{{ orbit.project.version }}"]
 ```
 
 This field is required when configuring a protocol.

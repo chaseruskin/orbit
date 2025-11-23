@@ -497,7 +497,7 @@ There are multiple checks that are performed before a project can be published.
 First, the project must have an up to date lockfile with no relative 
 dependencies. The project's manifest must also have a value for the source 
 field. In addition, Orbit must be able to construct the HDL source code graph 
-without errors. Finally, the project is downloaded from its repository url and 
+without errors. Finally, the project is downloaded from its source url and 
 temporarily installed to verify its contents match those of the local project.
 
 Posting a project to a channel involves copying the project's manifest file to 
@@ -631,7 +631,7 @@ options."--url <url>" = "URL to install the project from the internet"
 options."--path <path>" = "Path to install the project from local file system"
 options."--protocol, -p <name>" = "Protocol to download the project"
 options."--force" = "Install the project regardless of the cache slot occupancy"
-options."--offline" = "Skip checking coherency with repository"
+options."--offline" = "Skip checking coherency with source"
 options."--list, -l" = "View available protocols and exit"
 options."--all-deps" = "Install all dependencies (including development)"
 options."--all-public" = "Install with all source files being public"
@@ -796,7 +796,7 @@ options."--help, -h" = "print help information"
 # rely on accessing the internet to get IP. Downloads allow Orbit to quickly
 # repair broken installations and allow users to learn about IP before installing.
 
-# When using a custom protocol, Orbit expects the final fetched repository to
+# When using a custom protocol, Orbit expects the final fetched source to
 # exist within a special directory called the queue. By default, the queue is set
 # to a temporary directory, but it can be overridden with `--queue`. After a 
 # protocol is executed, Orbit resumes the download process by trying to detect the 

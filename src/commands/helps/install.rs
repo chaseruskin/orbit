@@ -28,7 +28,7 @@ Options:
     --protocol, -p <name>
                           protocol to download the project
     --force               install the project regardless of the cache slot occupancy
-    --offline             skip checking coherency with repository
+    --offline             skip checking coherency with source
     --list, -l            view available protocols and exit
     --all-deps            install all dependencies (including development)
     --all-public          install with all source files being public

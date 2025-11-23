@@ -125,6 +125,11 @@ jobs:
       - name: Update application documentation
         run: python ./tools/mansync.py
 
+      - name: Run security audit on Rust crates
+        uses: rustsec/audit-check@v2.0.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Package
         id: package
         env:

@@ -1,6 +1,4 @@
-# Author: Chase Ruskin
-# Details:
-#   A series of commands to run at convenience.
+# A series of commands to run at convenience.
 
 _default:
     just --list

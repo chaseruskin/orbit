@@ -59,7 +59,7 @@ pub enum Mapping {
     Virtual(Vec<u8>),
     /// Local development version (all files are there)
     Relative(PathBuf),
-    /// Available (acts as a pointer to project's repository)
+    /// Available (acts as a pointer to project's source)
     Imaginary,
 }
 

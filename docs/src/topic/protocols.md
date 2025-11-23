@@ -27,7 +27,7 @@ Filename: config.toml
 [[protocol]]
 name = "gitit"
 summary = "Access packages through git to handle remote repositories"
-command = ["git", "clone", "-b", "{{ orbit.project.version }}", "{{ orbit.project.repository }}"]
+command = ["git", "clone", "-b", "{{ orbit.project.version }}", "{{ orbit.project.source }}"]
 patterns = ["*.git"]
 ```
 

@@ -32,7 +32,7 @@ Orbit also sets environment variables during runtime such that any subprocesses 
 
 - `ORBIT_PROJECT_CHECKSUM` - The full 64 character hexadecimal string of the SHA256 checksum of the current project.
 
-- `ORBIT_PROJECT_SOURCE` - The source url of the current project. This environment variable is only available during a protocol's execution.
+- `ORBIT_PROJECT_SOURCE` - The source URL of the current project. This environment variable is only available during a protocol's execution.
 
 - `ORBIT_TARGET` - The name of the target selected for the latest build process.
 

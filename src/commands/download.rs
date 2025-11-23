@@ -109,7 +109,7 @@ impl Download {
         // perform string swap on source url
         let processed_src = src.clone().replace_vars_in_url(&vtable);
 
-        vtable.add("orbit.project.repository", processed_src.get_url());
+        vtable.add("orbit.project.source", processed_src.get_url());
 
         // initialize the variable table as environment variables as well
         Environment::new().from_var_table(vtable)?.initialize();

@@ -185,7 +185,7 @@ pub fn synchronize_state_with_manifest(
                             ));
                         }
                         None => {
-                            panic!("missing repository field for a project in a channel: please open a bug report");
+                            panic!("missing source field for a project in a channel: please open a bug report");
                         }
                     }
                 }
@@ -231,7 +231,7 @@ pub fn synchronize_state_with_manifest(
                 if let Some(src) = le.get_source() {
                     Install::download_target_from_source(c, src, le.to_project_id_spec(), true)?;
                 } else {
-                    panic!("missing repository field from a known released version maintained in a lockfile");
+                    panic!("missing source field from a known released version maintained in a lockfile");
                 }
             }
             catalog.refresh_downloads()?;

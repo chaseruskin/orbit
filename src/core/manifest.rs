@@ -400,7 +400,7 @@ impl Manifest {
                 name: Name::new(),
                 version: ProjectVersion::default(),
                 uuid: Uuid::new(),
-                repository: None.into(),
+                source: None.into(),
                 keywords: Vec::new(),
                 description: None,
                 documentation: None,
@@ -588,7 +588,7 @@ pub struct Package {
     keywords: Vec<String>,
     /// Describes the URL for fetching the captured state's code
     #[serde(deserialize_with = "source::read_string", default)]
-    repository: Option<Source>,
+    source: Option<Source>,
     /// Known channels where this project should be published to
     channels: Option<Vec<String>>,
     /// Filepaths that should be explictly known to the user for project referencing
@@ -647,7 +647,7 @@ impl Package {
     }
 
     pub fn get_source(&self) -> &Option<Source> {
-        &self.repository
+        &self.source
     }
 
     pub fn get_channels(&self) -> &Option<Vec<String>> {
@@ -892,7 +892,7 @@ name = "gates"
 uuid = "0000000000000000000000000"
 version = "0.1.0"
 library = "common"
-repository = "https://github.com/ks-tech/gates/archive/refs/tags/0.1.0.zip"
+source = "https://github.com/ks-tech/gates/archive/refs/tags/0.1.0.zip"
 
 [project.metadata]
 foo = 1
@@ -934,28 +934,28 @@ const EX4: &str = r#"[project]
 name = "lab2"
 uuid = "0000000000000000000000000"
 version = "1.20.0"
-repository = "https://some.url"
+source = "https://some.url"
 "#;
 
 const EX5: &str = r#"[project]
 name = "lab2"
 uuid = "0000000000000000000000000"
 version = "1.20.0"
-repository = "https://some.url"
+source = "https://some.url"
 "#;
 
 const EX6: &str = r#"[project]
 name = "lab2"
 uuid = "0000000000000000000000000"
 version = "1.20.0"
-repository = "https://some.url"
+source = "https://some.url"
 "#;
 
 const EX7: &str = r#"[project]
 name = "lab2"
 uuid = "0000000000000000000000000"
 version = "1.20.0"
-repository = false
+source = false
 "#;
 
 const ERR1: &str = r#"[project]

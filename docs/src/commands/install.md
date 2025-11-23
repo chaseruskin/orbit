@@ -57,7 +57,7 @@ To remove a project from the catalog, see the `remove` command.
 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Install the project regardless of the cache slot occupancy
 
 `--offline`  
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Skip checking coherency with repository
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Skip checking coherency with source
 
 `--list, -l`  
 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; View available protocols and exit

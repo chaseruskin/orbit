@@ -17,6 +17,12 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 ## UNRELEASED
 
+### Features
+- Adds [Rust security audit](https://github.com/rustsec/rustsec) to audit dependency crates and report vulnerabilities during CI/CD
+
+### Changes
+- Reverts `repository` field back to `source` to be more consistent with its intended usage and flexible functionality
+
 ## 0.27.0
 
 ### Features

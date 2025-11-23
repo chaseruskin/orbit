@@ -54,11 +54,11 @@ This guide walks through the steps to have a successful release using a channel 
 version = "1.0.0"
 ```
 
-2. Define a source url for the project:
+2. Define a source URL for the project:
 ``` toml
 [project]
 # ...
-repository = "https://github.com/chaseruskin/gates/archive/{{orbit.project.version}}.zip"
+source = "https://github.com/chaseruskin/gates/archive/{{orbit.project.version}}.zip"
 ```
 
 3. Specify what source files in the project are public using the project manifest's `public` field:

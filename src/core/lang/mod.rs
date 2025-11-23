@@ -16,6 +16,7 @@
 //
 
 pub mod highlight;
+pub mod js;
 pub mod sv;
 pub mod verilog;
 pub mod vhdl;

@@ -249,9 +249,6 @@ impl Plan {
             // return Err(Error::TestbenchRequired)?;
         }
 
-        // Write the lock file
-        Self::write_lockfile(&working_project, &prj_graph, true, true)?;
-
         // compute minimal topological ordering
         let min_order = match all {
             // perform topological sort on the entire graph
@@ -643,7 +640,7 @@ pub fn download_missing_deps(
                         // verify the checksum
                         if Install::is_checksum_good(&dep.get_root()) == false {
                             crate::info!(
-                                "redownloading project {} due to bad checksum ...",
+                                "redownloading project {} due to bad checksum...",
                                 dep.get_man().get_project().into_project_id_spec()
                             );
                             require_download = true;
@@ -716,7 +713,7 @@ pub fn install_missing_deps(lf: &LockFile, le: &LockEntry, catalog: &Catalog) ->
                             match status.get_download(&ver) {
                                 Some(dep) => {
                                     crate::info!(
-                                        "reinstalling project {} due to bad checksum ...",
+                                        "reinstalling project {} due to bad checksum...",
                                         dep.get_man().get_project().into_project_id_spec()
                                     );
                                     // perform extra work if the Ip is virtual (from downloads)

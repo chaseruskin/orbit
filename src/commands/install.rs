@@ -437,7 +437,7 @@ impl Subcommand<Context> for Install {
             && target.get_man().get_project().get_source().is_some()
             && self.offline == false
         {
-            crate::info!("{}", "verifying coherency with project's source  ...");
+            crate::info!("{}", "verifying coherency with project's source...");
             let changes = Publish::test_download_and_install(&target, c, false, false)?;
             // remove from install so that we can install again
             if let Some(chg) = changes {
@@ -449,7 +449,7 @@ impl Subcommand<Context> for Install {
 
         // this code is only ran if the lock file matches the manifest and we aren't force to recompute
         // if target.can_use_lock() == true && self.force == false {
-        //     crate::info!("{}", "reading dependencies from lockfile ...");
+        //     crate::info!("{}", "reading dependencies from lockfile...");
         //     let env = Environment::new()
         //         .from_config(c.get_config())?
         //         .from_ip(&target)?;
@@ -510,7 +510,7 @@ impl Install {
 
         // verify the lock file is generated and up to date
         if force == false {
-            crate::info!("{}", "verifying lockfile is up to date ...");
+            crate::info!("{}", "verifying lockfile is up to date...");
             // TODO: use catalog to find the uuids of all dependencies to fill in?
             if local_prj.can_use_lock() == false {
                 return Err(Box::new(Error::PublishMissingLockfile(Hint::MakeLock)));
@@ -525,7 +525,7 @@ impl Install {
             Plan::write_lockfile(&local_prj, &prj_graph, true, true)?;
         }
 
-        crate::info!("{}", "reading dependencies from lockfile ...");
+        crate::info!("{}", "reading dependencies from lockfile...");
         let env = Environment::new()
             .from_config(c.get_config())?
             .from_project(&local_prj)?;
@@ -555,7 +555,7 @@ impl Install {
         catalog.refresh_installations()?;
 
         // verify the ip has zero relative dependencies
-        crate::info!("{}", "verifying all dependencies are stable ...");
+        crate::info!("{}", "verifying all dependencies are stable...");
         if let Some(dep) = local_prj
             .get_lock()
             .inner()
@@ -568,7 +568,7 @@ impl Install {
         }
 
         // verify internal design unit visibility
-        crate::info!("verifying source file visibility ...");
+        crate::info!("verifying source file visibility...");
         if let Err(e) = Publish::check_design_unit_visibility_okay(
             &local_prj,
             c.are_units_private_by_default(),
@@ -580,7 +580,7 @@ impl Install {
         }
 
         // verify the graph build with no errors
-        crate::info!("verifying hardware graph construction ...");
+        crate::info!("verifying hardware graph construction...");
         if let Err(e) =
             Publish::check_graph_builds_okay(&local_prj, &catalog, c.are_units_private_by_default())
         {
@@ -698,7 +698,7 @@ impl Install {
         let ip_spec = src.get_man().get_project().into_project_id_spec();
 
         if verbose == true {
-            crate::info!("installing project {} ...", &ip_spec);
+            crate::info!("installing project {}...", &ip_spec);
         }
 
         // perform sha256 on the temporary cloned directory
@@ -745,7 +745,7 @@ impl Install {
                     return Ok(None);
                 } else {
                     if verbose == true {
-                        crate::info!("reinstalling project {} due to bad checksum ...", ip_spec);
+                        crate::info!("reinstalling project {} due to bad checksum...", ip_spec);
                     }
                     // blow directory up for re-install
                     std::fs::remove_dir_all(&cache_slot)?;

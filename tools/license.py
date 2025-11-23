@@ -41,6 +41,10 @@ OLD_HEADER = '''//
 
 '''
 
+OTHER_HEADER = '''//
+// BSD 3-Clause License
+'''
+
 def main():
     source_files = glob.glob('./src/**/*.rs', recursive=True)
     print('info: found', len(source_files), 'source files')
@@ -53,6 +57,9 @@ def main():
         data = ''
         with open(source, 'r', encoding='utf-8') as fd:
             data = fd.read()
+            # check if this file is a different header
+            if data.startswith(OTHER_HEADER) == True:
+                continue
             # check if it starts with the latest header
             if data.startswith(NEW_HEADER) == True:
                 latest += 1

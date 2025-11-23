@@ -23,6 +23,9 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 ### Changes
 - Reverts `repository` field back to `source` to be more consistent with its intended usage and flexible functionality
 
+### Fixes
+- Removes rendundant lockfile saving from `orbit build` and `orbit test` commands
+  
 ## 0.27.0
 
 ### Features

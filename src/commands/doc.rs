@@ -15,9 +15,6 @@
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-use std::path::PathBuf;
-use std::process::Command;
-
 use crate::commands::helps::doc;
 use crate::commands::plan;
 use crate::core::catalog::Catalog;
@@ -27,6 +24,7 @@ use crate::core::fileset::is_systemverilog;
 use crate::core::fileset::is_verilog;
 use crate::core::fileset::is_vhdl;
 use crate::core::lang;
+use crate::core::lang::js::HIGHLIGHT;
 use crate::core::lang::sv::symbols::SystemVerilogSymbol;
 use crate::core::lang::sv::token::keyword::Keyword as SvKeyword;
 use crate::core::lang::sv::token::tokenizer::SystemVerilogTokenizer;
@@ -44,14 +42,18 @@ use crate::error::LastError;
 use crate::info;
 use crate::util::anyerror::Fault;
 use crate::util::environment;
+use crate::util::filesystem;
 use crate::util::filesystem::LockZone;
 use crate::util::filesystem::{PRJ_CATALOG_EX_LOCK_NAME, PRJ_CATALOG_SH_LOCK_NAME};
 use crate::util::sha256;
 use crate::warn;
-use ansi_to_html::Converter;
-use markdown;
+use mdbook_driver::config::Config;
+use mdbook_driver::MDBook;
 use std::collections::HashMap;
 use std::path::Path;
+use std::path::PathBuf;
+use std::process::Command;
+use tempfile::TempDir;
 
 use cliproc::{cli, proc, stage::*};
 use cliproc::{Arg, Cli, Help, Subcommand};
@@ -246,12 +248,34 @@ impl Doc {
             }
         }
 
-        let index_path = self.save(
-            output_path,
+        let md_output_path = TempDir::new()?.keep();
+
+        // Write the markdown files and then export into an mdbook (HTML)
+        match self.save_md(
+            &md_output_path,
             all_doc_prjs,
             self.doc_priv_items,
             priv_by_default,
-        )?;
+        ) {
+            Ok(()) => (),
+            Err(e) => {
+                std::fs::remove_dir_all(md_output_path)?;
+                return Err(e);
+            }
+        }
+
+        info!("compiling documentation...");
+
+        // Export the markdown files into an mdbook
+        let index_path = match self.export_html(&md_output_path, &output_path) {
+            Ok(p) => p,
+            Err(e) => {
+                std::fs::remove_dir_all(md_output_path)?;
+                return Err(e);
+            }
+        };
+
+        std::fs::remove_dir_all(md_output_path)?;
 
         info!(
             "documentation generated at: {:?}",
@@ -266,39 +290,61 @@ impl Doc {
     }
 }
 
+#[derive(Debug, PartialEq)]
+pub enum PageLevel {
+    Book,
+    Project,
+    Document,
+    Source,
+}
+
+impl PageLevel {
+    pub fn as_usize(&self) -> usize {
+        match &self {
+            Self::Book => 0,
+            Self::Project => 1,
+            Self::Document => 2,
+            Self::Source => 3,
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+struct Page {
+    level: PageLevel,
+    title: String,
+    link: PathBuf,
+}
+
+impl Page {
+    pub fn new(level: PageLevel, title: String, link: PathBuf) -> Self {
+        Self {
+            level: level,
+            title: title,
+            link: link,
+        }
+    }
+
+    pub fn get_link(&self) -> &PathBuf {
+        &self.link
+    }
+}
+
+impl std::fmt::Display for Page {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}- [{}]({})",
+            String::from("  ").repeat(self.level.as_usize()),
+            self.title,
+            filesystem::into_std_str(self.link.clone())
+        )
+    }
+}
+
 struct DocProject<'a> {
     doc_units: Vec<DocUnit>,
     project: &'a Project,
-}
-
-/// Converts Markdown syntax (GFM) into valid HTML.
-///
-/// See GFM specification: https://github.github.com/gfm/.
-pub fn to_html(s: &str) -> String {
-    inject_css_style(&markdown::to_html_with_options(s, &markdown::Options::gfm()).unwrap())
-}
-
-/// Accepts an HTML formatted string `s` and adds certain styling options to the HTML
-/// using inline CSS.
-fn inject_css_style(s: &str) -> String {
-    let result = s.replace(
-        "<table>",
-        r#"<table style="width: 100%; border-collapse: collapse;">"#,
-    );
-    let result = result.replace(
-        "<td ",
-        r#"<td style="border: 1px solid black; padding: 8px;""#,
-    );
-    let result = result.replace(
-        "<th ",
-        r#"<th style="border: 1px solid black; padding: 8px;""#,
-    );
-    // Fix broken newlines
-    let result = result.replace("&lt;br&gt;", "<br>");
-    // apply ASNI to HTML color conversion
-    let converter = Converter::new().skip_escape(true).skip_optimize(true);
-    let result = converter.convert(&result).unwrap();
-    result
 }
 
 impl<'a> DocProject<'a> {
@@ -317,12 +363,12 @@ impl<'a> DocProject<'a> {
     ///
     /// Assumes `output_path` is the directory where to create the doc project's
     /// artifacts.
-    pub fn save(
+    pub fn save_md(
         &self,
         output_path: &PathBuf,
         doc_priv_items: bool,
         priv_by_default: bool,
-    ) -> Result<(), Fault> {
+    ) -> Result<Vec<Page>, Fault> {
         // use a unique name to avoid path conflicts of same project, multiple version
         let root_dir = output_path.join(self.into_out_name());
         // create the root directory
@@ -334,15 +380,15 @@ impl<'a> DocProject<'a> {
         // write the project's main index file
         self.write_index_file(&root_dir, &prj_unit_map, doc_priv_items)?;
         // write all source files
-        self.write_source_files(&root_dir, &prj_unit_map)?;
-        Ok(())
+        let pages = self.write_source_files(&root_dir, &prj_unit_map)?;
+        Ok(pages)
     }
 
     fn write_source_files(
         &self,
         output_path: &PathBuf,
         prj_unit_map: &HashMap<LangIdentifier, LangUnit>,
-    ) -> Result<(), Fault> {
+    ) -> Result<Vec<Page>, Fault> {
         let source_dus = self.doc_units.iter().filter(|f| {
             f.get_name().is_some()
                 && (f.is_type(DocType::Entity)
@@ -356,6 +402,8 @@ impl<'a> DocProject<'a> {
             .filter(|f| f.get_name().is_some() && f.as_parent_name().is_some())
             .collect();
 
+        let mut pages = Vec::new();
+
         // Write each source code file into the documentation
         for ds in &doc_subus {
             Self::import_hdl_source_to_md(output_path, &ds.get_source())?;
@@ -367,9 +415,10 @@ impl<'a> DocProject<'a> {
                 .iter()
                 .filter(|f| f.as_parent_name() == du.get_name())
                 .collect();
-            self.write_source_file(output_path, du, &prj_unit_map, unit_subus)?;
+            let page = self.write_source_file(output_path, du, &prj_unit_map, unit_subus)?;
+            pages.push(page);
         }
-        Ok(())
+        Ok(pages)
     }
 
     /// Returns the name of the file that will contain the raw HDL source code for the documentation generation.
@@ -391,7 +440,7 @@ impl<'a> DocProject<'a> {
 
         let src_path = std::path::PathBuf::from(src_src_path);
         let file_name = src_path.file_stem().unwrap_or_default().to_string_lossy();
-        let md_src_file = format!("{}.{}.{}.html", file_name, ext, sha);
+        let md_src_file = format!("{}.{}.{}.md", file_name, ext, sha);
         (md_src_file, lang)
     }
 
@@ -399,7 +448,7 @@ impl<'a> DocProject<'a> {
     /// browser.
     ///
     /// Returns the path to the destination source file.
-    fn import_hdl_source_to_md(output_path: &PathBuf, src_file: &str) -> Result<String, Fault> {
+    fn import_hdl_source_to_md(output_path: &PathBuf, src_file: &str) -> Result<Page, Fault> {
         // copy the source file contents to a new markdown file
         let (md_src_file, lang) = Self::get_hdl_source_md_name(src_file);
         let tar_src_path = output_path.join(&md_src_file);
@@ -412,9 +461,13 @@ impl<'a> DocProject<'a> {
             };
             let raw_src = lang::read_to_string(&src_file)?;
             let src_contents = format!("``` {}\n{}\n\n```\n", md_lang, raw_src);
-            std::fs::write(tar_src_path, to_html(&src_contents))?;
+            std::fs::write(&tar_src_path, &src_contents)?;
         }
-        Ok(md_src_file)
+        Ok(Page::new(
+            PageLevel::Source,
+            String::from("source"),
+            tar_src_path,
+        ))
     }
 
     /// Writes the documentation page for the given design unit.
@@ -424,26 +477,31 @@ impl<'a> DocProject<'a> {
         du: &DocUnit,
         unit_map: &UnitMap,
         unit_subus: Vec<&&DocUnit>,
-    ) -> Result<(), Fault> {
+    ) -> Result<Page, Fault> {
         let du_name = du.get_name().unwrap();
-        let unit_path = output_path.join(&format!("{}.html", du_name));
+        let unit_path = output_path.join(&format!("{}.md", du_name));
 
         let mut contents = String::new();
         // try to find the source file
         let src_file = match unit_map.get(du_name) {
-            Some(lu) => Some(Self::import_hdl_source_to_md(
-                output_path,
-                lu.get_source_file(),
-            )?),
+            Some(lu) => Some(
+                Self::import_hdl_source_to_md(output_path, lu.get_source_file())?
+                    .get_link()
+                    .clone(),
+            ),
             None => None,
         };
 
         if let Some(lu) = unit_map.get(du_name) {
-            contents.push_str(&to_html(&du.to_markdown(src_file, lu, unit_subus)));
+            contents.push_str(&du.to_markdown(src_file, lu, unit_subus));
         }
 
         std::fs::write(&unit_path, contents)?;
-        Ok(())
+        Ok(Page::new(
+            PageLevel::Document,
+            du_name.to_string(),
+            unit_path,
+        ))
     }
 
     /// Adds a section list for the project's overall index file.
@@ -480,7 +538,7 @@ impl<'a> DocProject<'a> {
                     Some(sum) => format!(": {}", Doc::fix_sentence(&sum)),
                     None => String::new(),
                 };
-                contents.push_str(&format!("- [__{}__]({}.html){}\n", name, name, desc));
+                contents.push_str(&format!("- [__{}__]({}.md){}\n", name, name, desc));
             }
         }
         if said_title == true {
@@ -495,7 +553,7 @@ impl<'a> DocProject<'a> {
         prj_unit_map: &HashMap<LangIdentifier, LangUnit>,
         doc_priv_items: bool,
     ) -> Result<(), Fault> {
-        let index_path = output_path.join("index.html");
+        let index_path = output_path.join("index.md");
         let name = self.project.get_man().get_project().get_name().to_string();
         let desc = self
             .project
@@ -538,7 +596,7 @@ impl<'a> DocProject<'a> {
             doc_priv_items,
         ));
 
-        std::fs::write(&index_path, to_html(&contents))?;
+        std::fs::write(&index_path, &contents)?;
         Ok(())
     }
 
@@ -580,32 +638,92 @@ impl Doc {
         )
     }
 
+    /// Transforms the set of Markdown files into a nice set of HTML files via mdbook.
+    fn export_html(
+        &self,
+        md_output_path: &PathBuf,
+        html_output_path: &PathBuf,
+    ) -> Result<PathBuf, Fault> {
+        // Tailor the configuration
+        let mut cfg = Config::default();
+        cfg.book.title = Some(String::from("Documentation"));
+        cfg.build.build_dir = html_output_path.to_path_buf();
+        cfg.book.src = md_output_path.to_path_buf();
+        cfg.set("output.html.no-section-label", true)?;
+        cfg.set("output.html.fold.enable", true)?;
+        cfg.set("output.html.fold.level", 1)?;
+        cfg.set("output.html.sidebar-header-nav", false)?;
+
+        // Provide custom theme for VHDL and Verilog syntax highlighting
+        std::fs::create_dir(md_output_path.join("theme"))?;
+        let highlight_js_path = md_output_path.join("theme").join("highlight.js");
+        std::fs::write(&highlight_js_path, HIGHLIGHT)?;
+
+        // Provide custom CSS (layout/sizing)
+        let custom_css_path = md_output_path.join("layout.css");
+        std::fs::write(&custom_css_path, CUSTOM_CSS)?;
+        cfg.set("output.html.additional-css", [custom_css_path])?;
+
+        // Load and build the book
+        let book = MDBook::load_with_config(md_output_path, cfg)?;
+        book.build()?;
+        Ok(html_output_path.join("index.html"))
+    }
+
     /// Saves all the provided Documentation projects and returns the single entry INDEX file path.
-    fn save(
+    fn save_md(
         &self,
         output_path: &PathBuf,
         doc_projects: Vec<DocProject>,
         doc_priv_items: bool,
         priv_by_default: bool,
-    ) -> Result<PathBuf, Fault> {
+    ) -> Result<(), Fault> {
         std::fs::create_dir_all(&output_path)?;
         // create a cache tag file if does not exist
         match Context::is_cache_tag_valid(&output_path.parent().unwrap().to_path_buf()) {
             Ok(_) => (),
             Err(e) => std::fs::write(&e, context::CACHE_TAG)?,
         }
+
+        // track the pages to include into the summary file
+        let summary_path = output_path.join("SUMMARY.md");
+        let mut summary_data = String::from("# Summary\n");
+
         // track the contents for the entry index file
-        let index_path = output_path.join("index.html");
+        let index_path = output_path.join("index.md");
         let mut index_data = String::new();
+
+        let page = Page::new(
+            PageLevel::Book,
+            String::from("Projects"),
+            index_path.clone(),
+        );
+        summary_data.push_str(&format!("{}\n", page));
+
         index_data.push_str(&format!("# Projects\n"));
         // save each project
         for dp in doc_projects {
-            dp.save(output_path, doc_priv_items, priv_by_default)?;
+            let name = dp.project.get_man().get_project().get_name();
+            let version = dp.project.get_man().get_project().get_version();
+            let uuid = dp.project.get_man().get_project().get_uuid();
+            let dp_link = format!("{}/index.md", dp.into_out_name());
+            let page = Page::new(
+                PageLevel::Project,
+                format!(
+                    "{}:{} ({})",
+                    name,
+                    version,
+                    uuid.to_string().get(0..8).unwrap()
+                ),
+                PathBuf::from(&dp_link),
+            );
+            summary_data.push_str(&format!("{}\n", page));
+            // Write the data that will go on the starting page (list of all projects)
             index_data.push_str(&format!(
-                "- [__{0}__ __{1}__ ({2})]({4}/index.html){3}\n",
-                dp.project.get_man().get_project().get_name(),
-                dp.project.get_man().get_project().get_version(),
-                dp.project.get_man().get_project().get_uuid(),
+                "- [__{0}__ __{1}__ ({2})]({4}){3}\n",
+                name,
+                version,
+                uuid,
                 {
                     if let Some(desc) = dp.project.get_man().get_project().get_description() {
                         format!(": {}", Doc::fix_sentence(&desc))
@@ -613,14 +731,21 @@ impl Doc {
                         String::new()
                     }
                 },
-                dp.into_out_name(),
+                &dp_link,
             ));
+
+            let pages = dp.save_md(output_path, doc_priv_items, priv_by_default)?;
+            for page in pages {
+                summary_data.push_str(&format!("{}\n", page));
+            }
         }
 
-        // write the entry index file
-        std::fs::write(&index_path, to_html(&index_data))?;
+        // Write the entry index file
+        std::fs::write(&index_path, &index_data)?;
+        // Write the summary file (contains the list of all pages to compile)
+        std::fs::write(&summary_path, summary_data)?;
 
-        Ok(index_path)
+        Ok(())
     }
 
     fn collect_doc_units(prj: &Project) -> Result<Vec<DocUnit>, Fault> {
@@ -629,7 +754,6 @@ impl Doc {
         let mut all_doc_units = Vec::new();
 
         for src in &src_files {
-            // println!("documenting: {}", src);
             if is_vhdl(src) {
                 all_doc_units.append(&mut Self::document_vhdl(src)?);
             } else if is_verilog(src) {
@@ -928,9 +1052,9 @@ impl Statement {
 impl std::fmt::Display for Statement {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Vhdl(stmt) => write!(f, "{}", stmt.to_colored_string()),
-            Self::Verilog(stmt) => write!(f, "{}", stmt.to_colored_string()),
-            Self::SystemVerilog(stmt) => write!(f, "{}", stmt.to_colored_string()),
+            Self::Vhdl(stmt) => write!(f, "{}", stmt.to_string()),
+            Self::Verilog(stmt) => write!(f, "{}", stmt.to_string()),
+            Self::SystemVerilog(stmt) => write!(f, "{}", stmt.to_string()),
         }
     }
 }
@@ -1017,7 +1141,7 @@ impl DocUnit {
     /// Writes the unit to it's markdown formatted string.
     pub fn to_markdown(
         &self,
-        src_file: Option<String>,
+        src_file: Option<PathBuf>,
         unit: &LangUnit,
         subs: Vec<&&DocUnit>,
     ) -> String {
@@ -1035,7 +1159,7 @@ impl DocUnit {
             contents.push_str(&format!(
                 "[Source ({})]({})\n\n",
                 unit.get_lang().to_proper_name(),
-                src
+                filesystem::into_std_str(src.clone()),
             ));
         }
 
@@ -1589,3 +1713,21 @@ impl DocUnit {
         }
     }
 }
+
+/// Custom CSS for sizing / layout
+const CUSTOM_CSS: &str = r##":root {
+  --content-max-width: 80%;
+}
+
+.chapter li.part-title {
+  color: var(--sidebar-fg);
+  margin-bottom: -5px;
+  margin-top: 11px;
+  font-weight: bold;
+}
+
+.chapter li.chapter-item {
+  line-height: 1.5em;
+  margin-left: 0.5em;
+  margin-top: 0.6em;
+}"##;

@@ -195,6 +195,40 @@ impl Subcommand<Context> for Get {
     }
 }
 
+use serde_derive::Serialize;
+
+#[derive(Debug, PartialEq, Serialize)]
+struct EntityJson<'a> {
+    #[serde(flatten)]
+    entity: &'a Entity,
+    file: &'a str,
+}
+
+impl<'a> EntityJson<'a> {
+    pub fn new(entity: &'a Entity, file: &'a str) -> Self {
+        Self {
+            entity: entity,
+            file: file,
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Serialize)]
+struct ModuleJson<'a> {
+    #[serde(flatten)]
+    module: &'a Module,
+    file: &'a str,
+}
+
+impl<'a> ModuleJson<'a> {
+    pub fn new(module: &'a Module, file: &'a str) -> Self {
+        Self {
+            module: module,
+            file: file,
+        }
+    }
+}
+
 impl Get {
     fn run(&self, project: &Project, is_local: bool, c: &Context) -> Result<(), Fault> {
         // collect all hdl files and parse them
@@ -240,6 +274,8 @@ impl Get {
             }
         };
 
+        let source_file = unit.get_source_file();
+
         // determine how to handle unit display
         match unit.get_lang() {
             Lang::Vhdl => {
@@ -249,9 +285,20 @@ impl Get {
                     LangConversion::Sv => {
                         // convert the entity to a SV module
                         let module = entity.to_sv_module()?;
-                        self.display_verilog_module(&project, &module, &c.get_sv_format())
+                        self.display_verilog_module(
+                            &project,
+                            &module,
+                            &c.get_sv_format(),
+                            source_file,
+                        )
                     }
-                    _ => self.display_vhdl_entity(&project, entity, is_local, &c.get_vhdl_format()),
+                    _ => self.display_vhdl_entity(
+                        &project,
+                        entity,
+                        is_local,
+                        &c.get_vhdl_format(),
+                        source_file,
+                    ),
                 }
             }
             Lang::Verilog => {
@@ -261,9 +308,20 @@ impl Get {
                     LangConversion::Vhdl => {
                         // convert the entity to a SV module
                         let entity = module.to_vhdl_entity()?;
-                        self.display_vhdl_entity(&project, &entity, is_local, &c.get_vhdl_format())
+                        self.display_vhdl_entity(
+                            &project,
+                            &entity,
+                            is_local,
+                            &c.get_vhdl_format(),
+                            source_file,
+                        )
                     }
-                    _ => self.display_verilog_module(&project, module, &c.get_sv_format()),
+                    _ => self.display_verilog_module(
+                        &project,
+                        module,
+                        &c.get_sv_format(),
+                        source_file,
+                    ),
                 }
             }
             Lang::SystemVerilog => {
@@ -277,9 +335,20 @@ impl Get {
                     LangConversion::Vhdl => {
                         // convert the entity to a SV module
                         let entity = module.to_vhdl_entity()?;
-                        self.display_vhdl_entity(&project, &entity, is_local, &c.get_vhdl_format())
+                        self.display_vhdl_entity(
+                            &project,
+                            &entity,
+                            is_local,
+                            &c.get_vhdl_format(),
+                            source_file,
+                        )
                     }
-                    _ => self.display_verilog_module(&project, module, &c.get_sv_format()),
+                    _ => self.display_verilog_module(
+                        &project,
+                        module,
+                        &c.get_sv_format(),
+                        source_file,
+                    ),
                 }
             }
         }?;
@@ -293,6 +362,7 @@ impl Get {
         entity: &Entity,
         is_local: bool,
         fmt: &VhdlFormat,
+        source: &str,
     ) -> Result<(), Fault> {
         // determine if default print should appear
         let default_output = self.architectures == false
@@ -397,7 +467,10 @@ impl Get {
             if need_sep == true {
                 println!();
             }
-            println!("{}", serde_json::to_string(&entity)?);
+            println!(
+                "{}",
+                serde_json::to_string(&EntityJson::new(&entity, &source))?
+            );
         }
 
         Ok(())
@@ -408,6 +481,7 @@ impl Get {
         _ip: &Project,
         module: &Module,
         fmt: &SystemVerilogFormat,
+        source: &str,
     ) -> Result<(), Fault> {
         // determine if default print should appear
         let default_output = self.architectures == false
@@ -461,7 +535,10 @@ impl Get {
             if need_sep == true {
                 println!();
             }
-            println!("{}", serde_json::to_string(&module)?);
+            println!(
+                "{}",
+                serde_json::to_string(&ModuleJson::new(&module, &source))?
+            );
         }
 
         Ok(())

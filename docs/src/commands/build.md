@@ -24,6 +24,11 @@ A target must be provided for the build command to run. A default target can
 be specified in a configuration file, which will be used when a target is
 omitted from the command-line.
 
+When the `--top` option is omitted, all possible top-level units will be
+included, leaving the respective top environment variables empty. Filesets 
+using valid string swapping variables such as `orbit.top.name` will resolve 
+to the wildcard character (`*`).
+
 If `--list` is used, then it will display a list of the available targets to
 the user. Using `--list` in combination with a target from `--target` will
 display any detailed help information the target has documented in its 
@@ -65,9 +70,6 @@ returned from the user-defined execution process is propagated through Orbit.
 `--list, -l`  
 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; View available targets and exit
 
-`--all`  
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Include all hdl files of the current project
-
 `--fileset <key=glob>...`  
 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; A glob-style pattern identified by name to include in the blueprint
 
@@ -86,9 +88,8 @@ returned from the user-defined execution process is propagated through Orbit.
 ## __EXAMPLES__
 
 ```
-orbit build --target xsim -- --elab
-orbit build --command python3 --target pysim
-orbit build --all --target-dir build --target ghdl
-orbit build --target xsim --force -- --help
+orbit build
+orbit build --target quartus --top riscv_cpu
+orbit build -- --some-arg1 --some-arg2
 ```
 

@@ -52,7 +52,6 @@ pub struct Build {
     list: bool,
     force: bool,
     dirty: bool,
-    all: bool,
     command: Option<String>,
     top: Option<Identifier>,
     plan: Option<Scheme>,
@@ -70,7 +69,6 @@ impl Subcommand<Context> for Build {
             list: cli.check(Arg::flag("list").switch('l'))?,
             verbose: cli.check(Arg::flag("verbose"))?,
             force: cli.check(Arg::flag("force"))?,
-            all: cli.check(Arg::flag("all"))?,
             dirty: cli.check(Arg::flag("keep").switch('k'))?,
             // Options
             top: cli.get(Arg::option("top").value("unit"))?,
@@ -170,6 +168,8 @@ impl Subcommand<Context> for Build {
             false,
         )?;
 
+        let is_all = self.top.is_none();
+
         // plan for the provided target
         Plan::run(
             &current_project,
@@ -178,12 +178,13 @@ impl Subcommand<Context> for Build {
             catalog,
             self.dirty == false,
             self.force,
-            self.all,
+            is_all,
             &None,
             &self.top,
             &self.filesets,
             &plan,
             false,
+            is_all,
             false,
             envs,
             c.are_units_private_by_default(),

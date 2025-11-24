@@ -42,7 +42,9 @@ The following schema is implemented for the json output of `orbit get`:
       "string"
   ],
   // native language of the design unit (choices: "vhdl", "verilog", "systemverilog")
-  "language": "string"
+  "language": "string",
+  // full path to the source file that declares this design unit
+  "file": "string"
 }
 ```
 

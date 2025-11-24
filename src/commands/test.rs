@@ -51,7 +51,6 @@ pub struct Test {
     dirty: bool,
     target_dir: Option<String>,
     force: bool,
-    all: bool,
     plan: Option<Scheme>,
     verbose: bool,
     dut: Option<Identifier>,
@@ -68,7 +67,6 @@ impl Subcommand<Context> for Test {
             list: cli.check(Arg::flag("list").switch('l'))?,
             verbose: cli.check(Arg::flag("verbose"))?,
             force: cli.check(Arg::flag("force"))?,
-            all: cli.check(Arg::flag("all"))?,
             dirty: cli.check(Arg::flag("keep").switch('k'))?,
             // Options
             dut: cli.get(Arg::option("dut").value("unit"))?,
@@ -176,6 +174,9 @@ impl Subcommand<Context> for Test {
             false,
         )?;
 
+        // check if all mode is being used
+        let is_all = self.dut.is_none() && self.bench.is_none();
+
         // plan the target
         Plan::run(
             &current_project,
@@ -184,12 +185,13 @@ impl Subcommand<Context> for Test {
             catalog,
             self.dirty == false,
             self.force,
-            self.all,
+            is_all,
             &self.bench,
             &self.dut,
             &self.filesets,
             &plan,
             true,
+            is_all,
             true,
             envs,
             c.are_units_private_by_default(),

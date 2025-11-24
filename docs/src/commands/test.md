@@ -24,6 +24,11 @@ A target must be provided for the test command to run. A default target can
 be specified in a configuration file, which will be used when a target is
 omitted from the command-line.
 
+When the `--dut` option and the `--tb` option are omitted, all possible 
+DUTs and TBs are included, leaving the respective DUT and TB environment 
+variables empty. Filesets using valid string swapping variables such as 
+`orbit.dut.name` will resolve to the wildcard character (`*`).
+
 If `--list` is used, then it will display a list of the available targets to
 the user. Using `--list` in combination with a target from `--target` will
 display any detailed help information the target has documented in its 
@@ -67,9 +72,6 @@ returned from the user-defined execution process is propagated through Orbit.
 
 `--list, -l`  
 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; View available targets and exit
-
-`--all`  
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Include all hdl files of the current project
 
 `--fileset <key=glob>...`  
 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; A glob-style pattern identified by name to include in the blueprint

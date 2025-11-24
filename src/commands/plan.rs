@@ -88,6 +88,7 @@ impl Plan {
         filesets: &Option<Vec<Fileset>>,
         scheme: &Scheme,
         is_test: bool,
+        is_all_mode: bool,
         allow_bench: bool,
         envs: Environment,
         priv_by_def: bool,
@@ -128,6 +129,7 @@ impl Plan {
                         &String::new(),
                         target,
                         is_test,
+                        is_all_mode,
                     )?;
                     // create a blueprint file
                     crate::warn!(
@@ -379,21 +381,37 @@ impl Plan {
             None => String::new(),
         };
 
-        // print information (maybe also print the plugin saved to .env too?)
-        match top_name.is_empty() {
-            false => match is_test {
-                true => crate::info!("dut set to {}", top_name.blue()),
-                false => crate::info!("top-level set to {}", top_name.blue()),
-            },
-            true => match is_test {
-                true => crate::warn!("no dut set"),
-                false => crate::warn!("no top-level set"),
-            },
-        }
-        if is_test == true {
-            match bench_name.is_empty() {
-                false => crate::info!("testbench set to {}", bench_name.blue()),
-                true => crate::warn!("no testbench set"),
+        // print information (maybe also print the target saved to .env too?)
+        match is_all_mode {
+            true => {
+                // Do nothing when using all source files
+                // match is_test {
+                //     true => {
+                //         crate::info!("no dut set");
+                //         crate::info!("no testbench set");
+                //     }
+                //     false => {
+                //         crate::info!("no top-level set");
+                //     }
+                // }
+            }
+            false => {
+                match top_name.is_empty() {
+                    false => match is_test {
+                        true => crate::info!("dut set to {}", top_name.blue()),
+                        false => crate::info!("top-level set to {}", top_name.blue()),
+                    },
+                    true => match is_test {
+                        true => crate::warn!("no dut set"),
+                        false => crate::warn!("no top-level set"),
+                    },
+                }
+                if is_test == true {
+                    match bench_name.is_empty() {
+                        false => crate::info!("testbench set to {}", bench_name.blue()),
+                        true => crate::warn!("no testbench set"),
+                    }
+                }
             }
         }
 
@@ -413,6 +431,16 @@ impl Plan {
             if is_test == true {
                 vtable.add("orbit.tb.name", &bench_name);
                 vtable.add("orbit.dut.name", &top_name);
+
+                // overwrite the values if in ALL mode
+                if is_all_mode == true {
+                    vtable.add("orbit.tb.name", "*");
+                    vtable.add("orbit.dut.name", "*");
+                }
+            }
+            // overwrite the top value if in ALL mode
+            if is_all_mode == true {
+                vtable.add("orbit.top.name", "*");
             }
 
             // store data in a map for quicker look-ups when comparing to target-defind filesets
@@ -501,6 +529,7 @@ impl Plan {
             &bench_json,
             target,
             is_test,
+            is_all_mode,
         )?;
         // create a blueprint file
         crate::info!(
@@ -1792,6 +1821,7 @@ impl Plan {
         bench_json: &str,
         target: &Target,
         is_test: bool,
+        is_all_mode: bool,
     ) -> Result<PathBuf, Fault> {
         let output_path = target_path.join(target.get_name());
         // create a output build directorie(s) if they do not exist
@@ -1812,7 +1842,9 @@ impl Plan {
         envs = envs
             .add(EnvVar::with(
                 environment::ORBIT_TOP_NAME,
-                if is_test == false || bench_name.len() == 0 {
+                if is_all_mode == true {
+                    ""
+                } else if is_test == false || bench_name.len() == 0 {
                     &top_name
                 } else {
                     &bench_name
@@ -1820,7 +1852,9 @@ impl Plan {
             ))
             .add(EnvVar::with(
                 environment::ORBIT_TOP_FILE,
-                if is_test == false || bench_name.len() == 0 {
+                if is_all_mode == true {
+                    ""
+                } else if is_test == false || bench_name.len() == 0 {
                     &top_file
                 } else {
                     &bench_file
@@ -1828,7 +1862,9 @@ impl Plan {
             ))
             .add(EnvVar::with(
                 environment::ORBIT_TOP_JSON,
-                if is_test == false || bench_name.len() == 0 {
+                if is_all_mode == true {
+                    ""
+                } else if is_test == false || bench_name.len() == 0 {
                     &top_json
                 } else {
                     &bench_json
@@ -1836,19 +1872,46 @@ impl Plan {
             ))
             .add(EnvVar::with(
                 environment::ORBIT_DUT_NAME,
-                if is_test == true { &top_name } else { "" },
+                if is_all_mode == true {
+                    ""
+                } else if is_test == true {
+                    &top_name
+                } else {
+                    ""
+                },
             ))
             .add(EnvVar::with(
                 environment::ORBIT_DUT_FILE,
-                if is_test == true { &top_file } else { "" },
+                if is_all_mode == true {
+                    ""
+                } else if is_test == true {
+                    &top_file
+                } else {
+                    ""
+                },
             ))
             .add(EnvVar::with(
                 environment::ORBIT_DUT_JSON,
-                if is_test == true { &top_json } else { "" },
+                if is_all_mode == true {
+                    ""
+                } else if is_test == true {
+                    &top_json
+                } else {
+                    ""
+                },
             ))
-            .add(EnvVar::with(environment::ORBIT_TB_NAME, &bench_name))
-            .add(EnvVar::with(environment::ORBIT_TB_FILE, &bench_file))
-            .add(EnvVar::with(environment::ORBIT_TB_JSON, &bench_json))
+            .add(EnvVar::with(
+                environment::ORBIT_TB_NAME,
+                if is_all_mode == true { "" } else { &bench_name },
+            ))
+            .add(EnvVar::with(
+                environment::ORBIT_TB_FILE,
+                if is_all_mode == true { "" } else { &bench_file },
+            ))
+            .add(EnvVar::with(
+                environment::ORBIT_TB_JSON,
+                if is_all_mode == true { "" } else { &bench_json },
+            ))
             .add(EnvVar::with(
                 environment::ORBIT_BLUEPRINT,
                 &blueprint.get_filename(),

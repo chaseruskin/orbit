@@ -35,6 +35,11 @@ DESCRIPTION
     be specified in a configuration file, which will be used when a target is
     omitted from the command-line.
     
+    When the '--top' option is omitted, all possible top-level units will be
+    included, leaving the respective top environment variables empty. Filesets 
+    using valid string swapping variables such as 'orbit.top.name' will resolve 
+    to the wildcard character ('*').
+    
     If '--list' is used, then it will display a list of the available targets to
     the user. Using '--list' in combination with a target from '--target' will
     display any detailed help information the target has documented in its 
@@ -75,9 +80,6 @@ OPTIONS
     --list, -l
         View available targets and exit
 
-    --all
-        Include all hdl files of the current project
-
     --fileset <key=glob>...
         A glob-style pattern identified by name to include in the blueprint
 
@@ -94,8 +96,7 @@ OPTIONS
         Arguments to pass to the target
 
 EXAMPLES
-    orbit build --target xsim -- --elab
-    orbit build --command python3 --target pysim
-    orbit build --all --target-dir build --target ghdl
-    orbit build --target xsim --force -- --help
+    orbit build
+    orbit build --target quartus --top riscv_cpu
+    orbit build -- --some-arg1 --some-arg2
 "#;

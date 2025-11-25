@@ -18,6 +18,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 ## UNRELEASED
 
 ### Features
+- Adds new file as part of the output from the planning stage - the legend file (`legend.json`). The legend stores the list of metadata for each entity/module that is local to the current project
 - Adds [Rust security audit](https://github.com/rustsec/rustsec) to audit dependency crates and report vulnerabilities during CI/CD
 - Adds "file" to JSON data of a design unit
 
@@ -25,6 +26,8 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - Default behavior for `orbit build` and `orbit test` when not specifying `--top`, `--dut`, and `--tb` is to include all source files (deprecates `--all` flag) and no longer attempts to auto-detect a top-level, dut, or testbench
 - When using the `--all` flag, filesets using valid string swapping variables such as `orbit.dut.name`, `orbit.tb.name`, and `orbit.top.name`, resolve to the wildcard pattern (`*`)
 - Reverts `repository` field back to `source` to be more consistent with its intended usage and flexible functionality
+- Renames `identifier` to `name` within JSON data of a design unit
+  - Any existing Orbit.json files within a channel will need their field updated manually
 
 ### Fixes
 - Removes rendundant lockfile saving from `orbit build` and `orbit test` commands

@@ -17,12 +17,12 @@ The serialized JSON string data is unformatted.
 The following schema is implemented for the json output of `orbit get`:
 ``` json
 {
-  // the name of the design unit
-  "identifier": "string",
+  // the identifier of the design unit
+  "name": "string",
   // list of generics/parameters
   "generics": [
     {
-        "identifier": "string",
+        "name": "string",
         "mode": "string",
         "type": "string", // null if blank
         "default": "string" // null if blank
@@ -31,7 +31,7 @@ The following schema is implemented for the json output of `orbit get`:
   // list of ports
   "ports": [
     {
-        "identifier": "string",
+        "name": "string",
         "mode": "string",
         "type": "string", // null if blank
         "default": "string" // null if blank
@@ -101,8 +101,8 @@ The following schema is currently implemented for the json file `Orbit.json` pro
   // list of all local design units
   "units": [
     {
-      // name of the design unit
-      "identifier": "string",
+      // the identifier of the design unit
+      "name": "string",
       // the primary design unit type (examples: "entity", "module", "package")
       "type": "string",
       // native language (choices: "vhdl", "verilog", "systemverilog")
@@ -113,7 +113,7 @@ The following schema is currently implemented for the json file `Orbit.json` pro
       "sources": [
         "string"
       ],
-      // list of unit identifiers that this unit requires
+      // list of design unit names that this unit requires
       "dependencies": [
         "string"
       ]

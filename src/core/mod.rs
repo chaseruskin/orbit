@@ -24,6 +24,7 @@ pub mod config;
 pub mod context;
 pub mod fileset;
 pub mod lang;
+pub mod legend;
 pub mod lockfile;
 pub mod manifest;
 pub mod name;

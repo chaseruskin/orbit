@@ -19,7 +19,7 @@ use crate::core::lang::reference::RefSet;
 
 use super::{Identifier, Position};
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Configuration {
     name: Identifier,
     owner: Identifier,

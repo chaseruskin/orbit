@@ -29,6 +29,8 @@ use crate::core::lang::vhdl::token::Identifier as VhdlIdentifier;
 use crate::core::lang::Lang;
 use crate::core::lang::LangIdentifier;
 use crate::core::lang::LangUnit;
+use crate::core::legend::EntityJson;
+use crate::core::legend::ModuleJson;
 use crate::core::project::PartialProjectIdSpec;
 use crate::core::project::Project;
 use crate::core::project::ProjectIdSpec;
@@ -192,40 +194,6 @@ impl Subcommand<Context> for Get {
         crate::util::filesystem::release_lock(&cache_ap_lock)?;
 
         result
-    }
-}
-
-use serde_derive::Serialize;
-
-#[derive(Debug, PartialEq, Serialize)]
-struct EntityJson<'a> {
-    #[serde(flatten)]
-    entity: &'a Entity,
-    file: &'a str,
-}
-
-impl<'a> EntityJson<'a> {
-    pub fn new(entity: &'a Entity, file: &'a str) -> Self {
-        Self {
-            entity: entity,
-            file: file,
-        }
-    }
-}
-
-#[derive(Debug, PartialEq, Serialize)]
-struct ModuleJson<'a> {
-    #[serde(flatten)]
-    module: &'a Module,
-    file: &'a str,
-}
-
-impl<'a> ModuleJson<'a> {
-    pub fn new(module: &'a Module, file: &'a str) -> Self {
-        Self {
-            module: module,
-            file: file,
-        }
     }
 }
 
@@ -575,7 +543,6 @@ impl Get {
             }
         } else {
             let mut mapping = ip.collect_units(true, false, priv_by_default)?;
-            // TODO: need to link to architectures here for VHDL such that they appear in arch listing
             let result = mapping.remove(name);
             Ok(result)
         }

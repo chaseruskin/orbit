@@ -392,7 +392,7 @@ pub struct Port {
     // ANSI-style forces all things of a port to be specified in port list in one-shot
     #[serde(skip_serializing)]
     is_ansi: bool,
-    #[serde(rename = "identifier")]
+    #[serde(rename = "name")]
     name: Identifier,
     #[serde(rename = "mode", default = "default_mode")]
     mode: Option<Keyword>,

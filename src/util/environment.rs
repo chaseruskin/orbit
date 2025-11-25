@@ -484,19 +484,24 @@ pub const ORBIT_PROTOCOL: &str = "ORBIT_PROTOCOL";
 pub const ORBIT_TARGET: &str = "ORBIT_TARGET";
 
 pub const ORBIT_TOP_NAME: &str = "ORBIT_TOP_NAME";
+// @TODO: Deprecate these 2 vars since the legend exists now
 pub const ORBIT_TOP_FILE: &str = "ORBIT_TOP_FILE";
 pub const ORBIT_TOP_JSON: &str = "ORBIT_TOP_JSON";
 
 pub const ORBIT_TB_NAME: &str = "ORBIT_TB_NAME";
+// @TODO: Deprecate these 2 vars since the legend exists now
 pub const ORBIT_TB_FILE: &str = "ORBIT_TB_FILE";
 pub const ORBIT_TB_JSON: &str = "ORBIT_TB_JSON";
 
 pub const ORBIT_DUT_NAME: &str = "ORBIT_DUT_NAME";
+// @TODO: Deprecate these 2 vars since the legend exists now
 pub const ORBIT_DUT_FILE: &str = "ORBIT_DUT_FILE";
 pub const ORBIT_DUT_JSON: &str = "ORBIT_DUT_JSON";
 
 pub const ORBIT_BLUEPRINT: &str = "ORBIT_BLUEPRINT";
 pub const ORBIT_BLUEPRINT_PLAN: &str = "ORBIT_BLUEPRINT_PLAN";
+
+pub const ORBIT_LEGEND: &str = "ORBIT_LEGEND";
 
 pub const ORBIT_TARGET_DIR: &str = "ORBIT_TARGET_DIR";
 pub const ORBIT_OUT_DIR: &str = "ORBIT_OUT_DIR";

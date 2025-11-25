@@ -107,6 +107,13 @@ impl HdlSymbol {
         }
     }
 
+    pub fn as_entity_mut(&mut self) -> Option<&mut Entity> {
+        match self {
+            Self::Vhdl(v) => v.as_entity_mut(),
+            _ => None,
+        }
+    }
+
     pub fn is_testbench(&self) -> bool {
         match &self {
             Self::Verilog(v) => {

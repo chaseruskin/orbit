@@ -58,6 +58,8 @@ Orbit also sets environment variables during runtime such that any subprocesses 
 
 - `ORBIT_BLUEPRINT_PLAN` - The plan name for the blueprint created from the planning stage of the latest build process. See [Blueprint](./blueprint.md) for all possible plans.
 
+- `ORBIT_LEGEND` - The file name for the legend created from the planning stage of the latest build process, relative to the current build process's output directory.
+
 - `ORBIT_TARGET_DIR` - The directory where all generated artifacts from any targets will be stored, relative to the current project's directory. Default is "target".
   
 - `ORBIT_OUT_DIR` - The full path to the directory where all generated artifacts for the current target will be stored. This directory is inside the target directory for the current project, and is unique for each selected target.

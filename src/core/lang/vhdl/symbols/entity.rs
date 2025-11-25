@@ -38,7 +38,6 @@ use super::{
 pub struct Entity {
     #[serde(skip_serializing)]
     version: u32,
-    #[serde(rename = "identifier")]
     name: Identifier,
     generics: Generics,
     ports: Ports,

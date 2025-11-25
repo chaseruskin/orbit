@@ -19,7 +19,7 @@ use crate::core::lang::reference::{CompoundIdentifier, RefSet};
 
 use super::{symbols, token::identifier::Identifier};
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum SubUnit {
     Configuration(symbols::configuration::Configuration),
     Architecture(symbols::architecture::Architecture),

@@ -21,7 +21,7 @@ use crate::core::lang::reference::RefSet;
 
 use super::{Identifier, Position};
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct PackageBody {
     owner: Identifier,
     refs: RefSet,

@@ -28,6 +28,7 @@ use crate::core::lang::vhdl::subunit::SubUnit;
 use crate::core::lang::vhdl::symbols::{VHDLParser, VhdlSymbol};
 use crate::core::lang::vhdl::token::Identifier;
 use crate::core::lang::{self, Lang, LangIdentifier};
+use crate::core::legend::Legend;
 use crate::core::project_archive::ProjectArchive;
 use crate::core::swap;
 use crate::core::swap::StrSwapTable;
@@ -130,6 +131,7 @@ impl Plan {
                         target,
                         is_test,
                         is_all_mode,
+                        &Legend::new(),
                     )?;
                     // create a blueprint file
                     crate::warn!(
@@ -415,6 +417,22 @@ impl Plan {
             }
         }
 
+        // store data in the legend
+        let mut legend = Legend::new();
+
+        for (_, local_node, _) in local_graph.iter() {
+            let node_file = local_node
+                .get_associated_files()
+                .first()
+                .unwrap()
+                .get_file();
+            if let Some(sym_ent) = local_node.get_symbol().as_entity() {
+                legend.add_entity(sym_ent, node_file);
+            } else if let Some(sym_mod) = local_node.get_symbol().as_module() {
+                legend.add_module(sym_mod, node_file);
+            }
+        }
+
         // store data in blueprint
         let mut blueprint = Blueprint::new(scheme.clone());
 
@@ -530,6 +548,7 @@ impl Plan {
             target,
             is_test,
             is_all_mode,
+            &legend,
         )?;
         // create a blueprint file
         crate::info!(
@@ -1172,6 +1191,12 @@ impl Plan {
                 None => continue,
             };
             entity_node.as_ref_mut().add_file(node.get_file());
+            // link this architecture to this entity
+            if let Some(arch) = node.get_sub().clone().into_arch() {
+                if let Some(pri_ent) = entity_node.as_ref_mut().get_symbol_mut().as_entity_mut() {
+                    pri_ent.link_architecture(arch);
+                }
+            }
             // create edges (this is very important)
             entity_node
                 .as_ref_mut()
@@ -1822,6 +1847,7 @@ impl Plan {
         target: &Target,
         is_test: bool,
         is_all_mode: bool,
+        legend: &Legend,
     ) -> Result<PathBuf, Fault> {
         let output_path = target_path.join(target.get_name());
         // create a output build directorie(s) if they do not exist
@@ -1837,6 +1863,9 @@ impl Plan {
 
         // create the blueprint file
         let (blueprint_path, _) = blueprint.write(&output_path)?;
+
+        // create the legend file
+        let _ = legend.write(&output_path)?;
 
         // build upon existing environment variables to save in .env file
         envs = envs
@@ -1919,6 +1948,10 @@ impl Plan {
             .add(EnvVar::with(
                 environment::ORBIT_BLUEPRINT_PLAN,
                 &blueprint.get_plan().to_string(),
+            ))
+            .add(EnvVar::with(
+                environment::ORBIT_LEGEND,
+                &legend.get_filename(),
             ))
             .add(EnvVar::with(environment::ORBIT_TARGET, target.get_name()));
 

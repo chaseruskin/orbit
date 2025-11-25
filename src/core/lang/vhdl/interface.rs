@@ -325,7 +325,7 @@ impl Expr {
 
 #[derive(Debug, PartialEq, Serialize)]
 pub struct InterfaceDeclaration {
-    #[serde(rename = "identifier")]
+    #[serde(rename = "name")]
     identifier: Identifier,
     #[serde(rename = "mode", flatten)]
     mode: Mode,

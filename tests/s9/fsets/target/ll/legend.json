@@ -1,0 +1,17 @@
+[
+  {
+    "name": "foo",
+    "generics": [],
+    "ports": [
+      {
+        "name": "clk",
+        "mode": "output",
+        "type": "logic",
+        "default": null
+      }
+    ],
+    "architectures": [],
+    "language": "systemverilog",
+    "file": "/Users/chase/Develop/rust/orbit/tests/s9/fsets/foo.sv"
+  }
+]

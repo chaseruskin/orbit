@@ -44,7 +44,6 @@ use std::iter::Peekable;
 pub struct Module {
     #[serde(skip_serializing)]
     version: u32,
-    #[serde(rename = "identifier")]
     name: Identifier,
     #[serde(rename = "generics")]
     parameters: ParamList,

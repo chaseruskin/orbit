@@ -33,11 +33,12 @@ type VerilogIdentifier = crate::core::lang::verilog::token::identifier::Identifi
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct UnitCache {
-    identifier: String,
+    name: String,
     #[serde(rename = "type")]
     symbol: String,
     language: Lang,
     visibility: Visibility,
+    // @TODO: Rename to `files` for consistency?
     sources: Vec<String>,
     dependencies: Vec<String>,
 }
@@ -53,7 +54,7 @@ impl UnitCache {
         let base_path_offset = project.get_root().as_os_str().len();
 
         Self {
-            identifier: name.to_string(),
+            name: name.to_string(),
             symbol: unit.to_string(),
             language: unit.get_lang(),
             visibility: unit.get_visibility().clone(),
@@ -89,9 +90,9 @@ impl UnitCache {
     pub fn get_name(&self) -> LangIdentifier {
         match self.get_lang() {
             Lang::SystemVerilog | Lang::Verilog => {
-                LangIdentifier::from(VerilogIdentifier::from_str(&self.identifier).unwrap())
+                LangIdentifier::from(VerilogIdentifier::from_str(&self.name).unwrap())
             }
-            Lang::Vhdl => LangIdentifier::from(VhdlIdentifier::from_str(&self.identifier).unwrap()),
+            Lang::Vhdl => LangIdentifier::from(VhdlIdentifier::from_str(&self.name).unwrap()),
         }
     }
 }

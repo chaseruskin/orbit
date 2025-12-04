@@ -15,6 +15,8 @@
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
+// This file is currently unused.
+
 use crate::core::lang::verilog::symbols::module::Module;
 use crate::core::lang::vhdl::symbols::entity::Entity;
 use crate::error::Error;

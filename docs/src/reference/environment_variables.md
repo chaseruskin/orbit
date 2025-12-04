@@ -40,25 +40,17 @@ Orbit also sets environment variables during runtime such that any subprocesses 
 
 - `ORBIT_TOP_FILE` - The full file system path that contains the top level design for the latest build process.
 
-- `ORBIT_TOP_JSON` - The serialized json data for the top level design unit for the latest build process (see [JSON Output](json.md)).
-
 - `ORBIT_TB_NAME` - The testbench's identifier for the latest build process, only if the build process was a test and a testbench was found.
 
 - `ORBIT_TB_FILE` - The full file system path that contains the testbench for the latest build process, only if the build process was a test and a testbench was found.
-
-- `ORBIT_TB_JSON` - The serialized json data for the testbench for the latest build process, only if the build process was a test and a testbench was found (see [JSON Output](json.md)).
 
 - `ORBIT_DUT_NAME` - The design under test's identifier for the latest build process, only if the build process was a test.
 
 - `ORBIT_DUT_FILE` - The full file system path that contains the design under test for the latest build process, only if the build process was a test.
 
-- `ORBIT_DUT_JSON` - The serialized json data for the design under test for the latest build process, only if the build process was a test (see [JSON Output](json.md)).
-
 - `ORBIT_BLUEPRINT` - The file name for the blueprint created from the planning stage of the latest build process, relative to the current build process's output directory.
 
 - `ORBIT_BLUEPRINT_PLAN` - The plan name for the blueprint created from the planning stage of the latest build process. See [Blueprint](./blueprint.md) for all possible plans.
-
-- `ORBIT_LEGEND` - The file name for the legend created from the planning stage of the latest build process, relative to the current build process's output directory.
 
 - `ORBIT_TARGET_DIR` - The directory where all generated artifacts from any targets will be stored, relative to the current project's directory. Default is "target".
   

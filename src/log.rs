@@ -19,8 +19,8 @@
 macro_rules! info {
     ($($arg:tt)*) => {{
         use colored::Colorize;
-        print!("{}: ", "info".blue().bold());
-        println!($($arg)*);
+        eprint!("{}: ", "info".blue().bold());
+        eprintln!($($arg)*);
     }};
 }
 
@@ -28,8 +28,8 @@ macro_rules! info {
 macro_rules! warn {
     ($($arg:tt)*) => {{
         use colored::Colorize;
-        print!("{}: ", "warning".yellow().bold());
-        println!($($arg)*);
+        eprint!("{}: ", "warning".yellow().bold());
+        eprintln!($($arg)*);
     }};
 }
 
@@ -37,14 +37,14 @@ macro_rules! warn {
 macro_rules! hint {
     ($($arg:tt)*) => {{
         use colored::Colorize;
-        print!("{}: ", "hint".green().bold());
-        println!($($arg)*);
+        eprint!("{}: ", "hint".green().bold());
+        eprintln!($($arg)*);
     }};
 }
 
 #[macro_export]
 macro_rules! subproc {
     ($($arg:tt)*) => {{
-        println!($($arg)*);
+        eprintln!($($arg)*);
     }};
 }

@@ -28,7 +28,6 @@ use crate::core::lang::vhdl::subunit::SubUnit;
 use crate::core::lang::vhdl::symbols::{VHDLParser, VhdlSymbol};
 use crate::core::lang::vhdl::token::Identifier;
 use crate::core::lang::{self, Lang, LangIdentifier};
-use crate::core::legend::Legend;
 use crate::core::project_archive::ProjectArchive;
 use crate::core::swap;
 use crate::core::swap::StrSwapTable;
@@ -126,12 +125,9 @@ impl Plan {
                         &String::new(),
                         &String::new(),
                         &String::new(),
-                        &String::new(),
-                        &String::new(),
                         target,
                         is_test,
                         is_all_mode,
-                        &Legend::new(),
                     )?;
                     // create a blueprint file
                     crate::warn!(
@@ -339,7 +335,7 @@ impl Plan {
         };
 
         // grab the json representation of the top level unit
-        let top_json = match top {
+        let _top_json = match top {
             Some(i) => {
                 let n = global_graph.get_node_by_index(i).unwrap();
                 let sym = n.as_ref().get_symbol();
@@ -368,7 +364,7 @@ impl Plan {
         };
 
         // grab the json representation of the testbench unit
-        let bench_json = match bench {
+        let _bench_json = match bench {
             Some(i) => {
                 let n = global_graph.get_node_by_index(i).unwrap();
                 let sym = n.as_ref().get_symbol();
@@ -414,22 +410,6 @@ impl Plan {
                         true => crate::warn!("no testbench set"),
                     }
                 }
-            }
-        }
-
-        // store data in the legend
-        let mut legend = Legend::new();
-
-        for (_, local_node, _) in local_graph.iter() {
-            let node_file = local_node
-                .get_associated_files()
-                .first()
-                .unwrap()
-                .get_file();
-            if let Some(sym_ent) = local_node.get_symbol().as_entity() {
-                legend.add_entity(sym_ent, node_file);
-            } else if let Some(sym_mod) = local_node.get_symbol().as_module() {
-                legend.add_module(sym_mod, node_file);
             }
         }
 
@@ -541,14 +521,11 @@ impl Plan {
             &target_path,
             &top_name,
             &top_file,
-            &top_json,
             &bench_name,
             &bench_file,
-            &bench_json,
             target,
             is_test,
             is_all_mode,
-            &legend,
         )?;
         // create a blueprint file
         crate::info!(
@@ -1840,14 +1817,11 @@ impl Plan {
         target_path: &PathBuf,
         top_name: &str,
         top_file: &str,
-        top_json: &str,
         bench_name: &str,
         bench_file: &str,
-        bench_json: &str,
         target: &Target,
         is_test: bool,
         is_all_mode: bool,
-        legend: &Legend,
     ) -> Result<PathBuf, Fault> {
         let output_path = target_path.join(target.get_name());
         // create a output build directorie(s) if they do not exist
@@ -1863,9 +1837,6 @@ impl Plan {
 
         // create the blueprint file
         let (blueprint_path, _) = blueprint.write(&output_path)?;
-
-        // create the legend file
-        let _ = legend.write(&output_path)?;
 
         // build upon existing environment variables to save in .env file
         envs = envs
@@ -1890,16 +1861,6 @@ impl Plan {
                 },
             ))
             .add(EnvVar::with(
-                environment::ORBIT_TOP_JSON,
-                if is_all_mode == true {
-                    ""
-                } else if is_test == false || bench_name.len() == 0 {
-                    &top_json
-                } else {
-                    &bench_json
-                },
-            ))
-            .add(EnvVar::with(
                 environment::ORBIT_DUT_NAME,
                 if is_all_mode == true {
                     ""
@@ -1920,16 +1881,6 @@ impl Plan {
                 },
             ))
             .add(EnvVar::with(
-                environment::ORBIT_DUT_JSON,
-                if is_all_mode == true {
-                    ""
-                } else if is_test == true {
-                    &top_json
-                } else {
-                    ""
-                },
-            ))
-            .add(EnvVar::with(
                 environment::ORBIT_TB_NAME,
                 if is_all_mode == true { "" } else { &bench_name },
             ))
@@ -1938,20 +1889,12 @@ impl Plan {
                 if is_all_mode == true { "" } else { &bench_file },
             ))
             .add(EnvVar::with(
-                environment::ORBIT_TB_JSON,
-                if is_all_mode == true { "" } else { &bench_json },
-            ))
-            .add(EnvVar::with(
                 environment::ORBIT_BLUEPRINT,
                 &blueprint.get_filename(),
             ))
             .add(EnvVar::with(
                 environment::ORBIT_BLUEPRINT_PLAN,
                 &blueprint.get_plan().to_string(),
-            ))
-            .add(EnvVar::with(
-                environment::ORBIT_LEGEND,
-                &legend.get_filename(),
             ))
             .add(EnvVar::with(environment::ORBIT_TARGET, target.get_name()));
 

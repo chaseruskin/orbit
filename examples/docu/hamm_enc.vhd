@@ -15,8 +15,7 @@ use work.hamm_pkg.all;
 -- Implemented in purely combinational logic. Parity bits are set in the
 -- indices corresponding to powers of 2 (0, 1, 2, 4, 8, ...).
 --
--- <code>inline code</code>
--- <pre><code>&lt;div&gt;Another block with &lt;span style="color: green;"&gt;green text&lt;/span&gt;.&lt;/div&gt;</code></pre>.
+-- <p style="color: red; font-family: monospace;">This text is red.</p>
 entity hamm_enc is 
     generic (
         -- Number of parity bits to encode (excluding 0th DED bit)

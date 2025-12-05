@@ -18,14 +18,15 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 ## UNRELEASED
 
 ### Features
-- Adds [Rust security audit](https://github.com/rustsec/rustsec) to audit dependency crates and report vulnerabilities during CI/CD
+- Runs [Rust security audit](https://github.com/rustsec/rustsec) to audit dependency crates and report vulnerabilities during CI/CD
 - Adds "file" to JSON data of a design unit
 - Adds `auto-discovery` fields for `[build]` and `[test]` tables in config.toml (default to true)
+- Generated documentation now includes links to source code files when using `orbit doc`
 
 ### Changes
 - Redirects all diagnostic print statements to stderr and keeps all machine-readable code (such as output of `--json`) on stdout
 - Default behavior for `orbit build` and `orbit test` when not specifying `--top`, `--dut`, and `--tb` is to include all source files (deprecates `--all` flag) and no longer attempts to auto-detect a top-level, dut, or testbench
-- When using the `--all` flag, filesets using valid string swapping variables such as `orbit.dut.name`, `orbit.tb.name`, and `orbit.top.name`, resolve to the wildcard pattern (`*`)
+- When collecting all source files, filesets using valid string swapping variables such as `orbit.dut.name`, `orbit.tb.name`, and `orbit.top.name`, resolve to the wildcard pattern (`*`)
 - Reverts `repository` field back to `source` to be more consistent with its intended usage and flexible functionality
 - Renames `identifier` to `name` within JSON data of a design unit
   - Any existing Orbit.json files within a channel will need their field updated manually

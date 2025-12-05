@@ -20,6 +20,7 @@ use crate::commands::plan;
 use crate::core::catalog::Catalog;
 use crate::core::context;
 use crate::core::context::Context;
+use crate::core::fileset;
 use crate::core::fileset::is_systemverilog;
 use crate::core::fileset::is_verilog;
 use crate::core::fileset::is_vhdl;
@@ -251,23 +252,23 @@ impl Doc {
         let md_output_path = TempDir::new()?.keep();
 
         // Write the markdown files and then export into an mdbook (HTML)
-        match self.save_md(
+        let pages_to_hide = match self.save_md(
             &md_output_path,
             all_doc_prjs,
             self.doc_priv_items,
             priv_by_default,
         ) {
-            Ok(()) => (),
+            Ok(p) => p,
             Err(e) => {
                 std::fs::remove_dir_all(md_output_path)?;
                 return Err(e);
             }
-        }
+        };
 
         info!("compiling documentation...");
 
         // Export the markdown files into an mdbook
-        let index_path = match self.export_html(&md_output_path, &output_path) {
+        let index_path = match self.export_html(&md_output_path, &output_path, &pages_to_hide) {
             Ok(p) => p,
             Err(e) => {
                 std::fs::remove_dir_all(md_output_path)?;
@@ -290,7 +291,7 @@ impl Doc {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum PageLevel {
     Book,
     Project,
@@ -304,7 +305,7 @@ impl PageLevel {
             Self::Book => 0,
             Self::Project => 1,
             Self::Document => 2,
-            Self::Source => 3,
+            Self::Source => 2,
         }
     }
 }
@@ -327,6 +328,32 @@ impl Page {
 
     pub fn get_link(&self) -> &PathBuf {
         &self.link
+    }
+
+    pub fn get_level(&self) -> PageLevel {
+        self.level
+    }
+
+    pub fn as_toc_html(&self, base_path: &PathBuf) -> String {
+        let rel_link = filesystem::remove_base(base_path, &self.link)
+            .to_str()
+            .unwrap()
+            .replace(".md", ".html");
+        format!(
+            r#"<li class="chapter-item "><span class="chapter-link-wrapper"><a href="{}" target="_parent">{}</a></span></li>"#,
+            rel_link, self.title
+        )
+    }
+
+    pub fn as_toc_js(&self, base_path: &PathBuf) -> String {
+        let rel_link = filesystem::remove_base(base_path, &self.link)
+            .to_str()
+            .unwrap()
+            .replace(".md", ".html");
+        format!(
+            r#"<li class="chapter-item "><span class="chapter-link-wrapper"><a href="{}">{}</a></span></li>"#,
+            rel_link, self.title
+        )
     }
 }
 
@@ -376,11 +403,24 @@ impl<'a> DocProject<'a> {
         // try to collect all design units (force to ensure we apply the correct private visibility capture)
         let prj_unit_map =
             self.project
-                .collect_units(false, doc_priv_items == false, priv_by_default)?;
+                .collect_units(true, doc_priv_items == false, priv_by_default)?;
+
         // write the project's main index file
         self.write_index_file(&root_dir, &prj_unit_map, doc_priv_items)?;
-        // write all source files
-        let pages = self.write_source_files(&root_dir, &prj_unit_map)?;
+        // write all documentation source files
+        let mut pages = self.write_source_files(&root_dir, &prj_unit_map)?;
+
+        // next write all HDL source files
+        let hdl_paths: Vec<String> = self
+            .project
+            .gather_current_files()
+            .into_iter()
+            .filter(|p| fileset::is_hdl(p))
+            .collect();
+        for hdl_path in &hdl_paths {
+            pages.push(Self::import_hdl_source_to_md(&root_dir, &hdl_path)?);
+        }
+
         Ok(pages)
     }
 
@@ -404,19 +444,17 @@ impl<'a> DocProject<'a> {
 
         let mut pages = Vec::new();
 
-        // Write each source code file into the documentation
-        for ds in &doc_subus {
-            Self::import_hdl_source_to_md(output_path, &ds.get_source())?;
-        }
-
         // Write each primary design unit as its own documentation page
         for du in source_dus {
             let unit_subus: Vec<&&DocUnit> = doc_subus
                 .iter()
                 .filter(|f| f.as_parent_name() == du.get_name())
                 .collect();
-            let page = self.write_source_file(output_path, du, &prj_unit_map, unit_subus)?;
-            pages.push(page);
+            // only add the page if the design unit was collected
+            if prj_unit_map.get(du.get_name().unwrap()).is_some() {
+                let page = self.write_source_file(output_path, du, &prj_unit_map, unit_subus)?;
+                pages.push(page);
+            }
         }
         Ok(pages)
     }
@@ -465,7 +503,7 @@ impl<'a> DocProject<'a> {
         }
         Ok(Page::new(
             PageLevel::Source,
-            String::from("source"),
+            String::from("ORBIT_DOC_HIDDEN"),
             tar_src_path,
         ))
     }
@@ -484,11 +522,7 @@ impl<'a> DocProject<'a> {
         let mut contents = String::new();
         // try to find the source file
         let src_file = match unit_map.get(du_name) {
-            Some(lu) => Some(
-                Self::import_hdl_source_to_md(output_path, lu.get_source_file())?
-                    .get_link()
-                    .clone(),
-            ),
+            Some(lu) => Some(Self::get_hdl_source_md_name(lu.get_source_file()).0),
             None => None,
         };
 
@@ -643,6 +677,7 @@ impl Doc {
         &self,
         md_output_path: &PathBuf,
         html_output_path: &PathBuf,
+        pages_to_hide: &Vec<Page>,
     ) -> Result<PathBuf, Fault> {
         // Tailor the configuration
         let mut cfg = Config::default();
@@ -667,24 +702,50 @@ impl Doc {
         // Load and build the book
         let book = MDBook::load_with_config(md_output_path, cfg)?;
         book.build()?;
+
+        // create a cache tag file if does not exist
+        match Context::is_cache_tag_valid(&html_output_path.parent().unwrap().to_path_buf()) {
+            Ok(_) => (),
+            Err(e) => std::fs::write(&e, context::CACHE_TAG)?,
+        }
+
+        // tweak the TOC to hide certain pages
+        let html_toc_path = html_output_path.join("toc.html");
+        let mut data = std::fs::read_to_string(&html_toc_path)?;
+        for page in pages_to_hide {
+            data = data.replace(&page.as_toc_html(md_output_path), "");
+        }
+        std::fs::write(&html_toc_path, data)?;
+
+        // there really should be only 1 path after we glob, but loop just in case...
+        let js_toc_paths =
+            glob::glob(&(filesystem::into_std_str(html_output_path.clone()) + "/toc-*.js"))?;
+        for path in js_toc_paths {
+            match path {
+                Ok(js_toc_path) => {
+                    let mut data = std::fs::read_to_string(&js_toc_path)?;
+                    for page in pages_to_hide {
+                        data = data.replace(&page.as_toc_js(md_output_path), "");
+                    }
+                    std::fs::write(&js_toc_path, data)?;
+                }
+                _ => (),
+            }
+        }
+
         Ok(html_output_path.join("index.html"))
     }
 
     /// Saves all the provided Documentation projects and returns the single entry INDEX file path.
+    ///
+    /// Returns the list of pages to hide from the table of contents after it is generated by mdbook.
     fn save_md(
         &self,
         output_path: &PathBuf,
         doc_projects: Vec<DocProject>,
         doc_priv_items: bool,
         priv_by_default: bool,
-    ) -> Result<(), Fault> {
-        std::fs::create_dir_all(&output_path)?;
-        // create a cache tag file if does not exist
-        match Context::is_cache_tag_valid(&output_path.parent().unwrap().to_path_buf()) {
-            Ok(_) => (),
-            Err(e) => std::fs::write(&e, context::CACHE_TAG)?,
-        }
-
+    ) -> Result<Vec<Page>, Fault> {
         // track the pages to include into the summary file
         let summary_path = output_path.join("SUMMARY.md");
         let mut summary_data = String::from("# Summary\n");
@@ -699,8 +760,9 @@ impl Doc {
             index_path.clone(),
         );
         summary_data.push_str(&format!("{}\n", page));
-
         index_data.push_str(&format!("# Projects\n"));
+
+        let mut pages_to_hide = Vec::new();
         // save each project
         for dp in doc_projects {
             let name = dp.project.get_man().get_project().get_name();
@@ -737,15 +799,21 @@ impl Doc {
             let pages = dp.save_md(output_path, doc_priv_items, priv_by_default)?;
             for page in pages {
                 summary_data.push_str(&format!("{}\n", page));
+                if page.get_level() == PageLevel::Source {
+                    pages_to_hide.push(page);
+                }
             }
         }
+
+        // for p in &pages_to_hide {
+        //     println!("{}", p.as_toc_html(output_path));
+        // }
 
         // Write the entry index file
         std::fs::write(&index_path, &index_data)?;
         // Write the summary file (contains the list of all pages to compile)
         std::fs::write(&summary_path, summary_data)?;
-
-        Ok(())
+        Ok(pages_to_hide)
     }
 
     fn collect_doc_units(prj: &Project) -> Result<Vec<DocUnit>, Fault> {
@@ -1141,7 +1209,7 @@ impl DocUnit {
     /// Writes the unit to it's markdown formatted string.
     pub fn to_markdown(
         &self,
-        src_file: Option<PathBuf>,
+        src_file: Option<String>,
         unit: &LangUnit,
         subs: Vec<&&DocUnit>,
     ) -> String {
@@ -1159,7 +1227,7 @@ impl DocUnit {
             contents.push_str(&format!(
                 "[Source ({})]({})\n\n",
                 unit.get_lang().to_proper_name(),
-                filesystem::into_std_str(src.clone()),
+                src,
             ));
         }
 

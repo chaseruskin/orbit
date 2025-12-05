@@ -169,6 +169,7 @@ impl Subcommand<Context> for Build {
         )?;
 
         let is_all = self.top.is_none();
+        let auto_discover = c.get_config().get_auto_discovery(true);
 
         // plan for the provided target
         Plan::run(
@@ -178,13 +179,13 @@ impl Subcommand<Context> for Build {
             catalog,
             self.dirty == false,
             self.force,
-            is_all,
             &None,
             &self.top,
             &self.filesets,
             &plan,
             false,
             is_all,
+            auto_discover,
             false,
             envs,
             c.are_units_private_by_default(),

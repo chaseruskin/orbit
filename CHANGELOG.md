@@ -20,6 +20,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 ### Features
 - Adds [Rust security audit](https://github.com/rustsec/rustsec) to audit dependency crates and report vulnerabilities during CI/CD
 - Adds "file" to JSON data of a design unit
+- Adds `auto-discovery` fields for `[build]` and `[test]` tables in config.toml (default to true)
 
 ### Changes
 - Redirects all diagnostic print statements to stderr and keeps all machine-readable code (such as output of `--json`) on stdout

@@ -121,8 +121,8 @@ pub enum Error {
     IpHasRelativeDependencies,
     #[error("a testbench is required to test")]
     TestbenchRequired,
-    #[error("top \"{0}\" is not tested in testbench \"{1}\"{2}")]
-    TopNotInTestbench(LangIdentifier, LangIdentifier, Hint),
+    #[error("top \"{0}\" is not tested in testbench \"{1}\"")]
+    TopNotInTestbench(LangIdentifier, LangIdentifier),
     #[error("lockfile entry \"{0}\" is not queued for installation (missing download)")]
     EntryMissingDownload(ProjectIdSpec),
     #[error("lockfile entry \"{0}\" is not queued for installation")]
@@ -270,7 +270,6 @@ pub enum Hint {
     TopSpecify,
     BenchSpecify,
     RootSpecify,
-    IncludeAllInPlan,
     SpecifyIpSpecForDownload,
     MakeLock,
     PublishWithReady,
@@ -322,7 +321,6 @@ impl Display for Hint {
             Self::TopSpecify => "use the \"--top\" option to specify the top-level design",
             Self::BenchSpecify => "use the \"--tb\" option to specify the testbench",
             Self::RootSpecify => "use the \"--root\" option to specify the root design unit",
-            Self::IncludeAllInPlan => "use the \"-all\" flag to continue with this setup",
             Self::SpecifyIpSpecForDownload => {
                 "consider providing the project ID specification for the requested project to download"
             }

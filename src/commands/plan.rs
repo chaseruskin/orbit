@@ -82,13 +82,13 @@ impl Plan {
         catalog: Catalog,
         clean: bool,
         force: bool,
-        all: bool,
         bench_name: &Option<Identifier>,
         top_name: &Option<Identifier>,
         filesets: &Option<Vec<Fileset>>,
         scheme: &Scheme,
         is_test: bool,
-        is_all_mode: bool,
+        is_all: bool,
+        auto_discover: bool,
         allow_bench: bool,
         envs: Environment,
         priv_by_def: bool,
@@ -127,7 +127,7 @@ impl Plan {
                         &String::new(),
                         target,
                         is_test,
-                        is_all_mode,
+                        is_all,
                     )?;
                     // create a blueprint file
                     crate::warn!(
@@ -174,7 +174,7 @@ impl Plan {
                     Ok(r) => r,
                     Err(e) => match e {
                         PlanError::Ambiguous(_, _, _) => {
-                            if all == true {
+                            if is_all == true {
                                 (None, None)
                             } else {
                                 return Err(e)?;
@@ -200,7 +200,7 @@ impl Plan {
             Ok(r) => r,
             Err(e) => match e {
                 PlanError::Ambiguous(_, _, _) => {
-                    if all == true {
+                    if is_all == true {
                         (top, bench)
                     } else {
                         return Err(e)?;
@@ -220,12 +220,19 @@ impl Plan {
             Some(i) => Some(Self::local_to_global(i, &global_graph, &local_graph).index()),
             None => None,
         };
-        // guarantees top exists if not using --all
+
+        let auto_discovered_top: bool = top.is_some() || bench.is_some();
+
+        let is_all = if auto_discover == true && auto_discovered_top == true {
+            false
+        } else {
+            is_all
+        };
 
         // error if the user-defined top is not instantiated in the testbench. Say this can be fixed by adding '--all'
         if let Some(b) = &bench {
             // @idea: merge two topological sorted lists together by running top sort from bench and top sort from top if in this situation
-            if all == false
+            if is_all == false
                 && top.is_some()
                 && global_graph
                     .get_graph()
@@ -241,16 +248,12 @@ impl Plan {
                 return Err(Error::TopNotInTestbench(
                     given_top.clone(),
                     given_bench.clone(),
-                    Hint::IncludeAllInPlan,
                 ))?;
             }
-        } else if bench.is_none() == true && is_test == true {
-            // allow test to proceed if testbench is omitted.
-            // return Err(Error::TestbenchRequired)?;
         }
 
         // compute minimal topological ordering
-        let min_order = match all {
+        let min_order = match is_all {
             // perform topological sort on the entire graph
             true => {
                 match local_graph.find_root() {
@@ -297,7 +300,6 @@ impl Plan {
         // println!("{:?}", min_order);
 
         // generate the file order while merging dependencies for common file path names together
-
         let file_order = Self::determine_file_order(&global_graph, min_order);
 
         // remove duplicate files from list while perserving order
@@ -380,18 +382,9 @@ impl Plan {
         };
 
         // print information (maybe also print the target saved to .env too?)
-        match is_all_mode {
+        match is_all {
             true => {
                 // Do nothing when using all source files
-                // match is_test {
-                //     true => {
-                //         crate::info!("no dut set");
-                //         crate::info!("no testbench set");
-                //     }
-                //     false => {
-                //         crate::info!("no top-level set");
-                //     }
-                // }
             }
             false => {
                 match top_name.is_empty() {
@@ -431,13 +424,13 @@ impl Plan {
                 vtable.add("orbit.dut.name", &top_name);
 
                 // overwrite the values if in ALL mode
-                if is_all_mode == true {
+                if is_all == true {
                     vtable.add("orbit.tb.name", "*");
                     vtable.add("orbit.dut.name", "*");
                 }
             }
             // overwrite the top value if in ALL mode
-            if is_all_mode == true {
+            if is_all == true {
                 vtable.add("orbit.top.name", "*");
             }
 
@@ -525,7 +518,7 @@ impl Plan {
             &bench_file,
             target,
             is_test,
-            is_all_mode,
+            is_all,
         )?;
         // create a blueprint file
         crate::info!(

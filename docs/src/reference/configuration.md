@@ -49,8 +49,10 @@ Every configuration file consists of the following sections:
     - [target-dir](#the-target-dir-field) - Default target directory.
 - [[test]](#the-test-section) - The test settings.
     - [default-target](#the-default-target-field) - Set the default target for tests.
+    - [auto-discovery](#the-auto-discovery-field) - Enable or disable testbench auto discovery.
 - [[build]](#the-build-section) - The build settings.
     - [default-target](#the-default-target-field) - Set the default target for builds.
+    - [auto-discovery](#the-auto-discovery-field) - Enable or disable top-level auto discovery.
 - [[publish]](#the-publish-section) - The publish settings.
     - [default-channels](#the-default-channels-field) - Set the default channels to publish a project to.
 - [[install]](#the-install-section) - The install settings.
@@ -131,6 +133,18 @@ default-target = "modelsim"
 
 If the default target is set to be used and its name cannot be found among the known targets, the build process will error.
 
+### The `auto-discovery` field
+
+The optional `auto-discovery` key sets whether or not to allow Orbit to try to automatically discovery the testbench, if it is unambiguous.
+
+``` toml
+[test]
+# ...
+auto-discovery = true
+```
+
+If this field is omitted, then auto discovery is enabled by default. Auto discovery is only attempted when the user does not provide the `--dut` and `--tb` options to `orbit test`.
+
 ### The `[build]` section
 
 ### The `default-target` field
@@ -143,6 +157,18 @@ default-target = "vivado"
 ```
 
 If the default target is set to be used and its name cannot be found among the known targets, the build process will error.
+
+### The `auto-discovery` field
+
+The optional `auto-discovery` key sets whether or not to allow Orbit to try to automatically discovery the testbench, if it is unambiguous.
+
+``` toml
+[build]
+# ...
+auto-discovery = true
+```
+
+If this field is omitted, then auto discovery is enabled by default. Auto discovery is only attempted when the user does not provide the `--top` option to `orbit build`.
 
 ### The `[publish]` section
 

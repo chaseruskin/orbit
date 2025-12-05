@@ -474,17 +474,24 @@ impl General {
 pub struct Build {
     #[serde(rename = "default-target")]
     default_target: Option<String>,
+    #[serde(rename = "auto-discovery")]
+    auto_discovery: Option<bool>,
 }
 
 impl Build {
     pub fn new() -> Self {
         Self {
             default_target: None,
+            auto_discovery: None,
         }
     }
 
     pub fn get_default_target(&self) -> Option<&String> {
         self.default_target.as_ref()
+    }
+
+    pub fn get_auto_discovery(&self) -> Option<&bool> {
+        self.auto_discovery.as_ref()
     }
 
     /// Merges any populated data from `rhs` into attributes that do not already
@@ -494,6 +501,9 @@ impl Build {
             // no build dir defined so give it the value from `rhs`
             if self.default_target.is_some() == false {
                 self.default_target = rhs.default_target
+            }
+            if self.auto_discovery.is_some() == false {
+                self.auto_discovery = rhs.auto_discovery;
             }
         }
     }
@@ -564,17 +574,24 @@ impl Publish {
 pub struct Test {
     #[serde(rename = "default-target")]
     default_target: Option<String>,
+    #[serde(rename = "auto-discovery")]
+    auto_discovery: Option<bool>,
 }
 
 impl Test {
     pub fn new() -> Self {
         Self {
             default_target: None,
+            auto_discovery: None,
         }
     }
 
     pub fn get_default_target(&self) -> Option<&String> {
         self.default_target.as_ref()
+    }
+
+    pub fn get_auto_discovery(&self) -> Option<&bool> {
+        self.auto_discovery.as_ref()
     }
 
     /// Merges any populated data from `rhs` into attributes that do not already
@@ -583,7 +600,10 @@ impl Test {
         if let Some(rhs) = rhs {
             // no build dir defined so give it the value from `rhs`
             if self.default_target.is_some() == false {
-                self.default_target = rhs.default_target
+                self.default_target = rhs.default_target;
+            }
+            if self.auto_discovery.is_some() == false {
+                self.auto_discovery = rhs.auto_discovery;
             }
         }
     }
@@ -738,6 +758,19 @@ impl Config {
             false => match &self.test {
                 Some(m) => m.get_default_target(),
                 None => None,
+            },
+        }
+    }
+
+    pub fn get_auto_discovery(&self, is_build: bool) -> bool {
+        match is_build {
+            true => match &self.build {
+                Some(m) => *m.get_auto_discovery().unwrap_or(&true),
+                None => true,
+            },
+            false => match &self.test {
+                Some(m) => *m.get_auto_discovery().unwrap_or(&true),
+                None => true,
             },
         }
     }

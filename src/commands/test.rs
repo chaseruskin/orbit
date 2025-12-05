@@ -176,6 +176,7 @@ impl Subcommand<Context> for Test {
 
         // check if all mode is being used
         let is_all = self.dut.is_none() && self.bench.is_none();
+        let auto_discover = c.get_config().get_auto_discovery(false);
 
         // plan the target
         Plan::run(
@@ -185,13 +186,13 @@ impl Subcommand<Context> for Test {
             catalog,
             self.dirty == false,
             self.force,
-            is_all,
             &self.bench,
             &self.dut,
             &self.filesets,
             &plan,
             true,
             is_all,
+            auto_discover,
             true,
             envs,
             c.are_units_private_by_default(),

@@ -367,7 +367,7 @@ pub fn compute_final_project_graph<'a>(
     Ok(rough_project_graph)
 }
 
-/// Take the ip graph and create the entire space of HDL files that could be used for the current design.
+/// Take the project graph and create the entire space of HDL files that could be used for the current design.
 pub fn build_project_file_list<'a>(
     project_graph: &'a GraphMap<ProjectIdSpec, ProjectNode<'a>, ()>,
     current_project: &Project,

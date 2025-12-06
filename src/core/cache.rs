@@ -38,7 +38,6 @@ pub struct UnitCache {
     symbol: String,
     language: Lang,
     visibility: Visibility,
-    // @TODO: Rename to `files` for consistency?
     sources: Vec<String>,
     dependencies: Vec<String>,
 }

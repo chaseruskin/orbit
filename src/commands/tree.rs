@@ -53,8 +53,8 @@ use cliproc::{Arg, Cli, Help, Subcommand};
 #[derive(PartialEq, Debug, Serialize)]
 struct SerNode {
     name: String,
-    targets: Vec<String>,
-    sources: Vec<String>,
+    dependents: Vec<String>,
+    dependencies: Vec<String>,
 }
 
 impl SerNode {
@@ -69,20 +69,20 @@ impl SerNode {
             .get_symbol()
             .get_name()
             .to_string();
-        let sources = graph
+        let dependencies = graph
             .predecessors(id)
             .into_iter()
             .map(|i| i.1.get_symbol().get_name().to_string())
             .collect();
-        let targets = graph
+        let dependents = graph
             .successors(id)
             .into_iter()
             .map(|i| i.1.get_symbol().get_name().to_string())
             .collect();
         Self {
             name: name,
-            sources: sources,
-            targets: targets,
+            dependencies: dependencies,
+            dependents: dependents,
         }
     }
 
@@ -99,7 +99,7 @@ impl SerNode {
             .get_project()
             .get_name()
             .to_string();
-        let sources = graph
+        let dependencies = graph
             .predecessors(id)
             .into_iter()
             .map(|i| {
@@ -110,7 +110,7 @@ impl SerNode {
                     .to_string()
             })
             .collect();
-        let targets = graph
+        let dependents = graph
             .successors(id)
             .into_iter()
             .map(|i| {
@@ -123,8 +123,8 @@ impl SerNode {
             .collect();
         Self {
             name: name,
-            sources: sources,
-            targets: targets,
+            dependencies: dependencies,
+            dependents: dependents,
         }
     }
 }

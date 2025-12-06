@@ -516,7 +516,9 @@ impl Project {
         }
     }
 
-    /// Gets the already cached internal metadata for the install ip from [ORBIT_CACHE_FILE].
+    /// Gets the already cached internal metadata for the installed project from [ORBIT_CACHE_FILE].
+    ///
+    /// If the project is not installed, then returns None.
     pub fn read_cache_metadata(dir: &PathBuf) -> Option<PkgCache> {
         let meta_file = dir.join(ORBIT_CACHE_FILE);
         if meta_file.exists() == false {

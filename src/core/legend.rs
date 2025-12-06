@@ -29,14 +29,14 @@ use std::path::PathBuf;
 pub struct EntityJson<'a> {
     #[serde(flatten)]
     entity: &'a Entity,
-    file: &'a str,
+    source: &'a str,
 }
 
 impl<'a> EntityJson<'a> {
-    pub fn new(entity: &'a Entity, file: &'a str) -> Self {
+    pub fn new(entity: &'a Entity, source: &'a str) -> Self {
         Self {
             entity: entity,
-            file: file,
+            source: source,
         }
     }
 }
@@ -45,14 +45,14 @@ impl<'a> EntityJson<'a> {
 pub struct ModuleJson<'a> {
     #[serde(flatten)]
     module: &'a Module,
-    file: &'a str,
+    source: &'a str,
 }
 
 impl<'a> ModuleJson<'a> {
-    pub fn new(module: &'a Module, file: &'a str) -> Self {
+    pub fn new(module: &'a Module, source: &'a str) -> Self {
         Self {
             module: module,
-            file: file,
+            source: source,
         }
     }
 }

@@ -1,12 +1,12 @@
 # JSON Output
 
-Some commands and processes serialize data into JSON as a mechanism for external tools and scripts to easily load data that may be of interest.
+Some commands and processes serialize data into JSON as a mechanism for external tools and scripts to easily load data that may be of interest. All JSON output is sent to standard output (stdout).
 
-## Design units
+## Cores
 
-The `orbit get` command allows a user to receive various pieces of information related to a design unit, such its component declaration, defined architectures, or entity instantiation.
+The `orbit get` command allows a user to receive various pieces of information related to a core, such its component declaration, defined architectures, or entity instantiation.
 
-It also allows users to export the unit's interface with the `--json` flag. This is convenient when you wish to pass this information in a more machine-readable format to another tool/program.
+It also allows users to export the core's interface with the `--json` flag. This is convenient when you wish to pass this information in a more machine-readable format to another tool/program.
 
 The serialized JSON data is also available during the execution phase of a build process through the appropriate environment variables. To know which variables contain this data, see [Environment Variables](./environment_variables.md).
 
@@ -14,60 +14,60 @@ The serialized JSON string data is unformatted.
 
 ### Schema
 
-The following schema is implemented for the json output of `orbit get`:
+The following schema is implemented for the JSON output of `orbit get`:
 ``` json
 {
-  // the identifier of the design unit
+  // The identifier of the unit
   "name": "string",
-  // list of generics/parameters
+  // List of generics/parameters
   "generics": [
     {
-        "name": "string",
-        "mode": "string",
-        "type": "string", // null if blank
-        "default": "string" // null if blank
+      "name": "string",
+      "mode": "string",
+      "type": "string", // Null if blank
+      "default": "string" // Null if blank
     }
   ],
-  // list of ports
+  // List of ports
   "ports": [
     {
-        "name": "string",
-        "mode": "string",
-        "type": "string", // null if blank
-        "default": "string" // null if blank
+      "name": "string",
+      "mode": "string",
+      "type": "string", // Null if blank
+      "default": "string" // Null if blank
     }
   ],
-  // list of defined architectures (empty if Verilog or SystemVerilog)
+  // List of defined architectures (empty if Verilog or SystemVerilog)
   "architectures": [
-      "string"
+    "string"
   ],
-  // native language of the design unit (choices: "vhdl", "verilog", "systemverilog")
+  // Hardware description language (choices: "vhdl", "verilog", "systemverilog")
   "language": "string",
-  // full path to the source file that declares this design unit
-  "file": "string"
+  // Full path to the source file that declares this unit
+  "source": "string"
 }
 ```
 
-## Dependency trees
+## Hierarchies
 
-The `orbit tree` command allows one to view how cores are related to one another by displaying a dependency tree. 
+The `orbit tree` command allows one to view how units are related to one another by displaying a dependency tree. 
 
 It also allows users to export the dependency tree with the `--json` flag. This is convenient when you wish to pass this information in a more machine-readable format to another tool/program.
 
 ### Schema
 
-The following schema is currently implemented for json output of `orbit tree`:
+The following schema is currently implemented for JSON output of `orbit tree`:
 ``` json
 [
   {
     // the node's name
     "name": "string",
-    // a list of the nodes that use this current node
-    "targets": [
+    // a list of the node names that use this current node
+    "dependents": [
       "string",
     ],
-    // a list of the nodes this current node uses
-    "sources": [
+    // a list of the node names this current node uses
+    "dependencies": [
       "string"
     ]
   }
@@ -84,36 +84,36 @@ The serialized JSON data is available in a file called `Orbit.json` found in the
 
 ### Schema
 
-The following schema is currently implemented for the json file `Orbit.json` produced by `orbit publish`:
+The following schema is currently implemented for the JSON file `Orbit.json` produced by `orbit publish`:
 ``` json
 {
-  // schema version
-  "version": integer,
-  // serialized project manifest (Orbit.toml) data
+  // Schema version
+  "version": 1,
+  // Serialized project manifest (Orbit.toml) data
   "manifest": {
     "project": {
       "name": "string",
       "uuid": "string",
       "version": "string",
-      // ... see manifest reference for all properties
+      // ... See manifest reference for all properties
     }
   },
-  // list of all local design units
+  // List of all local units
   "units": [
     {
-      // the identifier of the design unit
+      // The identifier of the unit
       "name": "string",
-      // the primary design unit type (examples: "entity", "module", "package")
+      // The primary unit type (examples: "entity", "module", "package")
       "type": "string",
-      // native language (choices: "vhdl", "verilog", "systemverilog")
+      // Native hardware description language (choices: "vhdl", "verilog", "systemverilog")
       "language": "string",
-      // visibility of unit (choices: "public", "protected", "private")
+      // Source visibility (choices: "public", "protected", "private")
       "visibility": "string",
-      // list of files relative to the project that define this unit
+      // Paths relative to the project's root directory for the source file that declare and implement this unit
       "sources": [
         "string"
       ],
-      // list of design unit names that this unit requires
+      // List of unit names that the current unit requires
       "dependencies": [
         "string"
       ]
@@ -126,4 +126,4 @@ The latest schema version is `1`. Schema versions increment by 1 whenever there 
 
 ## References
 
-Some ideas about exporting json can be found at this [blog post](https://blog.kellybrazil.com/2021/12/03/tips-on-adding-json-output-to-your-cli-app/).
+Some ideas about exporting JSON can be found at this [blog post](https://blog.kellybrazil.com/2021/12/03/tips-on-adding-json-output-to-your-cli-app/).

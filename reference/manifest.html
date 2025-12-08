@@ -19,7 +19,7 @@
         <link rel="shortcut icon" href="../favicon-15e1d472.png">
         <link rel="stylesheet" href="../css/variables-8adf115d.css">
         <link rel="stylesheet" href="../css/general-2459343d.css">
-        <link rel="stylesheet" href="../css/chrome-9dfbd86b.css">
+        <link rel="stylesheet" href="../css/chrome-ae938929.css">
         <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
 
         <!-- Fonts -->
@@ -38,7 +38,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-53c9339b.js";
+            window.path_to_searchindex_js = "../searchindex-b23682d8.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-2c693c97.js"></script>
@@ -197,7 +197,7 @@
 <li><a href="#the-documentation-field">documentation</a> - URL of the project documentation.</li>
 <li><a href="#the-authors-field">authors</a> - The authors of the project.</li>
 <li><a href="#the-library-field">library</a> - The HDL library for the design units within the project.</li>
-<li><a href="#the-repository-field">repository</a> - The URL of the project source repository.</li>
+<li><a href="#the-source-field">source</a> - URL of the project source code.</li>
 <li><a href="#the-public-field">public</a> - Source files to be visible to other project.</li>
 <li><a href="#the-keywords-field">keywords</a> - A list of simple words categorizing the project.</li>
 <li><a href="#the-channels-field">channels</a> - The channels to update when publishing the project.</li>
@@ -265,12 +265,12 @@ authors = ["Duncan Idaho", "Gurney Halleck &lt;ghalleck@dune.mov&gt;"]
 # ...
 library = "axi"
 </code></pre>
-<h3 id="the-repository-field"><a class="header" href="#the-repository-field">The <code>repository</code> field</a></h3>
-<p>The <code>repository</code> entry is a string that represents the URL where this project is stored on the internet.</p>
+<h3 id="the-source-field"><a class="header" href="#the-source-field">The <code>source</code> field</a></h3>
+<p>The <code>source</code> entry is a string that represents the URL where this project is stored on the internet.</p>
 <p>It is encouraged that this value is used among protocols, so it is important that an exact state of the project can be retreived using this field (and potentially other fields, such as <code>version</code>).</p>
 <pre><code class="language-toml">[project]
 # ...
-repository = "https://github.com/chaseruskin/orbit/archive/refs/tags/1.0.0.zip"
+source = "https://github.com/chaseruskin/orbit/archive/refs/tags/1.0.0.zip"
 </code></pre>
 <h3 id="the-public-field"><a class="header" href="#the-public-field">The <code>public</code> field</a></h3>
 <p>The <code>public</code> field is an array of strings that specify which source files are publicly accessible to external projects.</p>

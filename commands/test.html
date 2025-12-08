@@ -19,7 +19,7 @@
         <link rel="shortcut icon" href="../favicon-15e1d472.png">
         <link rel="stylesheet" href="../css/variables-8adf115d.css">
         <link rel="stylesheet" href="../css/general-2459343d.css">
-        <link rel="stylesheet" href="../css/chrome-9dfbd86b.css">
+        <link rel="stylesheet" href="../css/chrome-ae938929.css">
         <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
 
         <!-- Fonts -->
@@ -38,7 +38,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-53c9339b.js";
+            window.path_to_searchindex_js = "../searchindex-b23682d8.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-2c693c97.js"></script>
@@ -196,6 +196,10 @@ requests a testbench, if you must not allow a testbench, see <code>orbit build</
 <p>A target must be provided for the test command to run. A default target can
 be specified in a configuration file, which will be used when a target is
 omitted from the command-line.</p>
+<p>When the <code>--dut</code> option and the <code>--tb</code> option are omitted, all possible
+DUTs and TBs are included, leaving the respective DUT and TB environment
+variables empty. Filesets using valid string swapping variables such as
+<code>orbit.dut.name</code> will resolve to the wildcard character (<code>*</code>).</p>
 <p>If <code>--list</code> is used, then it will display a list of the available targets to
 the user. Using <code>--list</code> in combination with a target from <code>--target</code> will
 display any detailed help information the target has documented in its
@@ -222,7 +226,6 @@ returned from the user-defined execution process is propagated through Orbit.</p
 <p><code>--target-dir &lt;dir&gt;</code><br>            The relative directory where the target starts</p>
 <p><code>--command &lt;path&gt;</code><br>            Overwrite the target’s command</p>
 <p><code>--list, -l</code><br>            View available targets and exit</p>
-<p><code>--all</code><br>            Include all hdl files of the current project</p>
 <p><code>--fileset &lt;key=glob&gt;...</code><br>            A glob-style pattern identified by name to include in the blueprint</p>
 <p><code>--keep, -k</code><br>            Do not clean the target folder before execution</p>
 <p><code>--force</code><br>            Force the target to execute</p>

@@ -19,7 +19,7 @@
         <link rel="shortcut icon" href="../favicon-15e1d472.png">
         <link rel="stylesheet" href="../css/variables-8adf115d.css">
         <link rel="stylesheet" href="../css/general-2459343d.css">
-        <link rel="stylesheet" href="../css/chrome-9dfbd86b.css">
+        <link rel="stylesheet" href="../css/chrome-ae938929.css">
         <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
 
         <!-- Fonts -->
@@ -38,7 +38,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-53c9339b.js";
+            window.path_to_searchindex_js = "../searchindex-b23682d8.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-2c693c97.js"></script>
@@ -231,11 +231,13 @@
 <li><a href="#the-test-section">[test]</a> - The test settings.
 <ul>
 <li><a href="#the-default-target-field">default-target</a> - Set the default target for tests.</li>
+<li><a href="#the-auto-discovery-field">auto-discovery</a> - Enable or disable testbench auto discovery.</li>
 </ul>
 </li>
 <li><a href="#the-build-section">[build]</a> - The build settings.
 <ul>
 <li><a href="#the-default-target-field">default-target</a> - Set the default target for builds.</li>
+<li><a href="#the-auto-discovery-field">auto-discovery</a> - Enable or disable top-level auto discovery.</li>
 </ul>
 </li>
 <li><a href="#the-publish-section">[publish]</a> - The publish settings.
@@ -311,6 +313,13 @@ target-dir = "target"
 default-target = "modelsim"
 </code></pre>
 <p>If the default target is set to be used and its name cannot be found among the known targets, the build process will error.</p>
+<h3 id="the-auto-discovery-field"><a class="header" href="#the-auto-discovery-field">The <code>auto-discovery</code> field</a></h3>
+<p>The optional <code>auto-discovery</code> key sets whether or not to allow Orbit to try to automatically discovery the testbench, if it is unambiguous.</p>
+<pre><code class="language-toml">[test]
+# ...
+auto-discovery = true
+</code></pre>
+<p>If this field is omitted, then auto discovery is enabled by default. Auto discovery is only attempted when the user does not provide the <code>--dut</code> and <code>--tb</code> options to <code>orbit test</code>.</p>
 <h3 id="the-build-section"><a class="header" href="#the-build-section">The <code>[build]</code> section</a></h3>
 <h3 id="the-default-target-field-1"><a class="header" href="#the-default-target-field-1">The <code>default-target</code> field</a></h3>
 <p>The optional <code>default-target</code> key sets the default target when starting the build process through the build entry point (<code>orbit build</code>).</p>
@@ -318,6 +327,13 @@ default-target = "modelsim"
 default-target = "vivado"
 </code></pre>
 <p>If the default target is set to be used and its name cannot be found among the known targets, the build process will error.</p>
+<h3 id="the-auto-discovery-field-1"><a class="header" href="#the-auto-discovery-field-1">The <code>auto-discovery</code> field</a></h3>
+<p>The optional <code>auto-discovery</code> key sets whether or not to allow Orbit to try to automatically discovery the testbench, if it is unambiguous.</p>
+<pre><code class="language-toml">[build]
+# ...
+auto-discovery = true
+</code></pre>
+<p>If this field is omitted, then auto discovery is enabled by default. Auto discovery is only attempted when the user does not provide the <code>--top</code> option to <code>orbit build</code>.</p>
 <h3 id="the-publish-section"><a class="header" href="#the-publish-section">The <code>[publish]</code> section</a></h3>
 <h3 id="the-default-channels-field"><a class="header" href="#the-default-channels-field">The <code>default-channels</code> field</a></h3>
 <p>The optional <code>default-channels</code> field is an array of strings that represent the names of known channels. When this field is provided and the current project omits the <code>channels</code> field from its manifest, the project will be published to the list of channels defined here. If the current project’s manifest does have the <code>channels</code> field defined, then the <code>default-channels</code> field is not applied.</p>
@@ -464,7 +480,7 @@ patterns = ["*.git"]
 <p>The <code>command</code> entry for a protocol is a string or an array of strings (<a href="#executable-paths-with-arguments">program path with args</a>) used to specify the external program and additional arguments (if they exist) to run for the download phase of the installation process.</p>
 <pre><code class="language-toml">[[protocol]]
 # ...
-command = ["git", "clone", "{{orbit.project.repository}}", "-b", "{{orbit.project.version}}"]
+command = ["git", "clone", "{{ orbit.project.source }}", "-b", "{{ orbit.project.version }}"]
 </code></pre>
 <p>This field is required when configuring a protocol.</p>
 <p>This field supports <a href="./../topic/swapping.html"><em>string swapping</em></a>.</p>

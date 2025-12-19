@@ -17,8 +17,11 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 ## 0.28.1 - unreleased
 
+### Changes
+- Updates `orbit get` JSON output to include all related source files (primary and secondary) for a given unit (primary file is always first in the list)
+
 ### Fixes
-- JSON blueprints now correctly have a primary design unit file listed as a  dependency of any of its corresponding sub unit files
+- JSON blueprints now correctly have a primary design unit file listed as a dependency of any of its corresponding sub unit files
 
 ## 0.28.0
 

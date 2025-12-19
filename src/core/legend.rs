@@ -29,14 +29,14 @@ use std::path::PathBuf;
 pub struct EntityJson<'a> {
     #[serde(flatten)]
     entity: &'a Entity,
-    source: &'a str,
+    sources: &'a Vec<String>,
 }
 
 impl<'a> EntityJson<'a> {
-    pub fn new(entity: &'a Entity, source: &'a str) -> Self {
+    pub fn new(entity: &'a Entity, sources: &'a Vec<String>) -> Self {
         Self {
             entity: entity,
-            source: source,
+            sources: sources,
         }
     }
 }
@@ -45,14 +45,14 @@ impl<'a> EntityJson<'a> {
 pub struct ModuleJson<'a> {
     #[serde(flatten)]
     module: &'a Module,
-    source: &'a str,
+    sources: &'a Vec<String>,
 }
 
 impl<'a> ModuleJson<'a> {
-    pub fn new(module: &'a Module, source: &'a str) -> Self {
+    pub fn new(module: &'a Module, sources: &'a Vec<String>) -> Self {
         Self {
             module: module,
-            source: source,
+            sources: sources,
         }
     }
 }
@@ -74,15 +74,15 @@ impl<'a> Legend<'a> {
         Self { keys: Vec::new() }
     }
 
-    pub fn add_module(&mut self, module: &'a Module, file: &'a str) {
-        self.keys
-            .push(UnitKey::Module(ModuleJson::new(module, file)));
-    }
+    // pub fn add_module(&mut self, module: &'a Module, file: &'a str) {
+    //     self.keys
+    //         .push(UnitKey::Module(ModuleJson::new(module, file)));
+    // }
 
-    pub fn add_entity(&mut self, entity: &'a Entity, file: &'a str) {
-        self.keys
-            .push(UnitKey::Entity(EntityJson::new(entity, file)));
-    }
+    // pub fn add_entity(&mut self, entity: &'a Entity, file: &'a str) {
+    //     self.keys
+    //         .push(UnitKey::Entity(EntityJson::new(entity, file)));
+    // }
 
     pub fn get_filename(&self) -> String {
         String::from("legend.json")

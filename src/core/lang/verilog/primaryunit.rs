@@ -54,7 +54,7 @@ impl PrimaryUnit {
         let unit = Unit {
             name: Identifier::from_str(tbl.get("identifier")?.as_str()?).unwrap(),
             symbol: None,
-            source: String::new(),
+            sources: Vec::new(),
         };
         let shape = match tbl.get("type")?.as_str()? {
             "module" => PrimaryShape::Module,
@@ -88,7 +88,7 @@ pub struct Unit {
     name: Identifier,
     symbol: Option<VerilogSymbol>,
     /// source code file
-    source: String,
+    sources: Vec<String>,
 }
 
 impl Unit {
@@ -100,8 +100,8 @@ impl Unit {
         self.symbol.as_mut()
     }
 
-    pub fn get_source_file(&self) -> &str {
-        &self.source
+    pub fn get_source_files(&self) -> &Vec<String> {
+        &self.sources
     }
 
     pub fn is_usable_component(&self) -> Option<()> {
@@ -154,7 +154,7 @@ fn analyze(source_file: &str) -> Result<HashMap<Identifier, PrimaryUnit>, CodeFa
                         unit: Unit {
                             name: name.unwrap().clone(),
                             symbol: Some(sym),
-                            source: source_file.to_string(),
+                            sources: vec![source_file.to_string()],
                         },
                     },
                 )),
@@ -165,7 +165,7 @@ fn analyze(source_file: &str) -> Result<HashMap<Identifier, PrimaryUnit>, CodeFa
                         unit: Unit {
                             name: name.unwrap().clone(),
                             symbol: Some(sym),
-                            source: source_file.to_string(),
+                            sources: vec![source_file.to_string()],
                         },
                     },
                 )),
@@ -176,7 +176,7 @@ fn analyze(source_file: &str) -> Result<HashMap<Identifier, PrimaryUnit>, CodeFa
                         unit: Unit {
                             name: name.unwrap().clone(),
                             symbol: Some(sym),
-                            source: source_file.to_string(),
+                            sources: vec![source_file.to_string()],
                         },
                     },
                 )),
@@ -196,7 +196,7 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<Identifier, PrimaryU
 
     for pri_unit in divided_results? {
         for (_key, primary) in pri_unit {
-            let pri_src = PathBuf::from(primary.get_unit().get_source_file());
+            let pri_src = PathBuf::from(primary.get_unit().get_source_files().first().unwrap());
             let pri_pos = primary
                 .get_unit()
                 .get_symbol()
@@ -210,7 +210,7 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<Identifier, PrimaryU
                     None,
                     Box::new(HdlNamingError::DuplicateIdentifier(
                         dupe.get_name().to_string(),
-                        PathBuf::from(dupe.get_unit().get_source_file()),
+                        PathBuf::from(dupe.get_unit().get_source_files().first().unwrap()),
                         dupe.get_unit().get_symbol().unwrap().get_position().clone(),
                         pri_src,
                         pri_pos,

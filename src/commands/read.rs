@@ -288,7 +288,7 @@ impl Read {
                     ))?;
                 } else {
                     (
-                        unit.get_source_file(),
+                        unit.get_source_files().first().unwrap(),
                         match unit.get_lang() {
                             Lang::Vhdl => unit.get_vhdl_symbol().unwrap().get_position().clone(),
                             Lang::Verilog => {

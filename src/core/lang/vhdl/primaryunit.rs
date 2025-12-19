@@ -97,7 +97,7 @@ impl PrimaryUnit {
         let unit = Unit {
             name: Identifier::from_str(tbl.get("identifier")?.as_str()?).unwrap(),
             symbol: None,
-            source: String::new(),
+            sources: Vec::new(),
         };
         let shape = match tbl.get("type")?.as_str()? {
             "entity" => PrimaryShape::Entity,
@@ -133,7 +133,7 @@ pub struct Unit {
     name: Identifier,
     symbol: Option<VhdlSymbol>,
     /// source code file
-    source: String,
+    sources: Vec<String>,
 }
 
 impl Unit {
@@ -152,8 +152,17 @@ impl Unit {
         self.symbol.as_mut()
     }
 
-    pub fn get_source_file(&self) -> &str {
-        &self.source
+    pub fn get_source_files(&self) -> &Vec<String> {
+        &self.sources
+    }
+
+    /// Adds a source file to the list of known source files tied to this unit.
+    ///
+    /// Only adds the file to the list if it is not already in the list.
+    pub fn add_source_file(&mut self, src: String) {
+        if self.sources.contains(&src) == false {
+            self.sources.push(src);
+        }
     }
 }
 
@@ -216,7 +225,7 @@ fn analyze(
                         unit: Unit {
                             name: name,
                             symbol: Some(sym),
-                            source: source_file.to_string(),
+                            sources: vec![source_file.to_string()],
                         },
                     },
                 ),
@@ -231,8 +240,10 @@ fn analyze(
     sub_nodes
         .into_iter()
         .map(|n| match n {
-            VhdlSymbol::Architecture(arch) => SubUnit::from_arch(arch),
-            VhdlSymbol::PackageBody(pkg_body) => SubUnit::from_body(pkg_body),
+            VhdlSymbol::Architecture(arch) => SubUnit::from_arch(arch, source_file.to_string()),
+            VhdlSymbol::PackageBody(pkg_body) => {
+                SubUnit::from_body(pkg_body, source_file.to_string())
+            }
             _ => panic!("primary design units cannot be here"),
         })
         .for_each(|n| {
@@ -265,7 +276,7 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<Identifier, PrimaryU
 
     for pri_unit in pri_units {
         for (_key, primary) in pri_unit {
-            let pri_src = PathBuf::from(primary.get_unit().get_source_file());
+            let pri_src = PathBuf::from(primary.get_unit().get_source_files().first().unwrap());
             let pri_pos = primary
                 .get_unit()
                 .get_symbol()
@@ -278,7 +289,7 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<Identifier, PrimaryU
                     None,
                     Box::new(HdlNamingError::DuplicateIdentifier(
                         dupe.get_name().to_string(),
-                        PathBuf::from(dupe.get_unit().get_source_file()),
+                        PathBuf::from(dupe.get_unit().get_source_files().first().unwrap()),
                         all_result
                             .get(dupe.get_name())
                             .unwrap()
@@ -298,7 +309,11 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<Identifier, PrimaryU
     // connect architectures and other postponed secondary nodes
     for sub_nodes in all_sub_nodes {
         sub_nodes.into_iter().for_each(|n| {
+            // check if the secondary unit has a primary unit
             if let Some(owner) = all_result.get_mut(n.get_entity()) {
+                // add its source file to the list for the primary unit
+                owner.unit.add_source_file(n.get_source_file().clone());
+                // check if we need to update architecture information
                 if n.is_arch() && owner.is_entity() {
                     owner.steal_refs(n.get_refs().clone());
                     // adding the architecture to this entity
@@ -309,7 +324,6 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<Identifier, PrimaryU
             }
         });
     }
-
     Ok(all_result)
 }
 

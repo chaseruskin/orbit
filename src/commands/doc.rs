@@ -522,7 +522,9 @@ impl<'a> DocProject<'a> {
         let mut contents = String::new();
         // try to find the source file
         let src_file = match unit_map.get(du_name) {
-            Some(lu) => Some(Self::get_hdl_source_md_name(lu.get_source_file()).0),
+            Some(lu) => {
+                Some(Self::get_hdl_source_md_name(lu.get_source_files().first().unwrap()).0)
+            }
             None => None,
         };
 

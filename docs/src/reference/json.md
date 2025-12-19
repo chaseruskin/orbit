@@ -43,8 +43,10 @@ The following schema is implemented for the JSON output of `orbit get`:
   ],
   // Hardware description language (choices: "vhdl", "verilog", "systemverilog")
   "language": "string",
-  // Full path to the source file that declares this unit
-  "source": "string"
+  // Full paths to the source files that declare and implement this unit
+  "sources": [
+    "string"
+  ]
 }
 ```
 
@@ -74,7 +76,7 @@ The following schema is currently implemented for JSON output of `orbit tree`:
 ]
 ```
 
-## Published projects
+## Projects
 
 The `orbit publish` command allows users to automate the process of maintaining a centralized location where released projects can be found. When successfully ran, this command copies a project's manifest to a directory dedicated to storing manifests.
 
@@ -109,7 +111,7 @@ The following schema is currently implemented for the JSON file `Orbit.json` pro
       "language": "string",
       // Source visibility (choices: "public", "protected", "private")
       "visibility": "string",
-      // Paths relative to the project's root directory for the source file that declare and implement this unit
+      // Paths relative to the project's root directory for the source files that declare and implement this unit
       "sources": [
         "string"
       ],

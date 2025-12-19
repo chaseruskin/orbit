@@ -983,14 +983,14 @@ impl Plan {
                 VhdlSymbol::Architecture(arch) => {
                     sub_nodes.push((
                         LangIdentifier::Vhdl(vhdl_lib.clone()),
-                        SubUnitNode::new(SubUnit::from_arch(arch), node),
+                        SubUnitNode::new(SubUnit::from_arch(arch, node.get_file().clone()), node),
                     ));
                     None
                 }
                 VhdlSymbol::Configuration(cfg) => {
                     sub_nodes.push((
                         LangIdentifier::Vhdl(vhdl_lib.clone()),
-                        SubUnitNode::new(SubUnit::from_config(cfg), node),
+                        SubUnitNode::new(SubUnit::from_config(cfg, node.get_file().clone()), node),
                     ));
                     None
                 }
@@ -998,7 +998,7 @@ impl Plan {
                 VhdlSymbol::PackageBody(pb) => {
                     sub_nodes.push((
                         LangIdentifier::Vhdl(vhdl_lib.clone()),
-                        SubUnitNode::new(SubUnit::from_body(pb), node),
+                        SubUnitNode::new(SubUnit::from_body(pb, node.get_file().clone()), node),
                     ));
                     None
                 }

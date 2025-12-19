@@ -242,7 +242,7 @@ impl Get {
             }
         };
 
-        let source_file = unit.get_source_file();
+        let source_files = unit.get_source_files();
 
         // determine how to handle unit display
         match unit.get_lang() {
@@ -257,7 +257,7 @@ impl Get {
                             &project,
                             &module,
                             &c.get_sv_format(),
-                            source_file,
+                            source_files,
                         )
                     }
                     _ => self.display_vhdl_entity(
@@ -265,7 +265,7 @@ impl Get {
                         entity,
                         is_local,
                         &c.get_vhdl_format(),
-                        source_file,
+                        source_files,
                     ),
                 }
             }
@@ -281,14 +281,14 @@ impl Get {
                             &entity,
                             is_local,
                             &c.get_vhdl_format(),
-                            source_file,
+                            source_files,
                         )
                     }
                     _ => self.display_verilog_module(
                         &project,
                         module,
                         &c.get_sv_format(),
-                        source_file,
+                        source_files,
                     ),
                 }
             }
@@ -308,14 +308,14 @@ impl Get {
                             &entity,
                             is_local,
                             &c.get_vhdl_format(),
-                            source_file,
+                            source_files,
                         )
                     }
                     _ => self.display_verilog_module(
                         &project,
                         module,
                         &c.get_sv_format(),
-                        source_file,
+                        source_files,
                     ),
                 }
             }
@@ -330,7 +330,7 @@ impl Get {
         entity: &Entity,
         is_local: bool,
         fmt: &VhdlFormat,
-        source: &str,
+        sources: &Vec<String>,
     ) -> Result<(), Fault> {
         // determine if default print should appear
         let default_output = self.architectures == false
@@ -437,7 +437,7 @@ impl Get {
             }
             println!(
                 "{}",
-                serde_json::to_string(&EntityJson::new(&entity, &source))?
+                serde_json::to_string(&EntityJson::new(&entity, &sources))?
             );
         }
 
@@ -449,7 +449,7 @@ impl Get {
         _ip: &Project,
         module: &Module,
         fmt: &SystemVerilogFormat,
-        source: &str,
+        sources: &Vec<String>,
     ) -> Result<(), Fault> {
         // determine if default print should appear
         let default_output = self.architectures == false
@@ -505,7 +505,7 @@ impl Get {
             }
             println!(
                 "{}",
-                serde_json::to_string(&ModuleJson::new(&module, &source))?
+                serde_json::to_string(&ModuleJson::new(&module, &sources))?
             );
         }
 

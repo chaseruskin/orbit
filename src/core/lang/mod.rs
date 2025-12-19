@@ -255,7 +255,7 @@ impl LangUnit {
 
     /// Checks if the module is public.
     pub fn is_listed_public(&self, plist: &VipList) -> bool {
-        plist.is_included(self.get_source_file())
+        plist.is_included(self.get_source_files().first().unwrap())
     }
 
     pub fn get_visibility(&self) -> &Visibility {
@@ -309,11 +309,11 @@ impl LangUnit {
         }
     }
 
-    pub fn get_source_file(&self) -> &str {
+    pub fn get_source_files(&self) -> &Vec<String> {
         match &self {
-            Self::Vhdl(u, _) => u.get_unit().get_source_file(),
-            Self::Verilog(u, _) => u.get_unit().get_source_file(),
-            Self::SystemVerilog(u, _) => u.get_unit().get_source_file(),
+            Self::Vhdl(u, _) => u.get_unit().get_source_files(),
+            Self::Verilog(u, _) => u.get_unit().get_source_files(),
+            Self::SystemVerilog(u, _) => u.get_unit().get_source_files(),
         }
     }
 
@@ -554,10 +554,12 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<LangIdentifier, Lang
             let current_dir = std::env::current_dir().unwrap();
             let location_1 = filesystem::remove_base(
                 &current_dir,
-                &PathBuf::from(existing_unit.get_source_file()),
+                &PathBuf::from(existing_unit.get_source_files().first().unwrap()),
             );
-            let location_2 =
-                filesystem::remove_base(&current_dir, &PathBuf::from(old_unit.get_source_file()));
+            let location_2 = filesystem::remove_base(
+                &current_dir,
+                &PathBuf::from(old_unit.get_source_files().first().unwrap()),
+            );
             return Err(CodeFault(
                 None,
                 Box::new(Error::DuplicateIdentifiersCrossLang(
@@ -584,10 +586,12 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<LangIdentifier, Lang
             let current_dir = std::env::current_dir().unwrap();
             let location_1 = filesystem::remove_base(
                 &current_dir,
-                &PathBuf::from(existing_unit.get_source_file()),
+                &PathBuf::from(existing_unit.get_source_files().first().unwrap()),
             );
-            let location_2 =
-                filesystem::remove_base(&current_dir, &PathBuf::from(old_unit.get_source_file()));
+            let location_2 = filesystem::remove_base(
+                &current_dir,
+                &PathBuf::from(old_unit.get_source_files().first().unwrap()),
+            );
             return Err(CodeFault(
                 None,
                 Box::new(Error::DuplicateIdentifiersCrossLang(

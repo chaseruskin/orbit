@@ -129,7 +129,9 @@ fn graph_project<'a>(
                                                     .get_man()
                                                     .get_project()
                                                     .into_project_id_spec(),
-                                                PathBuf::from(dupe.get_source_file()),
+                                                PathBuf::from(
+                                                    dupe.get_source_files().first().unwrap(),
+                                                ),
                                                 dupe.get_position().clone(),
                                             )),
                                         ))?;
@@ -142,7 +144,9 @@ fn graph_project<'a>(
                                                     .get_man()
                                                     .get_project()
                                                     .into_project_id_spec(),
-                                                PathBuf::from(dupe.get_source_file()),
+                                                PathBuf::from(
+                                                    dupe.get_source_files().first().unwrap(),
+                                                ),
                                                 dupe.get_position().clone(),
                                             )),
                                         ))?;
@@ -219,7 +223,11 @@ fn graph_project<'a>(
                                                                 .get_man()
                                                                 .get_project()
                                                                 .into_project_id_spec(),
-                                                            PathBuf::from(dupe.get_source_file()),
+                                                            PathBuf::from(
+                                                                dupe.get_source_files()
+                                                                    .first()
+                                                                    .unwrap(),
+                                                            ),
                                                             dupe.get_position().clone(),
                                                         ),
                                                     ),

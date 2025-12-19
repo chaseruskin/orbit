@@ -15,6 +15,11 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.28.1 - unreleased
+
+### Fixes
+- JSON blueprints now correctly have a primary design unit file listed as a  dependency of any of its corresponding sub unit files
+
 ## 0.28.0
 
 ### Features

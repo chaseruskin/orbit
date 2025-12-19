@@ -628,7 +628,7 @@ fn install_dst(
     cached_prj
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Clone)]
 pub struct ProjectFileNode<'a> {
     file: String,
     library: LangIdentifier,
@@ -646,6 +646,16 @@ impl<'a> Ord for ProjectFileNode<'a> {
 impl<'a> PartialOrd for ProjectFileNode<'a> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
+    }
+}
+
+impl<'a> PartialEq for ProjectFileNode<'a> {
+    fn eq(&self, other: &Self) -> bool {
+        // do not care about the dependency file list when comparing project file nodes
+        self.file == other.file
+            && self.library == other.library
+            && self.project == other.project
+            && self.lang == other.lang
     }
 }
 
@@ -695,8 +705,12 @@ impl<'a> ProjectFileNode<'a> {
     }
 
     /// Sets the list of direct dependency filepaths.
-    pub fn set_dep_files(&mut self, deps: Vec<String>) {
-        self.dep_files = deps;
+    pub fn add_dep_files(&mut self, mut deps: Vec<String>) {
+        self.dep_files.append(&mut deps);
+    }
+
+    pub fn add_dep_file(&mut self, dep: String) {
+        self.dep_files.push(dep);
     }
 
     /// Get the direct dependency filepaths.

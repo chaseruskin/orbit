@@ -1670,6 +1670,12 @@ impl Plan {
                 .unwrap()
                 .as_ref()
                 .get_associated_files();
+            // call the parent file the first file (all files after first must link to it)
+            let primary_file = if let Some(pf) = ipfs.first() {
+                pf.get_file()
+            } else {
+                continue;
+            };
             // handle each associated file in the list
             ipfs.into_iter().for_each(|&prj_file_node| {
                 // collect all dependencies in the graph from this node
@@ -1687,10 +1693,11 @@ impl Plan {
                     // enter the new unmarked node and its dependencies
                     None => {
                         file_order.push(prj_file_node.get_file().clone());
-                        file_map.insert(
-                            prj_file_node.get_file().clone(),
-                            (prj_file_node.clone(), preds),
-                        );
+                        let mut pfn = prj_file_node.clone();
+                        if primary_file != prj_file_node.get_file() {
+                            pfn.add_dep_file(primary_file.clone());
+                        }
+                        file_map.insert(prj_file_node.get_file().clone(), (pfn, preds));
                     }
                 }
             });
@@ -1745,7 +1752,7 @@ impl Plan {
                 // remove all duplicates (only works on sorted lists)
                 dep_files.dedup();
                 // set this file's list of dependency files
-                ifn.set_dep_files(dep_files);
+                ifn.add_dep_files(dep_files);
                 ifn
             })
             .collect();

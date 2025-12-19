@@ -8,7 +8,7 @@ set -e
 
 # Run tested workflow
 cd .
-orbit build --force --target foo
+orbit build --force --target foo --plan tsv
 
 # Verify the correct behavior occurred without error
 python comp.py

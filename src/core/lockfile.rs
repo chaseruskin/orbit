@@ -285,11 +285,11 @@ pub mod v1 {
         name: ProjectName,
         version: Version,
         uuid: Uuid,
-        // @note: `sum` is optional because the root package will have its sum omitted
+        // This field is optional because the root package will have its sum omitted
         checksum: Option<Sha256Hash>,
         #[serde(deserialize_with = "source::read_string", default)]
         source: Option<Source>,
-        // @note: `path` is optional and only used if the dependency list uses a local project
+        // This field is optional and only used if the dependency list uses a local project
         path: Option<PathBuf>,
         dependencies: Vec<PartialProjectIdSpec>,
     }

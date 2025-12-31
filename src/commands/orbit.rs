@@ -256,7 +256,7 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 const REPOSITORY: &str = env!("CARGO_PKG_REPOSITORY");
 
-const DISCLAIMER: &str = r#"Copyright (C) 2022-2025  Chase Ruskin
+const DISCLAIMER: &str = r#"Copyright (C) 2022-2025 Chase Ruskin
 
 Orbit is free software, covered by the GNU General Public License. There is NO 
 warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE."#;

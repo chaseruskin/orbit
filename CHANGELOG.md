@@ -15,6 +15,8 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## UNRELEASED
+
 ## 0.28.1
 
 ### Changes

@@ -89,7 +89,7 @@ You can also review the license for Orbit:
 $ orbit --license
 ```
 ```
-Copyright (C) 2022 - 2025 Chase Ruskin
+Copyright (C) 2022-2026 Chase Ruskin
 
 This program is free software, covered by the GNU General Public License. There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 ```

@@ -55,19 +55,17 @@ and_gate                            entity        public
 nand_gate                           entity        public 
 ```
 
-Okay, how did we implement the NAND gate architecture?
+Okay, how did we implement the NAND gate architecture? We can compile the set of inline documentation for the current project's source code and all of its dependencies by using the `doc` subcommand.
 ```
-$ orbit read --project gates nand_gate --start architecture
+$ orbit doc
 ```
-```
-architecture rtl of nand_gate is
-begin
 
-  x <= a nand b;
-
-end architecture;
+The documentation is compiled into HTML that can be hosted locally. One such way to host the HTML may be through Python's built-in `http.server` module as with the following command:
 ```
-Cool, we had used the VHDL keyword `nand` to describe that particular circuit. Sometimes it may be insightful to read code snippets and comments from external design units when trying to integrate them into a new project.
+$ python3 -m http.server -d target/doc
+```
+
+Generating documentation for a project and all of its dependencies may be helpful when trying to integrate units into a new project by reading the inline documentation and source code for a given unit.
 
 ## Integrating design units across projects
 

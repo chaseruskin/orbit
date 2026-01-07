@@ -28,9 +28,12 @@ Filename: nand_gate.vhd
 library ieee;
 use ieee.std_logic_1164.all;
 
+-- Performs the NAND combinational boolean function between two inputs.
 entity nand_gate is
   port(
+    -- Source input
     a, b : in std_logic;
+    -- Combinational nand output
     x : out std_logic
   );
 end entity;
@@ -54,9 +57,12 @@ Filename: and_gate.vhd
 library ieee;
 use ieee.std_logic_1164.all;
 
+-- Performs the AND combinational boolean function between two inputs.
 entity and_gate is
   port(
+    -- Source input
     a, b : in std_logic;
+    -- Combinational and output
     y : out std_logic
   );
 end entity;
@@ -107,9 +113,12 @@ Filename: and_gate.vhd
 library ieee;
 use ieee.std_logic_1164.all;
 
+-- Performs the AND combinational boolean function between two inputs.
 entity and_gate is
   port(
+    -- Source input
     a, b : in std_logic;
+    -- Combinational and output
     y : out std_logic
   );
 end entity;
@@ -202,13 +211,13 @@ Filename: .orbit/config.toml
 [[target]]
 name = "yilinx"
 description = "Generate bitstreams for Yilinx FPGAs"
-command = ["python", "yilinx.py"]
+command = ["python3", "yilinx.py"]
 ```
 
 ### Calling a target
 
 ```
-$ orbit build --target yilinx
+$ orbit build --target yilinx --top and_gate
 ```
 ```
 info: lockfile experienced no changes

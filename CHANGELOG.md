@@ -17,6 +17,9 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 ## UNRELEASED
 
+### Fixes
+- Fixes bug when a project's lockfile with no relative dependencies failed to automatically synchronize with the manifest during a local install of a project
+
 ## 0.28.1
 
 ### Changes

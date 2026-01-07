@@ -466,17 +466,25 @@ impl Project {
         if target_is_ok == false {
             return false;
         }
-        // check that all entries are valid of dependencies and dev dependencies
+        // check that all entries are valid of dependencies and dev dependencies (at this point
+        // we have already verified that the number of dependencies in the manifest's lock entry matches the number
+        // of dependencies listed in the manifest itself)
         for dep in self.get_man().get_deps_list(true, true) {
             if let Some(entry) = self.get_lock().get(dep.0, dep.1.get_version()) {
+                // Check if the manifest entry is relative
                 if let Some(relative_ip) = dep.1.as_project() {
+                    // Carry on if the lock entry is also relative
                     if &LockEntry::from((relative_ip, true)) == entry {
                         ()
+                    // Consider out-of-date if the manifest entry is relative but the lock entry does not match
                     } else {
                         return false;
                     }
-                } else {
+                // Consider out-of-date if the lock entry is relative but the manifest entry was not
+                } else if entry.is_relative() {
                     return false;
+                } else {
+                    ()
                 }
             } else {
                 return false;

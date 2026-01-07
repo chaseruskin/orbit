@@ -38,7 +38,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-6e9ba2a6.js";
+            window.path_to_searchindex_js = "../searchindex-bcc65cca.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-9c44c394.js"></script>
@@ -202,9 +202,12 @@
 <pre><code class="language-vhdl">library ieee;
 use ieee.std_logic_1164.all;
 
+-- Performs the NAND combinational boolean function between two inputs.
 entity nand_gate is
   port(
+    -- Source input
     a, b : in std_logic;
+    -- Combinational nand output
     x : out std_logic
   );
 end entity;
@@ -223,9 +226,12 @@ end architecture;
 <pre><code class="language-vhdl">library ieee;
 use ieee.std_logic_1164.all;
 
+-- Performs the AND combinational boolean function between two inputs.
 entity and_gate is
   port(
+    -- Source input
     a, b : in std_logic;
+    -- Combinational and output
     y : out std_logic
   );
 end entity;
@@ -270,9 +276,12 @@ uX : nand_gate
 <pre><code class="language-vhdl">library ieee;
 use ieee.std_logic_1164.all;
 
+-- Performs the AND combinational boolean function between two inputs.
 entity and_gate is
   port(
+    -- Source input
     a, b : in std_logic;
+    -- Combinational and output
     y : out std_logic
   );
 end entity;
@@ -350,10 +359,10 @@ print('YILINX:','Bitstream saved at: target/yilinx/fpga.bit')
 <pre><code class="language-toml">[[target]]
 name = "yilinx"
 description = "Generate bitstreams for Yilinx FPGAs"
-command = ["python", "yilinx.py"]
+command = ["python3", "yilinx.py"]
 </code></pre>
 <h3 id="calling-a-target"><a class="header" href="#calling-a-target">Calling a target</a></h3>
-<pre><code>$ orbit build --target yilinx
+<pre><code>$ orbit build --target yilinx --top and_gate
 </code></pre>
 <pre><code>info: lockfile experienced no changes
 info: top-level set to and_gate

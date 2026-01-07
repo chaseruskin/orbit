@@ -38,7 +38,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-6e9ba2a6.js";
+            window.path_to_searchindex_js = "../searchindex-bcc65cca.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-9c44c394.js"></script>
@@ -219,17 +219,13 @@ gates = "0.1.0" # Add the dependency here!
 <pre><code>and_gate                            entity        public 
 nand_gate                           entity        public 
 </code></pre>
-<p>Okay, how did we implement the NAND gate architecture?</p>
-<pre><code>$ orbit read --project gates nand_gate --start architecture
+<p>Okay, how did we implement the NAND gate architecture? We can compile the set of inline documentation for the current project’s source code and all of its dependencies by using the <code>doc</code> subcommand.</p>
+<pre><code>$ orbit doc
 </code></pre>
-<pre><code>architecture rtl of nand_gate is
-begin
-
-  x &lt;= a nand b;
-
-end architecture;
+<p>The documentation is compiled into HTML that can be hosted locally. One such way to host the HTML may be through Python’s built-in <code>http.server</code> module as with the following command:</p>
+<pre><code>$ python3 -m http.server -d target/doc
 </code></pre>
-<p>Cool, we had used the VHDL keyword <code>nand</code> to describe that particular circuit. Sometimes it may be insightful to read code snippets and comments from external design units when trying to integrate them into a new project.</p>
+<p>Generating documentation for a project and all of its dependencies may be helpful when trying to integrate units into a new project by reading the inline documentation and source code for a given unit.</p>
 <h2 id="integrating-design-units-across-projects"><a class="header" href="#integrating-design-units-across-projects">Integrating design units across projects</a></h2>
 <p>Let’s use the NAND gate we previously defined to construct a half adder circuit. We can use the shorthand switches <code>-s</code> and  <code>-i</code> for the  <code>--signals</code> and <code>--instance</code> flags, respectively.</p>
 <pre><code>$ orbit get --project gates nand_gate -si

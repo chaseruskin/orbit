@@ -51,6 +51,19 @@ pub struct Target {
 }
 
 impl Target {
+    pub fn doc(root: PathBuf, browser: String) -> Self {
+        Self {
+            name: String::from("doc"),
+            description: None,
+            root: Some(root),
+            command: Command::from_vec(vec![browser]).unwrap(),
+            fileset: None,
+            plans: None,
+            build: None,
+            test: None,
+        }
+    }
+
     /// Performs variable substitution on the provided arguments for the target.
     pub fn replace_vars_in_args(mut self, vtable: &StrSwapTable) -> Self {
         self.command = self.command.replace_vars_in_args(vtable);

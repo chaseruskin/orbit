@@ -39,6 +39,8 @@ pub enum Error {
     CannotAutoExtractNameFromPath(String, LastError, Hint),
     #[error("environment variable \"BROWSER\" is required to open docs, but is not set")]
     BrowserEnvVarMissing,
+    #[error("environment variable \"BROWSER\" is required to open docs, but is an empty string")]
+    BrowserEnvVarEmpty,
     #[error("file system path {0:?} is missing a name{1}")]
     MissingFileSystemPathName(PathBuf, Hint),
     #[error("process failed to unlock file {0:?}: {1}")]
@@ -71,6 +73,8 @@ pub enum Error {
     TargetNotSpecified(Hint),
     #[error("failed to generate documentation: {0}")]
     DocGenFailed(LastError),
+    #[error("failed to open documentation: {0}")]
+    DocOpenFailed(LastError),
     #[error("failed to execute target process: {0}")]
     TargetProcFailed(LastError),
     #[error("failed to execute protocol process: {0}")]

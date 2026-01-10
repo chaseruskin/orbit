@@ -37,12 +37,16 @@ use crate::core::lang::LangUnit;
 use crate::core::lockfile::LockEntry;
 use crate::core::lockfile::LockFile;
 use crate::core::project::Project;
+use crate::core::target::Process;
+use crate::core::target::Target;
 use crate::core::version::AnyVersion;
 use crate::error::Error;
 use crate::error::LastError;
 use crate::info;
 use crate::util::anyerror::Fault;
 use crate::util::environment;
+use crate::util::environment::EnvVar;
+use crate::util::environment::Environment;
 use crate::util::filesystem;
 use crate::util::filesystem::LockZone;
 use crate::util::filesystem::{PRJ_CATALOG_EX_LOCK_NAME, PRJ_CATALOG_SH_LOCK_NAME};
@@ -53,7 +57,6 @@ use mdbook_driver::MDBook;
 use std::collections::HashMap;
 use std::path::Path;
 use std::path::PathBuf;
-use std::process::Command;
 use tempfile::TempDir;
 
 use cliproc::{cli, proc, stage::*};
@@ -93,16 +96,23 @@ impl Subcommand<Context> for Doc {
 
         let target_name = "doc";
 
+        let mut envs = Environment::new();
+
+        // First try to load the environment variable from the environment
+        if let Ok(val) = std::env::var(environment::BROWSER) {
+            envs.insert(EnvVar::new().key(environment::BROWSER).value(&val));
+        }
+        // Next read the config.toml environment variables in case BROWSER is set there
+        let envs = envs.from_config(c.get_config())?;
+
         // verify the browser env variable exists
         let browser = if self.open_browser == true {
-            match std::env::var(environment::BROWSER) {
-                Ok(browser) => Some(browser),
-                Err(e) => match e {
-                    std::env::VarError::NotPresent => {
-                        return Err(Box::new(Error::BrowserEnvVarMissing))
-                    }
-                    _ => return Err(Box::new(e)),
+            match envs.get(environment::BROWSER) {
+                Some(var) => match var.get_value().len() {
+                    0 => return Err(Box::new(Error::BrowserEnvVarEmpty)),
+                    _ => Some(var.get_value().to_string()),
                 },
+                None => return Err(Box::new(Error::BrowserEnvVarMissing)),
             }
         } else {
             None
@@ -155,15 +165,24 @@ impl Subcommand<Context> for Doc {
 
         // outputs to a target/doc folder
         crate::info!("executing target {}", target_name.green());
-        let result = self.run(
+        let run_result = self.run(
             &current_project,
             &updated_lf,
             &catalog,
             &output_path,
             true,
             c.are_units_private_by_default(),
-            browser,
         );
+
+        let open_result = if let Some(browser) = browser {
+            if let Ok(index) = &run_result {
+                self.open(&output_path, index.clone(), browser)
+            } else {
+                Ok(())
+            }
+        } else {
+            Ok(())
+        };
 
         // release our "READ" action to the cache
         crate::util::filesystem::release_lock(&cache_rd_lock)?;
@@ -178,14 +197,23 @@ impl Subcommand<Context> for Doc {
                 );
             }
         }
-        match result {
-            Ok(()) => Ok(()),
-            Err(e) => Err(Error::DocGenFailed(LastError(e.to_string())))?,
+
+        if let Err(e) = run_result {
+            Err(Error::DocGenFailed(LastError(e.to_string())))?
+        } else if let Err(e) = open_result {
+            Err(Error::DocOpenFailed(LastError(e.to_string())))?
+        } else {
+            Ok(())
         }
     }
 }
 
 impl Doc {
+    fn open(&self, output_path: &PathBuf, index: String, browser: String) -> Result<(), Fault> {
+        let doc_cmd = Target::doc(output_path.clone(), browser);
+        doc_cmd.execute(&None, &[index], &output_path, HashMap::new())
+    }
+
     fn run(
         &self,
         prj: &Project,
@@ -194,8 +222,7 @@ impl Doc {
         output_path: &PathBuf,
         clean: bool,
         priv_by_default: bool,
-        browser: Option<String>,
-    ) -> Result<(), Fault> {
+    ) -> Result<String, Fault> {
         // check if to clean the target output directory (but keep the file lock!!)
         if clean == true && Path::exists(&output_path) == true {
             std::fs::remove_dir_all(&output_path)?;
@@ -278,16 +305,9 @@ impl Doc {
 
         std::fs::remove_dir_all(md_output_path)?;
 
-        info!(
-            "documentation generated at: {:?}",
-            crate::util::filesystem::into_std_str(index_path.clone())
-        );
-
-        if let Some(browser) = browser {
-            let _ = Command::new(browser).arg(index_path).spawn()?;
-        }
-
-        Ok(())
+        let index_path_str = crate::util::filesystem::into_std_str(index_path.clone());
+        info!("documentation generated at: {:?}", index_path_str);
+        Ok(index_path_str)
     }
 }
 

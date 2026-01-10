@@ -153,9 +153,10 @@ impl EnvVar {
     /// Will attempt to resolve a relative path if the environment variable is configured to do such a thing.
     pub fn resolve_relative(&mut self, root: &PathBuf) {
         if self.relative == true {
+            let up_one_root = root.parent().unwrap_or(root.as_path());
             let p = PathBuf::from(&self.value);
-            if p.is_relative() == true && root.join(&p).exists() {
-                self.value = into_std_str(root.join(&p));
+            if p.is_relative() == true {
+                self.value = into_std_str(up_one_root.join(&p));
             }
         }
     }
@@ -378,8 +379,14 @@ impl Environment {
             // .filter(|x| x.can_apply())
             map.values().for_each(|var| {
                 let mut var = var.clone();
-                var.try_inherit();
-                self.insert(var);
+                // Ensure this value is the one to apply
+                if var.can_apply() {
+                    self.enforce(var);
+                // Try to load a value from the environment, otherwise set the value it found in the config
+                } else {
+                    var.try_inherit();
+                    self.insert(var);
+                }
             });
         }
         Ok(self)
@@ -429,6 +436,11 @@ impl Environment {
     pub fn add(mut self, var: EnvVar) -> Self {
         self.0.insert(var);
         self
+    }
+
+    pub fn enforce(&mut self, var: EnvVar) -> () {
+        self.0.remove(&var);
+        self.0.insert(var);
     }
 
     pub fn overwrite(mut self, var: EnvVar) -> Self {

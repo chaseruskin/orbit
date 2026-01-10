@@ -19,6 +19,9 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 ### Fixes
 - Fixes bug when a project's lockfile with no relative dependencies failed to automatically synchronize with the manifest during a local install of a project
+- Fixes behavior for setting environment variables in a `config.toml` as relative paths to properly result in an absolute path one directory above the definition of the `config.toml`
+- Fixes `orbit env` to display the correct values for environment variables (including those found in `config.toml` files under the `[env]` table)
+- Improves error messages around the `orbit doc` command when trying to open the generated documentation using `--open`
 
 ## 0.28.1
 

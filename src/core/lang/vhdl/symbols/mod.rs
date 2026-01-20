@@ -1609,7 +1609,10 @@ impl VhdlSymbol {
         let mut io: Vec<TokenPair> = Vec::new();
         while let Some(t) = tokens.peek() {
             if let Some((io_clause, _io_refs)) = io.last() {
-                // safe to unwrap because of outer condition
+                if io_clause.get_tokens().last().is_none() {
+                    return Err(VhdlError::Vague)
+                }
+                // safe to unwrap due to above check
                 if io_clause
                     .get_tokens()
                     .last()

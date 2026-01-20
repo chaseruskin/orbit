@@ -523,7 +523,12 @@ impl<'a> DocProject<'a> {
         }
         Ok(Page::new(
             PageLevel::Source,
-            String::from("ORBIT_DOC_HIDDEN"),
+            String::from(
+                PathBuf::from(src_file)
+                    .file_name()
+                    .unwrap()
+                    .to_string_lossy(),
+            ),
             tar_src_path,
         ))
     }

@@ -1610,7 +1610,7 @@ impl VhdlSymbol {
         while let Some(t) = tokens.peek() {
             if let Some((io_clause, _io_refs)) = io.last() {
                 if io_clause.get_tokens().last().is_none() {
-                    return Err(VhdlError::Vague)
+                    return Err(VhdlError::Vague);
                 }
                 // safe to unwrap due to above check
                 if io_clause

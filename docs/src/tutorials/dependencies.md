@@ -60,9 +60,9 @@ Okay, how did we implement the NAND gate architecture? We can compile the set of
 $ orbit doc
 ```
 
-The documentation is compiled into HTML that can be hosted locally. One such way to host the HTML may be through Python's built-in `http.server` module as with the following command:
+The documentation is compiled into HTML that can be hosted locally. One such way to host the HTML may be through your preferred web browser. One could open the documentation using Firefox with the following command:
 ```
-$ python3 -m http.server -d target/doc
+$ firefox target/doc/index.html
 ```
 
 Generating documentation for a project and all of its dependencies may be helpful when trying to integrate units into a new project by reading the inline documentation and source code for a given unit.

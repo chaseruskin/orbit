@@ -17,6 +17,7 @@
 
 use crate::commands::helps::doc;
 use crate::commands::plan;
+use crate::core::algo;
 use crate::core::catalog::Catalog;
 use crate::core::context;
 use crate::core::context::Context;
@@ -34,12 +35,9 @@ use crate::core::lang::vhdl::token::VhdlTokenizer;
 use crate::core::lang::Lang;
 use crate::core::lang::LangIdentifier;
 use crate::core::lang::LangUnit;
-use crate::core::lockfile::LockEntry;
-use crate::core::lockfile::LockFile;
 use crate::core::project::Project;
 use crate::core::target::Process;
 use crate::core::target::Target;
-use crate::core::version::AnyVersion;
 use crate::error::Error;
 use crate::error::LastError;
 use crate::info;
@@ -141,7 +139,7 @@ impl Subcommand<Context> for Doc {
             .installations(c.get_cache_path())?
             .downloads(c.get_downloads_path())?
             .available(&c.get_config().get_channels())?;
-        let updated_lf = plan::resolve_missing_deps(c, &current_project, &mut catalog, false)?;
+        let _ = plan::resolve_missing_deps(c, &current_project, &mut catalog, false)?;
         let catalog = catalog;
 
         // try to acquire a lock to only allow one orbit process access to the target output directory
@@ -167,7 +165,6 @@ impl Subcommand<Context> for Doc {
         crate::info!("executing target {}", target_name.green());
         let run_result = self.run(
             &current_project,
-            &updated_lf,
             &catalog,
             &output_path,
             true,
@@ -217,7 +214,6 @@ impl Doc {
     fn run(
         &self,
         prj: &Project,
-        updated_lf: &Option<LockFile>,
         catalog: &Catalog,
         output_path: &PathBuf,
         clean: bool,
@@ -228,16 +224,14 @@ impl Doc {
             std::fs::remove_dir_all(&output_path)?;
         }
 
-        // Pick the most up-to-date lockfile
-        let lf = match updated_lf {
-            Some(lf) => lf,
-            None => prj.get_lock(),
-        };
+        let project_graph =
+            algo::compute_final_project_graph(&prj, Some(&catalog), priv_by_default)?;
 
         let mut all_doc_prjs = Vec::new();
         // generate documentation for all dependencies
-        for entry in lf.inner() {
-            let prj_to_doc = match entry.matches_target(&LockEntry::from((prj, true))) {
+        for (_, node, _) in project_graph.iter() {
+            let entry = node.as_original_project();
+            let prj_to_doc = match entry == prj {
                 // use the local project
                 true => Some(prj),
                 false => {
@@ -245,32 +239,15 @@ impl Doc {
                     if self.no_deps == true {
                         continue;
                     }
-                    // identify if it is a relative path entry
-                    match entry.is_relative() {
-                        true => prj
-                            .get_man()
-                            .get_deps()
-                            .get(entry.get_name())
-                            .unwrap()
-                            .as_project(),
-                        false => {
-                            let any_ver =
-                                AnyVersion::Specific(entry.get_version().to_partial_version());
-                            match catalog.inner().get(entry.get_uuid()) {
-                                Some(stat) => stat.get_install(&any_ver),
-                                None => None,
-                            }
-                        }
-                    }
+                    Some(entry)
                 }
             };
             // generate the documentation for this project
             if let Some(doc_prj) = prj_to_doc {
-                // skip dynamic projects
-                if doc_prj.is_dynamic() {
-                    continue;
-                }
-                info!("documenting {}", entry.to_project_id_spec());
+                info!(
+                    "documenting {}",
+                    entry.get_man().get_project().into_project_id_spec()
+                );
                 let doc_prj = DocProject::from_project(&doc_prj)?;
                 all_doc_prjs.push(doc_prj);
             }

@@ -20,6 +20,7 @@ pub mod char_set {
     pub const BACKSLASH: char = '\\';
     pub const STAR: char = '*';
     pub const DASH: char = '-';
+    pub const ACCENT: char = '`';
     pub const FWDSLASH: char = '/';
     pub const UNDERLINE: char = '_';
     pub const SINGLE_QUOTE: char = '\'';
@@ -187,7 +188,7 @@ impl VhdlTokenizer {
     /// Transforms the list of results into a list of tokens, silently skipping over
     /// errors.
     ///
-    /// This `fn` also filters out `Comment`s. To include `Comment` tokens, see
+    /// This `fn` also filters out `Comment` and `Directive` tokens. To include these tokens, see
     /// `into_tokens_all`.
     pub fn into_tokens(self) -> Vec<Token<VhdlToken>> {
         self.tokens
@@ -195,6 +196,7 @@ impl VhdlTokenizer {
             .filter_map(|f| match f.0 {
                 Ok(t) => match t.as_ref() {
                     VhdlToken::Comment(_) => None,
+                    VhdlToken::Directive(_) => None,
                     _ => Some(t),
                 },
                 Err(_) => None,
@@ -320,6 +322,12 @@ impl Tokenize for VhdlTokenizer {
                         tk_loc.next_col(); // +1 col for correct alignment
                         Err(TokenError::new(e, tk_loc))
                     }
+                }
+            // collect conditional directive (takes up entire line)
+            } else if c == char_set::ACCENT {
+                match Self::TokenType::consume_directive(&mut train) {
+                    Ok(tk) => Ok(Token::new(tk, tk_loc)),
+                    Err(e) => Err(TokenError::new(e, train.locate().clone())),
                 }
             } else {
                 // collect delimiter

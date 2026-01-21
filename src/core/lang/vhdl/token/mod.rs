@@ -52,6 +52,7 @@ pub enum VhdlToken {
     BitStrLiteral(BitStrLiteral), // (String)
     Keyword(Keyword),
     Delimiter(Delimiter),
+    Directive(String),
     EOF,
 }
 
@@ -68,6 +69,9 @@ impl ToColor for VhdlToken {
             Self::BitStrLiteral(b) => b.to_color(),
             Self::Keyword(k) => k.to_color(),
             Self::Delimiter(d) => d.to_color(),
+            Self::Directive(d) => {
+                highlight::color(&format!("`{}", d.to_string()), highlight::STRINGS)
+            }
             Self::EOF => String::new().normal(),
         }
     }
@@ -87,6 +91,7 @@ impl Display for VhdlToken {
                 Self::BitStrLiteral(b) => b.to_string(),
                 Self::Keyword(kw) => kw.to_string(),
                 Self::Delimiter(d) => d.to_string(),
+                Self::Directive(d) => format!("`{}", d),
                 Self::EOF => String::new(),
             }
         )
@@ -488,6 +493,24 @@ impl VhdlToken {
             }
         }
         Ok(VhdlToken::Comment(Comment::Single(note)))
+    }
+
+    /// Captures VHDL conditional directives (lines starting with ` character).
+    pub fn consume_directive(
+        train: &mut TrainCar<impl Iterator<Item = char>>,
+    ) -> Result<VhdlToken, VhdlError> {
+        // consume characters to form the comment
+        let mut note = String::new();
+        while let Some(c) = train.consume() {
+            // cannot be vt, cr (\r), lf (\n)
+            if c == '\u{000B}' || c == '\u{000D}' || c == '\u{000A}' {
+                break;
+            } else {
+                note.push(c);
+            }
+        }
+        println!("{}", note);
+        Ok(VhdlToken::Directive(note))
     }
 
     /// Walks through the possible interpretations for capturing a VHDL delimiter.

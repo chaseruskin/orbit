@@ -17,6 +17,9 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 ## UNRELEASED
 
+### Features
+- Adds support for parsing conditional directives in VHDL
+
 ### Fixes
 - Fixes bug when a project's lockfile with no relative dependencies failed to automatically synchronize with the manifest during a local install of a project
 - Fixes behavior for setting environment variables in a `config.toml` as relative paths to properly result in an absolute path one directory above the definition of the `config.toml`

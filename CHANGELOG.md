@@ -26,6 +26,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - Fixes `orbit env` to display the correct values for environment variables (including those found in `config.toml` files under the `[env]` table)
 - Improves error messages around the `orbit doc` command when trying to open the generated documentation using `--open`
 - Correctly generates documentation for projects that have nested relative dependencies
+- Filters out testbenches from the hardware graph during the planning phase for build mode (`orbit build`) when the top is left unspecified (collecting design hierarchies)
 
 ## 0.28.1
 

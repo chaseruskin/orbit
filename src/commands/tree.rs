@@ -263,7 +263,7 @@ impl Tree {
         let roots = match &self.roots {
             Some(user_roots) => {
                 // restrict graph to units only found within the current project
-                let local_graph = Plan::compute_local_graph(&global_graph, &target);
+                let local_graph = Plan::compute_local_graph(&global_graph, &target, true);
                 let mut roots = Vec::new();
                 for root_name in user_roots {
                     // check if the identifier exists in the entity graph
@@ -291,7 +291,7 @@ impl Tree {
             }
             None => {
                 // restrict graph to units only found within the current project
-                let local_graph = Plan::compute_local_graph(&global_graph, &target);
+                let local_graph = Plan::compute_local_graph(&global_graph, &target, true);
                 // compile list of all roots
                 let mut roots = Vec::new();
                 if self.invert == true {

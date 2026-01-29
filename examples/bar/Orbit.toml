@@ -1,0 +1,6 @@
+[project]
+name = "bar"
+version = "0.1.0"
+uuid = "f5c9bgu25njqsnzieh11k0e41"
+
+[dependencies]

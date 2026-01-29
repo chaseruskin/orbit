@@ -186,7 +186,6 @@ impl Subcommand<Context> for Build {
             false,
             is_all,
             auto_discover,
-            false,
             envs,
             c.are_units_private_by_default(),
         )?;

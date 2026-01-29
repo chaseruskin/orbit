@@ -193,7 +193,6 @@ impl Subcommand<Context> for Test {
             true,
             is_all,
             auto_discover,
-            true,
             envs,
             c.are_units_private_by_default(),
         )?;

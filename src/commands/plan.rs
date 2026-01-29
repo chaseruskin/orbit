@@ -89,7 +89,6 @@ impl Plan {
         is_test: bool,
         is_all: bool,
         auto_discover: bool,
-        allow_bench: bool,
         envs: Environment,
         priv_by_def: bool,
     ) -> Result<Option<String>, Fault> {
@@ -158,11 +157,13 @@ impl Plan {
 
         let working_lib = working_project.get_hdl_library();
 
+        // include testbench files when we are in test mode or explicitly specified a top
+        let include_tbs = is_all == false || is_test == true;
         // restrict graph to units only found within the current project
         let local_graph: GraphMap<&CompoundIdentifier, &HdlNode, &()> =
-            Self::compute_local_graph(&global_graph, &working_project);
+            Self::compute_local_graph(&global_graph, &working_project, include_tbs);
 
-        let (top, bench) = match allow_bench {
+        let (top, bench) = match is_test {
             true => {
                 match Self::detect_bench(
                     &global_graph,
@@ -195,7 +196,7 @@ impl Plan {
             top,
             bench,
             &top_name,
-            allow_bench,
+            is_test,
         ) {
             Ok(r) => r,
             Err(e) => match e {
@@ -229,9 +230,9 @@ impl Plan {
             is_all
         };
 
-        // error if the user-defined top is not instantiated in the testbench. Say this can be fixed by adding '--all'
+        // error if the user-defined top is not instantiated in the testbench
         if let Some(b) = &bench {
-            // @idea: merge two topological sorted lists together by running top sort from bench and top sort from top if in this situation
+            // IDEA: merge two topological sorted lists together by running top sort from bench and top sort from top if in this situation... Is this ever a need??
             if is_all == false
                 && top.is_some()
                 && global_graph
@@ -1766,6 +1767,7 @@ impl Plan {
     pub fn compute_local_graph<'a>(
         global_graph: &'a GraphMap<CompoundIdentifier, HdlNode, ()>,
         target: &Project,
+        include_tbs: bool,
     ) -> GraphMap<&'a CompoundIdentifier, &'a HdlNode<'a>, &'a ()> {
         let working_lib = target.get_hdl_library();
         // restrict graph to units only found within the current ip
@@ -1789,6 +1791,7 @@ impl Plan {
                 }
                 in_range
             })
+            .filter(|f| include_tbs == true || f.1.get_symbol().is_testbench() == false)
             .map(|f| (f.0, f.1))
             .collect();
 

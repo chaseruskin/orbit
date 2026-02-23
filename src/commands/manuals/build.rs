@@ -84,10 +84,7 @@ OPTIONS
         A glob-style pattern identified by name to include in the blueprint
 
     --force
-        Force the target to execute 
-
-    --keep, -k
-        Do not clean the target folder before execution
+        Force the target to execute
 
     --verbose
         Display the command being executed

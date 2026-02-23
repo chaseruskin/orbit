@@ -472,7 +472,7 @@ impl General {
 #[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct Build {
-    #[serde(rename = "default-target")]
+    #[serde(rename = "target")]
     default_target: Option<String>,
     #[serde(rename = "auto-discovery")]
     auto_discovery: Option<bool>,
@@ -512,7 +512,7 @@ impl Build {
 #[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct Install {
-    #[serde(rename = "default-protocol")]
+    #[serde(rename = "protocol")]
     default_protocol: Option<String>,
 }
 
@@ -542,7 +542,7 @@ impl Install {
 #[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct Publish {
-    #[serde(rename = "default-channels")]
+    #[serde(rename = "channels")]
     default_channels: Option<Vec<String>>,
 }
 
@@ -572,7 +572,7 @@ impl Publish {
 #[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct Test {
-    #[serde(rename = "default-target")]
+    #[serde(rename = "target")]
     default_target: Option<String>,
     #[serde(rename = "auto-discovery")]
     auto_discovery: Option<bool>,

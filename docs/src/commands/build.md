@@ -74,10 +74,7 @@ returned from the user-defined execution process is propagated through Orbit.
 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; A glob-style pattern identified by name to include in the blueprint
 
 `--force`  
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Force the target to execute 
-
-`--keep, -k`  
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Do not clean the target folder before execution
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Force the target to execute
 
 `--verbose`  
 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Display the command being executed

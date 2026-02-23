@@ -69,6 +69,8 @@ pub enum Error {
     TargetNotFoundBuild(String, Hint),
     #[error("no test target named {0:?}{1}")]
     TargetNotFoundTest(String, Hint),
+    #[error("no target named {0:?}{1}")]
+    TargetNotFound(String, Hint),
     #[error("a target must be specified{0}")]
     TargetNotSpecified(Hint),
     #[error("failed to generate documentation: {0}")]
@@ -260,6 +262,7 @@ impl Error {
 pub enum Hint {
     TargetsListBuild,
     TargetsListTest,
+    TargetsListAll,
     PublishSyncRemote,
     CatalogList,
     InitNotNew,
@@ -303,6 +306,9 @@ impl Display for Hint {
             }
             Self::TargetsListTest => {
                 "use `orbit test --list` to see the list of defined test targets"
+            }
+            Self::TargetsListAll => {
+                "use `orbit test --list` and `orbit build --list` to see the list of defined targets"
             }
             Self::InitNotNew => "use `orbit init` to initialize an existing directory",
             Self::IpNameSeparate => {

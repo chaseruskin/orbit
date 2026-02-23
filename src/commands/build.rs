@@ -51,7 +51,6 @@ pub struct Build {
     target: Option<String>,
     list: bool,
     force: bool,
-    dirty: bool,
     command: Option<String>,
     top: Option<Identifier>,
     plan: Option<Scheme>,
@@ -69,7 +68,6 @@ impl Subcommand<Context> for Build {
             list: cli.check(Arg::flag("list").switch('l'))?,
             verbose: cli.check(Arg::flag("verbose"))?,
             force: cli.check(Arg::flag("force"))?,
-            dirty: cli.check(Arg::flag("keep").switch('k'))?,
             // Options
             top: cli.get(Arg::option("top").value("unit"))?,
             plan: cli.get(Arg::option("plan").value("format"))?,
@@ -177,7 +175,6 @@ impl Subcommand<Context> for Build {
             target_dir,
             target,
             catalog,
-            self.dirty == false,
             self.force,
             &None,
             &self.top,

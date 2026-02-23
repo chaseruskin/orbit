@@ -25,4 +25,4 @@ fileset.stxt = "/here/*.txt"
 fileset.ptxt = "here/*.txt"
 
 [test]
-default-target = "ao"
+target = "ao"

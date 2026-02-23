@@ -382,8 +382,7 @@ options."--target-dir <dir>" = "The relative directory where the target starts"
 options."--command <path>" = "Overwrite the target's command"
 options."--list, -l" = "View available targets and exit"
 options."--fileset <key=glob>..." = "A glob-style pattern identified by name to include in the blueprint"
-options."--keep, -k" = "Do not clean the target folder before execution"
-options."--force" = "Force the target to execute "
+options."--force" = "Force the target to execute"
 options."--verbose" = "Display the command being executed"
 options."args" = "Arguments to pass to the target"
 
@@ -446,8 +445,7 @@ options."--target-dir <dir>" = "The relative directory where the target starts"
 options."--command <path>" = "Overwrite the target's command"
 options."--list, -l" = "View available targets and exit"
 options."--fileset <key=glob>..." = "A glob-style pattern identified by name to include in the blueprint"
-options."--force" = "Force the target to execute "
-options."--keep, -k" = "Do not clean the target folder before execution"
+options."--force" = "Force the target to execute"
 options."--verbose" = "Display the command being executed"
 options."args" = "Arguments to pass to the target"
 
@@ -455,6 +453,30 @@ examples = """
 orbit build
 orbit build --target quartus --top riscv_cpu
 orbit build -- --some-arg1 --some-arg2
+"""
+
+# ------------------------------------------------------------------------------
+# clean             
+# ------------------------------------------------------------------------------
+[clean]
+name = "clean"
+summary = "remove the target directory"
+synopsis = "orbit clean [options]"
+description = """
+Remove artifacts that Orbit has generated in the past.
+
+By default, this command deletes all directories found within the current
+project's target directory. To select a single target's directory for removal,
+use the `--target` option.
+"""
+
+options."--doc" = "Whether or not to clean just the documentation directory"
+options."--target, -t <name>" = "Target output directory to just remove"
+options."--target-dir <dir>" = "The relative directory where the targets exist"
+
+examples = """
+orbit clean
+orbit clean --target modelsim
 """
 
 # ------------------------------------------------------------------------------

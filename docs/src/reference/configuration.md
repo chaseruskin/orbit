@@ -48,15 +48,15 @@ Every configuration file consists of the following sections:
     - [require-public](#the-require-public-field) - Assume source files to be private by default.
     - [target-dir](#the-target-dir-field) - Default target directory.
 - [[test]](#the-test-section) - The test settings.
-    - [default-target](#the-default-target-field) - Set the default target for tests.
+    - [target](#the-target-field) - Set the default target for tests.
     - [auto-discovery](#the-auto-discovery-field) - Enable or disable testbench auto discovery.
 - [[build]](#the-build-section) - The build settings.
-    - [default-target](#the-default-target-field) - Set the default target for builds.
+    - [target](#the-target-field) - Set the default target for builds.
     - [auto-discovery](#the-auto-discovery-field) - Enable or disable top-level auto discovery.
 - [[publish]](#the-publish-section) - The publish settings.
-    - [default-channels](#the-default-channels-field) - Set the default channels to publish a project to.
+    - [channels](#the-channels-field) - Set the default channels to publish a project to.
 - [[install]](#the-install-section) - The install settings.
-    - [default-protocol](#the-default-protocol-field) - Set the default protocol for installing projects.
+    - [protocol](#the-protocol-field) - Set the default protocol for installing projects.
 - [[vhdl-format]](#the-vhdl-format-section) - VHDL code formatting.
 - [[verilog-format]](#the-verilog-format-section) - SystemVerilog/Verilog code formatting.
 - [[env]](#the-env-section) - The runtime environment variables.
@@ -122,13 +122,13 @@ When this key is not defined, the default value for the build directory is "targ
 
 ### The `[test]` section
 
-### The `default-target` field
+### The `target` field
 
-The optional `default-target` key sets the default target when starting the build process through the test entry point (`orbit test`).
+The optional `target` key sets the default target when starting the build process through the test entry point (`orbit test`).
 
 ``` toml
 [test]
-default-target = "modelsim"
+target = "modelsim"
 ```
 
 If the default target is set to be used and its name cannot be found among the known targets, the build process will error.
@@ -147,13 +147,13 @@ If this field is omitted, then auto discovery is enabled by default. Auto discov
 
 ### The `[build]` section
 
-### The `default-target` field
+### The `target` field
 
-The optional `default-target` key sets the default target when starting the build process through the build entry point (`orbit build`).
+The optional `target` key sets the default target when starting the build process through the build entry point (`orbit build`).
 
 ``` toml
 [build]
-default-target = "vivado"
+target = "vivado"
 ```
 
 If the default target is set to be used and its name cannot be found among the known targets, the build process will error.
@@ -172,26 +172,26 @@ If this field is omitted, then auto discovery is enabled by default. Auto discov
 
 ### The `[publish]` section
 
-### The `default-channels` field
+### The `channels` field
 
-The optional `default-channels` field is an array of strings that represent the names of known channels. When this field is provided and the current project omits the `channels` field from its manifest, the project will be published to the list of channels defined here. If the current project's manifest does have the `channels` field defined, then the `default-channels` field is not applied.
+The optional `channels` field is an array of strings that represent the names of known channels. When this field is provided and the current project omits the `channels` field from its manifest, the project will be published to the list of channels defined here. If the current project's manifest does have the `channels` field defined, then the `channels` field is not applied.
 
 ``` toml
 [publish]
-default-channels = ["hyperspace-labs"]
+channels = ["hyperspace-labs"]
 ```
 
-If the `default-channels` field is set and at least one of the names cannot be found among the known channels, the publishing process will error.
+If the `channels` field is set and at least one of the names cannot be found among the known channels, the publishing process will error.
 
 ### The `[install]` section
 
-### The `default-protocol` field
+### The `protocol` field
 
-The optional `default-protocol` field can be used to specify which protocol should have priority when trying to access a project from the internet.
+The optional `protocol` field can be used to specify which protocol should have priority when trying to access a project from the internet.
 
 ``` toml
 [install]
-default-protocol = "git"
+protocol = "git"
 ```
 
 If the default protocol has patterns configured and none of the patterns match the given project's repository URL, then it is not used. If the default protocol is set to be used and its name cannot be found among the known protocols, the installation process will error.

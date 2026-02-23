@@ -76,11 +76,8 @@ returned from the user-defined execution process is propagated through Orbit.
 `--fileset <key=glob>...`  
 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; A glob-style pattern identified by name to include in the blueprint
 
-`--keep, -k`  
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Do not clean the target folder before execution
-
 `--force`  
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Force the target to execute 
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Force the target to execute
 
 `--verbose`  
 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Display the command being executed

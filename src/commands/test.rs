@@ -48,7 +48,6 @@ pub struct Test {
     target: Option<String>,
     args: Vec<String>,
     list: bool,
-    dirty: bool,
     target_dir: Option<String>,
     force: bool,
     plan: Option<Scheme>,
@@ -67,7 +66,6 @@ impl Subcommand<Context> for Test {
             list: cli.check(Arg::flag("list").switch('l'))?,
             verbose: cli.check(Arg::flag("verbose"))?,
             force: cli.check(Arg::flag("force"))?,
-            dirty: cli.check(Arg::flag("keep").switch('k'))?,
             // Options
             dut: cli.get(Arg::option("dut").value("unit"))?,
             bench: cli.get(Arg::option("tb").value("unit"))?,
@@ -184,7 +182,6 @@ impl Subcommand<Context> for Test {
             target_dir,
             target,
             catalog,
-            self.dirty == false,
             self.force,
             &self.bench,
             &self.dut,

@@ -15,31 +15,15 @@
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-// entry program
-pub mod orbit;
+// Automatically generated from the mansync.py script.
+pub const HELP: &str = r#"Remove the target directory.
 
-// commands
-mod build;
-mod clean;
-mod config;
-mod doc;
-mod download;
-mod env;
-mod get;
-mod help;
-mod info;
-mod init;
-mod install;
-mod new;
-pub mod plan;
-mod publish;
-mod read;
-mod remove;
-mod search;
-mod test;
-mod tree;
+Usage:
+    orbit clean [options]
 
-// informational content for help about commands
-mod helps;
-mod lock;
-mod manuals;
+Options:
+    --doc                 whether or not to clean just the documentation directory
+    --target, -t <name>   target output directory to just remove
+    --target-dir <dir>    the relative directory where the targets exist
+
+Use 'orbit help clean' to read more about the command."#;

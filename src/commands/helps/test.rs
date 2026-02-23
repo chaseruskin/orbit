@@ -31,8 +31,7 @@ Options:
     --list, -l            view available targets and exit
     --fileset <key=glob>...
                           a glob-style pattern identified by name to include in the blueprint
-    --keep, -k            do not clean the target folder before execution
-    --force               force the target to execute 
+    --force               force the target to execute
     --verbose             display the command being executed
     args                  arguments to pass to the target
 

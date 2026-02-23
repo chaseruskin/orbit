@@ -161,6 +161,7 @@ impl Command for Orbit {
 }
 
 use crate::commands::build::Build;
+use crate::commands::clean::Clean;
 use crate::commands::config::Config;
 use crate::commands::doc::Doc;
 use crate::commands::env::Env;
@@ -190,6 +191,7 @@ enum OrbitSubcommand {
     Install(Install),
     Tree(Tree),
     Get(Get),
+    Clean(Clean),
     Init(Init),
     Info(Info),
     Env(Env),
@@ -204,7 +206,7 @@ impl Subcommand<Context> for OrbitSubcommand {
         match cli
             .select(&[
                 "help", "new", "search", "lock", "build", "test", "t", "publish", "install", "get",
-                "init", "tree", "info", "b", "env", "config", "remove", "read", "doc",
+                "init", "tree", "info", "b", "env", "config", "remove", "read", "doc", "clean",
             ])?
             .as_ref()
         {
@@ -215,6 +217,7 @@ impl Subcommand<Context> for OrbitSubcommand {
             "lock" => Ok(OrbitSubcommand::Lock(Lock::interpret(cli)?)),
             "b" | "build" => Ok(OrbitSubcommand::Build(Build::interpret(cli)?)),
             "t" | "test" => Ok(OrbitSubcommand::Test(Test::interpret(cli)?)),
+            "clean" => Ok(OrbitSubcommand::Clean(Clean::interpret(cli)?)),
             "init" => Ok(OrbitSubcommand::Init(Init::interpret(cli)?)),
             "doc" => Ok(OrbitSubcommand::Doc(Doc::interpret(cli)?)),
             "publish" => Ok(OrbitSubcommand::Publish(Publish::interpret(cli)?)),
@@ -248,6 +251,7 @@ impl Subcommand<Context> for OrbitSubcommand {
             OrbitSubcommand::Config(sub) => sub.execute(context),
             OrbitSubcommand::Uninstall(sub) => sub.execute(context),
             OrbitSubcommand::Read(sub) => sub.execute(context),
+            OrbitSubcommand::Clean(sub) => sub.execute(context),
         }
     }
 }

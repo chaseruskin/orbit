@@ -44,7 +44,7 @@ use crate::util::graphmap::GraphMap;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::fs;
 use std::hash::Hash;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use crate::commands::install::Install;
 use crate::core::algo;
@@ -62,7 +62,6 @@ pub struct Plan {
     target: Option<String>,
     bench: Option<Identifier>,
     top: Option<Identifier>,
-    clean: bool,
     list: bool,
     all: bool,
     target_dir: Option<String>,
@@ -80,7 +79,6 @@ impl Plan {
         target_dir: &str,
         target: &Target,
         catalog: Catalog,
-        clean: bool,
         force: bool,
         bench_name: &Option<Identifier>,
         top_name: &Option<Identifier>,
@@ -95,7 +93,6 @@ impl Plan {
         // create the output path to know where to begin storing files
         let working_ip_path = working_project.get_root().clone();
         let target_path = working_ip_path.join(target_dir);
-        let output_path = target_path.join(target.get_name());
 
         // build entire ip graph and resolve with dynamic symbol transformation
         let prj_graph = match algo::compute_final_project_graph(
@@ -145,11 +142,6 @@ impl Plan {
                 }
             }
         };
-
-        // check if to clean the target output directory (but keep the file lock!!)
-        if clean == true && Path::exists(&output_path) == true {
-            fs::remove_dir_all(&output_path)?;
-        }
 
         let files = algo::build_project_file_list(&prj_graph, &working_project);
 

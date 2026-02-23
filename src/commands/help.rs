@@ -60,13 +60,14 @@ enum Topic {
     Config,
     Remove,
     Doc,
+    Clean,
 }
 
 impl Topic {
     fn list_all() -> String {
         let list = [
             "new", "init", "info", "read", "get", "tree", "lock", "test", "build", "doc",
-            "publish", "search", "install", "env", "config", "remove",
+            "publish", "search", "install", "env", "config", "remove", "clean",
         ];
         list.into_iter().fold(String::new(), |mut acc, x| {
             acc.push_str(&format!(
@@ -105,6 +106,7 @@ impl std::str::FromStr for Topic {
             "env" => Self::Env,
             "config" => Self::Config,
             "remove" => Self::Remove,
+            "clean" => Self::Clean,
             _ => return Err(AnyError(format!("topic '{}' not found", s))),
         })
     }
@@ -126,6 +128,7 @@ impl Topic {
             Build => manuals::build::MANUAL,
             Doc => manuals::doc::MANUAL,
             Publish => manuals::publish::MANUAL,
+            Clean => manuals::clean::MANUAL,
             Search => manuals::search::MANUAL,
             Install => manuals::install::MANUAL,
             Env => manuals::env::MANUAL,

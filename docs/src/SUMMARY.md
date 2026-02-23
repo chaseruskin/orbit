@@ -61,6 +61,7 @@
     - [orbit lock](./commands/lock.md) 
     - [orbit test](./commands/test.md)
     - [orbit build](./commands/build.md) 
+    - [orbit clean](./commands/clean.md)
     - [orbit doc](./commands/doc.md)
     - [orbit publish](./commands/publish.md)
     - [orbit search](./commands/search.md)

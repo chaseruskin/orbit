@@ -15,7 +15,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
-## UNRELEASED
+## 0.29.0
 
 ### Features
 - Adds support for parsing conditional directives in VHDL

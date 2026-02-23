@@ -88,5 +88,5 @@ IF major levels are not equal:
 ELSE IF minor levels are not equal:
     RETURN version with larger minor level value.
 ELSE:
-    RETURN version with larger patch level value. 
+    RETURN version with larger micro level value. 
 ```

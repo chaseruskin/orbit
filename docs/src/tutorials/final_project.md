@@ -10,7 +10,7 @@ In this tutorial, you will learn how to:
 
 After the quick detour back to the gates project, we are ready to tackle our final challenge in this mini tutorial series: the full adder. Like our previous projects, navigate to a directory in your file system where you would like to store the project.
 ```
-orbit new full-add --lib adding
+$ orbit new full-add --lib adding
 ```
 
 For the rest of this tutorial, we will be working relative to the project directory "/full-add" that currently stores our new full-add project. 

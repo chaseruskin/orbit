@@ -25,6 +25,8 @@ use super::get::GetError;
 use crate::commands::helps::read;
 use crate::core::catalog::Catalog;
 use crate::core::context::Context;
+use crate::core::lang::Lang;
+use crate::core::lang::LangIdentifier;
 use crate::core::lang::lexer::Position;
 use crate::core::lang::lexer::Token;
 use crate::core::lang::sv::token::token::SystemVerilogToken;
@@ -33,8 +35,6 @@ use crate::core::lang::verilog::token::token::VerilogToken;
 use crate::core::lang::verilog::token::tokenizer::VerilogTokenizer;
 use crate::core::lang::vhdl::token::VhdlToken;
 use crate::core::lang::vhdl::token::VhdlTokenizer;
-use crate::core::lang::Lang;
-use crate::core::lang::LangIdentifier;
 use crate::core::project::PartialProjectIdSpec;
 use crate::core::project::Project;
 use crate::error::Error;
@@ -46,8 +46,8 @@ use crate::util::filesystem::PRJ_CATALOG_EX_LOCK_NAME;
 use crate::util::sha256;
 use std::fs;
 
-use cliproc::{cli, proc, stage::*};
 use cliproc::{Arg, Cli, Help, Subcommand};
+use cliproc::{cli, proc, stage::*};
 
 const SYS_DIR: &str = ".system";
 const TMP_DIR: &str = "tmp";
@@ -451,7 +451,7 @@ impl Read {
                         None => {
                             return Err(AnyError(format!(
                                 "Zero comments associated with code chunk"
-                            )))?
+                            )))?;
                         }
                     }
                 }
@@ -637,7 +637,7 @@ impl Read {
                         None => {
                             return Err(AnyError(format!(
                                 "Zero comments associated with code chunk"
-                            )))?
+                            )))?;
                         }
                     }
                 }
@@ -829,7 +829,7 @@ impl Read {
                         None => {
                             return Err(AnyError(format!(
                                 "Zero comments associated with code chunk"
-                            )))?
+                            )))?;
                         }
                     }
                 }

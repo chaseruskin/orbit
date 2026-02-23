@@ -37,8 +37,8 @@ use crate::util::filesystem;
 use crate::util::filesystem::LockZone;
 use crate::util::filesystem::PRJ_CATALOG_EX_LOCK_NAME;
 
-use cliproc::{cli, proc, stage::*};
 use cliproc::{Arg, Cli, Help, Subcommand};
+use cliproc::{cli, proc, stage::*};
 
 use super::helps::publish::HELP;
 use super::install::Install;
@@ -75,7 +75,7 @@ impl Subcommand<Context> for Publish {
                     if c.get_config()
                         .get_channels()
                         .iter()
-                        .find(|(&n, _)| ch == n)
+                        .find(|(n, _)| ch == **n)
                         .is_none()
                     {
                         return Err(Box::new(Error::ChanNotFound(ch.clone())))?;
@@ -85,7 +85,7 @@ impl Subcommand<Context> for Publish {
                 c.get_config()
                     .get_channels()
                     .iter()
-                    .filter(|(&n, _)| channels.iter().find(|&z| z == n).is_some())
+                    .filter(|(n, _)| channels.iter().find(|&z| z == **n).is_some())
                     .for_each(|(_, &d)| {
                         println!("{}", d.to_string());
                     });

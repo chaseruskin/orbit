@@ -24,8 +24,8 @@ use crate::util::environment;
 use crate::util::prompt;
 use crate::util::sha256::Sha256Hash;
 
-use cliproc::{cli, proc, stage::*};
 use cliproc::{Arg, Cli, Command, Subcommand};
+use cliproc::{cli, proc, stage::*};
 
 use std::env;
 

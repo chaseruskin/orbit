@@ -15,7 +15,7 @@
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-use serde::{de, Deserialize};
+use serde::{Deserialize, de};
 use serde_derive::Serialize;
 use std::error::Error;
 use std::fmt::{self, Display};

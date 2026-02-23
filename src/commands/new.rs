@@ -29,8 +29,8 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::str::FromStr;
 
-use cliproc::{cli, proc, stage::*};
 use cliproc::{Arg, Cli, Help, Subcommand};
+use cliproc::{cli, proc, stage::*};
 
 use super::lock::Lock;
 

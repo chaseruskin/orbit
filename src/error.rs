@@ -20,7 +20,7 @@ use std::{fmt::Display, path::PathBuf};
 
 use crate::core::{
     blueprint::Scheme,
-    lang::{lexer::Position, LangIdentifier},
+    lang::{LangIdentifier, lexer::Position},
     name::Name,
     project::{PartialProjectIdSpec, ProjectIdSpec},
     version::{AnyVersion, PartialVersion, Version},
@@ -53,9 +53,13 @@ pub enum Error {
     FailedToInitIp(LastError),
     #[error("a target must be defined")]
     MissingRequiredTarget,
-    #[error("command must be ran from a local project: no project found in current directory or any parent directory")]
+    #[error(
+        "command must be ran from a local project: no project found in current directory or any parent directory"
+    )]
     NoWorkingProjectFound,
-    #[error("command must be ran from a local project when a project is not explicitly defined: no project found in current directory or any parent directory")]
+    #[error(
+        "command must be ran from a local project when a project is not explicitly defined: no project found in current directory or any parent directory"
+    )]
     NoAssumedWorkingIpFound,
     #[error("project {0:?} does not exist in the cache")]
     IpNotFoundInCache(String),
@@ -99,13 +103,17 @@ pub enum Error {
     IpGraphFailed(LastError),
     #[error("failed to parse identifier: {0}")]
     CrossIdentifierParsingFailed(LastError),
-    #[error("duplicate identifier \"{0}\" found in the following source files:\n\n  location 1: {1}{2}\n  location 2: {3}{4}{5}")]
+    #[error(
+        "duplicate identifier \"{0}\" found in the following source files:\n\n  location 1: {1}{2}\n  location 2: {3}{4}{5}"
+    )]
     DuplicateIdentifiersCrossLang(String, String, Position, String, Position, Hint),
     #[error(
         "blueprint plan \"{0}\" not supported by the current target; supported plans are: {1:?}"
     )]
     BlueprintPlanNotSupported(Scheme, Vec<Scheme>),
-    #[error("blueprint plan \"{0}\" not supported by the current target; no plans are defined so it can only accept \"{1}\"")]
+    #[error(
+        "blueprint plan \"{0}\" not supported by the current target; no plans are defined so it can only accept \"{1}\""
+    )]
     BlueprintPlanMustBeDefault(Scheme, Scheme),
     #[error("failed to find unit with matching name \"{0}\"{1}")]
     GetUnitNotFound(String, Hint),
@@ -211,7 +219,9 @@ pub enum Error {
     IpZeroDesignUnitsFound(Hint),
     #[error("0 source files are matched to the public entry list{0}")]
     IpNoDesignUnitsWithPublic(Hint),
-    #[error("all design units within the current project are private by default as viewed from the outside{0}")]
+    #[error(
+        "all design units within the current project are private by default as viewed from the outside{0}"
+    )]
     IpAssumedAllPrivateByDefault(Hint),
     #[error("failed to detect public design units: {0}")]
     PublishUnitVisibilityFailed(LastError),
@@ -335,7 +345,9 @@ impl Display for Hint {
                 "consider providing the project ID specification for the requested project to download"
             }
             Self::MakeLock => "use `orbit lock` to generate the latest lockfile for this project",
-            Self::PublishWithReady => "use the \"--ready\" flag to publish the project to its channels",
+            Self::PublishWithReady => {
+                "use the \"--ready\" flag to publish the project to its channels"
+            }
             Self::RegenerateLockfile => "verify the project's lockfile exists and is up to date",
             Self::ShowVersions => "use `orbit info <project> --versions` to see all known versions",
             Self::ShowConfigFiles => {

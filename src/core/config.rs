@@ -34,10 +34,11 @@ use std::str::FromStr;
 
 use serde::ser::SerializeSeq;
 use serde_derive::{Deserialize, Serialize};
+use toml_edit::DocumentMut;
 
 #[derive(Debug)]
 pub struct ConfigDocument {
-    document: Document,
+    document: DocumentMut,
 }
 
 impl FromStr for ConfigDocument {
@@ -47,7 +48,7 @@ impl FromStr for ConfigDocument {
         // verify all keys are valid during deserializing
         let _: Config = toml::from_str(s)?;
         Ok(Self {
-            document: s.parse::<Document>().unwrap(),
+            document: s.parse::<DocumentMut>().unwrap(),
         })
     }
 }
@@ -62,7 +63,6 @@ const TOP_KEYS: [&str; 5] = [INCLUDE_KEY, GENERAL_KEY, BUILD_KEY, TEST_KEY, PUBL
 
 use crate::util::anyerror::Fault;
 use toml_edit::Array;
-use toml_edit::Document;
 use toml_edit::Formatted;
 use toml_edit::Item;
 use toml_edit::Table;
@@ -260,7 +260,7 @@ impl FromFile for ConfigDocument {
                     "failed to parse configuration file at path {:?}: {}",
                     filesystem::into_std_str(path.clone()),
                     e
-                )))?
+                )))?;
             }
         }
     }
@@ -340,13 +340,13 @@ impl Configs {
                                 filesystem::into_std_str(base_config_path.clone()),
                                 filesystem::into_std_str(config_path.clone()),
                                 LastError(e.to_string()),
-                            ))?
+                            ))?;
                         }
                         _ => {
                             return Err(Error::ConfigLoadFailed(
                                 filesystem::into_std_str(config_path.clone()),
                                 LastError(e.to_string()),
-                            ))?
+                            ))?;
                         }
                     },
                 };

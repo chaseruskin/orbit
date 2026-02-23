@@ -84,8 +84,8 @@ impl Process for Protocol {
     }
 }
 
-use crate::commands::orbit::UpgradeError;
 use crate::commands::orbit::RESPONSE_OKAY;
+use crate::commands::orbit::UpgradeError;
 use crate::util::anyerror::Fault;
 use curl::easy::Easy;
 use std::io::Write;

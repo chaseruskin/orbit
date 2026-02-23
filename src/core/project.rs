@@ -48,7 +48,7 @@ use crate::util::sha256::Sha256Hash;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::str::FromStr;
-use toml_edit::Document;
+use toml_edit::DocumentMut;
 
 // add state to `root` (make enum) to determine if is real path or not
 #[derive(Debug, PartialEq)]
@@ -239,7 +239,11 @@ impl Project {
             while let Some(d) = rd.next() {
                 if let Ok(p) = d {
                     if p.file_name().into_string().unwrap().starts_with(&pat) == true {
-                        return Err(AnyError(format!("Illegal file {:?} found in ip; files starting with \"{}\" are reserved for internal use", p.path(), pat)))?;
+                        return Err(AnyError(format!(
+                            "Illegal file {:?} found in ip; files starting with \"{}\" are reserved for internal use",
+                            p.path(),
+                            pat
+                        )))?;
                     }
                 }
             }
@@ -688,7 +692,7 @@ impl Project {
         let meta_file: PathBuf = dir.join(ORBIT_CACHE_FILE);
         if Path::exists(&meta_file) == true {
             if let Ok(contents) = fs::read_to_string(&meta_file) {
-                if let Ok(toml) = contents.parse::<Document>() {
+                if let Ok(toml) = contents.parse::<DocumentMut>() {
                     let entry = toml.get("ip")?.as_table()?.get("units")?.as_array()?;
                     let mut map = HashMap::new();
                     for unit in entry {
@@ -856,8 +860,8 @@ impl From<(Name, Uuid, Version)> for ProjectIdSpec {
     }
 }
 
-use serde::de::{self};
 use serde::Serializer;
+use serde::de::{self};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 

@@ -59,7 +59,7 @@ impl<'a> std::fmt::Display for Architectures<'a> {
 // @note: identifier_list ::= identifier { , identifier }
 
 use super::super::lexer;
-use crate::core::lang::vhdl::token::{delimiter::Delimiter, keyword::Keyword, VhdlToken};
+use crate::core::lang::vhdl::token::{VhdlToken, delimiter::Delimiter, keyword::Keyword};
 use std::iter::Peekable;
 
 #[derive(Debug, Clone)]
@@ -240,11 +240,11 @@ impl Ports {
     }
 
     pub fn is_empty(&self) -> bool {
-        self.0 .0.is_empty()
+        self.0.0.is_empty()
     }
 
     pub fn len(&self) -> usize {
-        self.0 .0.len()
+        self.0.0.len()
     }
 }
 

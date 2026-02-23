@@ -120,11 +120,11 @@ impl Download {
         // first try to use a default protocol (name matches an entry and the pattern matches the url or has no patterns defined)
         if let Some(def) = default_protocol {
             // error if the name of the default protocol is not found
-            if protocols.iter().find(|(&key, _)| key == def).is_none() {
+            if protocols.iter().find(|(key, _)| *key == def).is_none() {
                 return Err(Box::new(Error::DefaultProtocolNotFound(def.clone())));
             }
-            sel_protocol = protocols.iter().find(|(&key, &pro)| {
-                key == def
+            sel_protocol = protocols.iter().find(|(key, pro)| {
+                *key == def
                     && (pro.has_patterns() == false
                         || pro.matches_a_pattern(&processed_src.get_url()))
             });

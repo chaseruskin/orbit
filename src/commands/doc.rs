@@ -26,15 +26,15 @@ use crate::core::fileset::is_systemverilog;
 use crate::core::fileset::is_verilog;
 use crate::core::fileset::is_vhdl;
 use crate::core::lang;
+use crate::core::lang::Lang;
+use crate::core::lang::LangIdentifier;
+use crate::core::lang::LangUnit;
 use crate::core::lang::js::HIGHLIGHT;
 use crate::core::lang::sv::symbols::SystemVerilogSymbol;
 use crate::core::lang::sv::token::keyword::Keyword as SvKeyword;
 use crate::core::lang::sv::token::tokenizer::SystemVerilogTokenizer;
 use crate::core::lang::vhdl::symbols::VhdlSymbol;
 use crate::core::lang::vhdl::token::VhdlTokenizer;
-use crate::core::lang::Lang;
-use crate::core::lang::LangIdentifier;
-use crate::core::lang::LangUnit;
 use crate::core::project::Project;
 use crate::core::target::Process;
 use crate::core::target::Target;
@@ -50,15 +50,15 @@ use crate::util::filesystem::LockZone;
 use crate::util::filesystem::{PRJ_CATALOG_EX_LOCK_NAME, PRJ_CATALOG_SH_LOCK_NAME};
 use crate::util::sha256;
 use crate::warn;
-use mdbook_driver::config::Config;
 use mdbook_driver::MDBook;
+use mdbook_driver::config::Config;
 use std::collections::HashMap;
 use std::path::Path;
 use std::path::PathBuf;
 use tempfile::TempDir;
 
-use cliproc::{cli, proc, stage::*};
 use cliproc::{Arg, Cli, Help, Subcommand};
+use cliproc::{cli, proc, stage::*};
 
 type UnitMap = HashMap<LangIdentifier, LangUnit>;
 
@@ -1375,7 +1375,7 @@ impl DocUnit {
                 return String::new();
             }
             // iterate through generics and identify what doc item is linked to the generic
-            for generic in &generics.0 .0 {
+            for generic in &generics.0.0 {
                 let comment = match filtered_dis.iter().find(|p| {
                     p.stmt
                         .contains_identifier(LangIdentifier::Vhdl(generic.get_name().clone()))
@@ -1500,7 +1500,7 @@ impl DocUnit {
                 return String::new();
             }
             // iterate through generics and identify what doc item is linked to the generic
-            for port in &ports.0 .0 {
+            for port in &ports.0.0 {
                 let comment = match filtered_dis.iter().find(|p| {
                     p.stmt
                         .contains_identifier(LangIdentifier::Vhdl(port.get_name().clone()))

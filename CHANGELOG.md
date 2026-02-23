@@ -25,7 +25,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - Build and test subcommands no longer allow for a `--keep` option; Orbit will always retain any existing contents during the planning phase from past builds/tests
   - See `orbit clean` for removing artifacts of past builds/tests
 - Removes `default-` prefix in multiple configuration field names to be more consistent as it already is implied these are default values
-- Dynamically links to OpenSSL rather than statically linking to it as better means to update OpenSSL and use latest patched version found on the user's OS
+- Updates Rust edition to 2024
 
 ### Fixes
 - Fixes bug when a project's lockfile with no relative dependencies failed to automatically synchronize with the manifest during a local install of a project

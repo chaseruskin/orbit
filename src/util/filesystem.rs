@@ -196,7 +196,7 @@ where
                     waiting_on_lock = true;
                 }
                 Err(TryLockError::Error(err)) => {
-                    return Err(Box::new(Error::FileLockFailed(lock_path, err.to_string())))?
+                    return Err(Box::new(Error::FileLockFailed(lock_path, err.to_string())))?;
                 }
             }
         }

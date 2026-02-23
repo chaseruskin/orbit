@@ -29,10 +29,10 @@ use self::packagebody::PackageBody;
 use super::super::lexer::*;
 use super::super::parser::*;
 
+use crate::core::lang::LangIdentifier;
 use crate::core::lang::reference::{CompoundIdentifier, RefSet};
 use crate::core::lang::vhdl::interface::*;
 use crate::core::lang::vhdl::token::*;
-use crate::core::lang::LangIdentifier;
 
 pub mod architecture;
 pub mod configuration;
@@ -776,7 +776,7 @@ impl VhdlSymbol {
             .into_iter()
             .map(|f| {
                 refs.extend(f.1);
-                f.0 .0
+                f.0.0
             })
             .collect::<Vec<Vec<Token<VhdlToken>>>>();
 

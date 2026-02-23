@@ -33,9 +33,9 @@ use crate::core::lang::{
     vhdl::token::VhdlTokenizer,
 };
 
+use crate::core::lang::SCHEMA_VERSION;
 use crate::core::lang::highlight;
 use crate::core::lang::highlight::ToColor;
-use crate::core::lang::SCHEMA_VERSION;
 
 use serde_derive::Serialize;
 use std::iter::Peekable;
@@ -298,11 +298,11 @@ use crate::core::lang::verilog::symbols::Statement as SvStatement;
 use crate::core::lang::lexer::Tokenize;
 use crate::core::lang::vhdl::error::VhdlError;
 use crate::core::lang::vhdl::symbols::entity::Entity;
+use crate::core::lang::vhdl::token::VhdlToken as Vvt;
+use crate::core::lang::vhdl::token::VhdlToken;
 use crate::core::lang::vhdl::token::delimiter::Delimiter as VhDelimiter;
 use crate::core::lang::vhdl::token::identifier::Identifier as VhIdentifier;
 use crate::core::lang::vhdl::token::keyword::Keyword as VhKeyword;
-use crate::core::lang::vhdl::token::VhdlToken as Vvt;
-use crate::core::lang::vhdl::token::VhdlToken;
 
 impl Module {
     /// Builds an [Entity] from the structured HDL data.

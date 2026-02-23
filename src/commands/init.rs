@@ -33,8 +33,8 @@ use crate::*;
 use std::io::Write;
 use std::path::PathBuf;
 
-use cliproc::{cli, proc, stage::*};
 use cliproc::{Arg, Cli, Help, Subcommand};
+use cliproc::{cli, proc, stage::*};
 
 #[derive(Debug, PartialEq)]
 pub struct Init {

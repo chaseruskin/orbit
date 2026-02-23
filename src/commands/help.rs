@@ -18,8 +18,8 @@
 use crate::commands::manuals;
 use crate::util::anyerror::AnyError;
 
-use cliproc::{cli, proc, stage::*};
 use cliproc::{Arg, Cli, Subcommand};
+use cliproc::{cli, proc, stage::*};
 
 #[derive(Debug, PartialEq)]
 pub struct Help {
@@ -72,13 +72,7 @@ impl Topic {
         list.into_iter().fold(String::new(), |mut acc, x| {
             acc.push_str(&format!(
                 "{}{}",
-                {
-                    if acc.len() > 0 {
-                        "\n"
-                    } else {
-                        ""
-                    }
-                },
+                { if acc.len() > 0 { "\n" } else { "" } },
                 x
             ));
             acc

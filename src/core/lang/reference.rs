@@ -108,10 +108,10 @@ impl CompoundIdentifier {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::lang::verilog::token::identifier::Identifier::Basic;
-    use crate::core::lang::vhdl::token::identifier::Identifier::Basic as VBasic;
     use crate::core::lang::LangIdentifier::Verilog;
     use crate::core::lang::LangIdentifier::Vhdl;
+    use crate::core::lang::verilog::token::identifier::Identifier::Basic;
+    use crate::core::lang::vhdl::token::identifier::Identifier::Basic as VBasic;
 
     #[test]
     fn ut_equal() {

@@ -29,9 +29,9 @@ use std::fs;
 use std::path;
 use std::path::PathBuf;
 
+use super::lang::Language;
 use super::lang::sv::format::SystemVerilogFormat;
 use super::lang::vhdl::format::VhdlFormat;
-use super::lang::Language;
 
 pub const CACHE_TAG_FILE: &str = "CACHEDIR.TAG";
 
@@ -104,7 +104,9 @@ impl Context {
             return Err(Error::OrbitHomeDoesNotExist(self.home_path.clone()));
         }
         // verify the environment variable is set
-        env::set_var(key, &self.home_path);
+        unsafe {
+            env::set_var(key, &self.home_path);
+        }
         Ok(self)
     }
 
@@ -198,7 +200,9 @@ impl Context {
         };
         // set the environment variable
         if let Some(k) = key {
-            env::set_var(k, &PathBuf::standardize(&dir));
+            unsafe {
+                env::set_var(k, &PathBuf::standardize(&dir));
+            }
         }
         Ok(dir)
     }
@@ -324,7 +328,9 @@ impl Context {
             Err(_) => return Err(Error::FailedToGetCurDir),
         }) {
             Some(cwd) => {
-                env::set_var(s, &cwd);
+                unsafe {
+                    env::set_var(s, &cwd);
+                }
                 Some(cwd)
             }
             None => None,
@@ -395,7 +401,9 @@ impl Context {
 
     /// Sets the project's build directory and the corresponding environment variable.
     pub fn build_dir(self, s: &str) -> Result<Context, Error> {
-        env::set_var(s, &self.get_target_dir());
+        unsafe {
+            env::set_var(s, &self.get_target_dir());
+        }
         Ok(self)
     }
 

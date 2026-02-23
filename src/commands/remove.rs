@@ -29,8 +29,8 @@ use crate::util::prompt;
 use std::fs;
 use std::path::PathBuf;
 
-use cliproc::{cli, proc, stage::*};
 use cliproc::{Arg, Cli, Help, Subcommand};
+use cliproc::{cli, proc, stage::*};
 
 #[derive(Debug, PartialEq)]
 pub struct Remove {
@@ -83,7 +83,7 @@ impl Subcommand<Context> for Remove {
                 return Err(AnyError(format!(
                     "project \"{}\" does not exist in the catalog",
                     self.spec
-                )))?
+                )))?;
             }
         };
 

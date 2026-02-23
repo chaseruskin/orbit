@@ -22,9 +22,9 @@
 use std::io::prelude::*;
 use std::io::{Seek, Write};
 use std::iter::Iterator;
+use zip::CompressionMethod;
 use zip::result::ZipError;
 use zip::write::FileOptions;
-use zip::CompressionMethod;
 
 use ignore::{DirEntry, WalkBuilder};
 use std::fs::File;

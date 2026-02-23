@@ -17,9 +17,9 @@
 
 use super::super::super::lexer::TrainCar;
 use super::VhdlError;
+use crate::core::lang::LangIdentifier;
 use crate::core::lang::highlight;
 use crate::core::lang::highlight::ToColor;
-use crate::core::lang::LangIdentifier;
 use crate::core::name::Name;
 use crate::util::strcmp;
 use colored::ColoredString;
@@ -31,8 +31,8 @@ use std::hash::Hash;
 use std::hash::Hasher;
 use std::str::FromStr;
 
-use crate::core::lang::vhdl::token::char_set;
 use crate::core::lang::vhdl::token::VhdlToken;
+use crate::core::lang::vhdl::token::char_set;
 
 #[derive(Debug, Clone, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(untagged)]

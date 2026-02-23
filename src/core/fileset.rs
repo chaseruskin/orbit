@@ -172,8 +172,8 @@ impl FromStr for Style {
     }
 }
 
-use serde::de::{self};
 use serde::Serializer;
+use serde::de::{self};
 use serde::{Deserialize, Serialize as Ser};
 use std::fmt;
 

@@ -885,10 +885,10 @@ mod test {
         // level 1
         g.add_edge(n1, n0, ()); // n1 -> n0
         g.add_edge(n4, n0, ()); // n4 -> n0
-                                // level 2 - L
+        // level 2 - L
         g.add_edge(n2, n1, ()); // n2 -> n1
         g.add_edge(n3, n1, ()); // n3 -> n1
-                                // level 2 - R
+        // level 2 - R
         g.add_edge(n5, n4, ()); // n5 -> n4
         g.add_edge(n6, n4, ()); // n6 -> n4
         g

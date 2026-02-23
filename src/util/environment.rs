@@ -395,7 +395,7 @@ impl Environment {
     /// Sets a set of environment variables, consuming the list.
     pub fn initialize(self) -> () {
         self.into_iter()
-            .for_each(|e| std::env::set_var(e.key, e.value));
+            .for_each(|e| unsafe { std::env::set_var(e.key, e.value) });
     }
 
     pub fn read(key: &str) -> Option<String> {

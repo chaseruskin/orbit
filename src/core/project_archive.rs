@@ -20,9 +20,9 @@ use super::manifest::Manifest;
 use super::project::Project;
 use crate::util::anyerror::{AnyError, Fault};
 use crate::util::compress;
+use flate2::Compression;
 use flate2::read::ZlibDecoder;
 use flate2::write::ZlibEncoder;
-use flate2::Compression;
 use std::fs::{self, File};
 use std::io::Read;
 use std::io::Write;
@@ -116,7 +116,10 @@ impl ProjectArchive {
             None => match repairing {
                 true => panic!("Repairing function failed for manifest"),
                 false => {
-                    crate::info!("{}", "failed to parse downloaded file's header bytes; running repair function ...");
+                    crate::info!(
+                        "{}",
+                        "failed to parse downloaded file's header bytes; running repair function ..."
+                    );
                     let repaired_bytes = Self::repair(archive, &path)?;
                     match Self::parse(repaired_bytes, true, &path) {
                         Ok(rp) => {
@@ -136,7 +139,10 @@ impl ProjectArchive {
             None => match repairing {
                 true => panic!("Repairing function failed for lockfile"),
                 false => {
-                    crate::info!("{}", "failed to parse downloaded file's header bytes; running repair function ...");
+                    crate::info!(
+                        "{}",
+                        "failed to parse downloaded file's header bytes; running repair function ..."
+                    );
                     let repaired_bytes = Self::repair(archive, &path)?;
                     match Self::parse(repaired_bytes, true, &path) {
                         Ok(rp) => {

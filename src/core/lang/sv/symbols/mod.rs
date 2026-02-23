@@ -30,6 +30,7 @@ use super::error::SystemVerilogError;
 use super::token::identifier::Identifier;
 use super::token::operator::Operator;
 use super::token::tokenizer::SystemVerilogTokenizer;
+use crate::core::lang::LangIdentifier;
 use crate::core::lang::lexer::{Position, Token};
 use crate::core::lang::parser::{Parse, Symbol};
 use crate::core::lang::reference::{CompoundIdentifier, RefSet};
@@ -37,7 +38,6 @@ use crate::core::lang::sv::token::keyword::Keyword;
 use crate::core::lang::sv::token::token::SystemVerilogToken;
 use crate::core::lang::verilog::error::VerilogError;
 use crate::core::lang::verilog::symbols::VerilogSymbol;
-use crate::core::lang::LangIdentifier;
 use std::str::FromStr;
 
 #[derive(PartialEq, Clone)]

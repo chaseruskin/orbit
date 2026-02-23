@@ -19,6 +19,9 @@ use crate::commands::helps::get;
 use crate::core::catalog::Catalog;
 use crate::core::context::Context;
 use crate::core::lang;
+use crate::core::lang::Lang;
+use crate::core::lang::LangIdentifier;
+use crate::core::lang::LangUnit;
 use crate::core::lang::sv::format::SystemVerilogFormat;
 use crate::core::lang::verilog::symbols::module::Module;
 use crate::core::lang::vhdl::format::VhdlFormat;
@@ -26,9 +29,6 @@ use crate::core::lang::vhdl::interface;
 use crate::core::lang::vhdl::interface::Architectures;
 use crate::core::lang::vhdl::symbols::entity::Entity;
 use crate::core::lang::vhdl::token::Identifier as VhdlIdentifier;
-use crate::core::lang::Lang;
-use crate::core::lang::LangIdentifier;
-use crate::core::lang::LangUnit;
 use crate::core::legend::EntityJson;
 use crate::core::legend::ModuleJson;
 use crate::core::project::PartialProjectIdSpec;
@@ -38,15 +38,15 @@ use crate::error::Error;
 use crate::error::Hint;
 use crate::util::anyerror::{AnyError, Fault};
 use crate::util::filesystem::LockZone;
-use crate::util::filesystem::Standardize;
 use crate::util::filesystem::PRJ_CATALOG_EX_LOCK_NAME;
+use crate::util::filesystem::Standardize;
 use colored::Colorize;
 use std::env;
 use std::path::PathBuf;
 use std::str::FromStr;
 
-use cliproc::{cli, proc, stage::*};
 use cliproc::{Arg, Cli, Help, Subcommand};
+use cliproc::{cli, proc, stage::*};
 
 /// The availale options to specify what language to return the code snippets
 /// for the `get` command.

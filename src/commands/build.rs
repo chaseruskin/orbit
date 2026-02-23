@@ -34,17 +34,17 @@ use crate::util::environment::Environment;
 use crate::util::environment::ORBIT;
 use crate::util::environment::ORBIT_OUT_DIR;
 use crate::util::environment::ORBIT_TARGET_DIR;
-use crate::util::filesystem::get_exe_path;
-use crate::util::filesystem::into_std_str;
 use crate::util::filesystem::LockZone;
-use crate::util::filesystem::Standardize;
 use crate::util::filesystem::PRJ_CATALOG_EX_LOCK_NAME;
 use crate::util::filesystem::PRJ_CATALOG_SH_LOCK_NAME;
+use crate::util::filesystem::Standardize;
+use crate::util::filesystem::get_exe_path;
+use crate::util::filesystem::into_std_str;
 use crate::warn;
 use std::path::PathBuf;
 
-use cliproc::{cli, proc, stage::*};
 use cliproc::{Arg, Cli, Help, Subcommand};
+use cliproc::{cli, proc, stage::*};
 
 #[derive(Debug, PartialEq)]
 pub struct Build {

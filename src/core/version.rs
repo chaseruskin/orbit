@@ -427,8 +427,8 @@ impl PartialOrd for Version {
     }
 }
 
-use serde::de::{self};
 use serde::Serializer;
+use serde::de::{self};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 

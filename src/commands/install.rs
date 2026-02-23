@@ -64,16 +64,16 @@ use crate::util::anyerror::Fault;
 use crate::util::environment::Environment;
 use crate::util::filesystem;
 use crate::util::filesystem::LockZone;
-use crate::util::filesystem::Standardize;
 use crate::util::filesystem::PRJ_CATALOG_EX_LOCK_NAME;
+use crate::util::filesystem::Standardize;
 use std::env;
 use std::fs;
 use std::fs::File;
 use std::path::PathBuf;
 use zip::ZipArchive;
 
-use cliproc::{cli, proc, stage::*};
 use cliproc::{Arg, Cli, Help, Subcommand};
+use cliproc::{cli, proc, stage::*};
 
 #[derive(Debug, PartialEq)]
 pub struct Install {
@@ -330,7 +330,7 @@ impl Subcommand<Context> for Install {
                                 None => {
                                     return Err(Error::Custom(format!(
                                         "project requires source to download"
-                                    )))?
+                                    )))?;
                                 }
                             }
                         // use the physical/local location of the ip? (does this ever occur?)
@@ -362,7 +362,7 @@ impl Subcommand<Context> for Install {
             None => {
                 return Err(Error::Custom(format!(
                     "failed to find a project to install"
-                )))?
+                )))?;
             }
         };
 

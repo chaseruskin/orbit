@@ -32,8 +32,8 @@ use std::fmt::{self, Display};
 use std::path::PathBuf;
 use std::{collections::HashMap, str::FromStr};
 
-use super::lang::vhdl::token::identifier::Identifier as VhdlIdentifier;
 use super::lang::LangIdentifier;
+use super::lang::vhdl::token::identifier::Identifier as VhdlIdentifier;
 use super::project::Project;
 use super::uuid::Uuid;
 
@@ -443,7 +443,9 @@ impl Manifest {
     }
 
     pub fn write_manifest_ref_help() -> String {
-        String::from("see more `Orbit.toml` keys and their definitions at https://chaseruskin.github.io/orbit/reference/manifest.html")
+        String::from(
+            "see more `Orbit.toml` keys and their definitions at https://chaseruskin.github.io/orbit/reference/manifest.html",
+        )
     }
 
     /// Composes a [String] to write to a clean manifest file.

@@ -23,8 +23,8 @@ use colored::Colorize;
 
 use super::reference::RefSet;
 use super::sv::symbols::SystemVerilogSymbol;
-use super::verilog::symbols::module::Module;
 use super::verilog::symbols::VerilogSymbol;
+use super::verilog::symbols::module::Module;
 use super::{Lang, LangIdentifier, VhdlIdentifier};
 use crate::core::lang::vhdl::symbols::entity::Entity;
 

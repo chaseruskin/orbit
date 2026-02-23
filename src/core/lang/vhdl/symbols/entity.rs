@@ -25,13 +25,13 @@ use crate::core::lang::{
     vhdl::{error::VhdlError, format::VhdlFormat, token::literal::AbstLiteral},
 };
 
+use crate::core::lang::SCHEMA_VERSION;
 use crate::core::lang::highlight;
 use crate::core::lang::highlight::ToColor;
-use crate::core::lang::SCHEMA_VERSION;
 
 use super::{
-    architecture::Architecture, Architectures, Delimiter, Generics, Identifier,
-    InterfaceDeclarations, Keyword, Ports, Position, Token, VhdlSymbol, VhdlToken,
+    Architectures, Delimiter, Generics, Identifier, InterfaceDeclarations, Keyword, Ports,
+    Position, Token, VhdlSymbol, VhdlToken, architecture::Architecture,
 };
 
 #[derive(Debug, PartialEq, Serialize)]
@@ -369,7 +369,7 @@ impl Entity {
             tokens.push(Self::sv(Svt::Operator(SvOp::Pound)));
             tokens.push(Self::sv(Svt::Operator(SvOp::ParenL)));
 
-            self.generics.0 .0.iter().for_each(|g| {
+            self.generics.0.0.iter().for_each(|g| {
                 tokens.push(Self::sv(Svt::Keyword(SvKeyword::Parameter)));
 
                 // datatype
@@ -420,7 +420,7 @@ impl Entity {
             tokens.push(Self::sv(Svt::Operator(SvOp::ParenL)));
 
             // iterate through all ports
-            self.ports.0 .0.iter().for_each(|p| {
+            self.ports.0.0.iter().for_each(|p| {
                 // port direction
                 let dir = match p.get_mode().as_keyword() {
                     Some(Keyword::Out) => SvKeyword::Output,

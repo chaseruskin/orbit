@@ -501,7 +501,10 @@ pub mod v1 {
                                     }
                                     // TODO: formalize into an error (a uuid must be explicitly defined)
                                     _ => {
-                                        panic!("a uuid must be explicitly defined in manifest for dependency {}", d.get_name())
+                                        panic!(
+                                            "a uuid must be explicitly defined in manifest for dependency {}",
+                                            d.get_name()
+                                        )
                                     }
                                 }
                             }

@@ -24,14 +24,14 @@ use crate::core::algo::ProjectFileNode;
 use crate::core::algo::ProjectNode;
 use crate::core::catalog::Catalog;
 use crate::core::context::Context;
+use crate::core::lang::Lang;
+use crate::core::lang::LangIdentifier;
 use crate::core::lang::node::HdlNode;
 use crate::core::lang::node::HdlSymbol;
 use crate::core::lang::node::IdentifierFormat;
 use crate::core::lang::node::SubUnitNode;
 use crate::core::lang::reference::CompoundIdentifier;
 use crate::core::lang::vhdl::token::Identifier as VhdlIdentifier;
-use crate::core::lang::Lang;
-use crate::core::lang::LangIdentifier;
 use crate::core::project::Project;
 use crate::core::project::ProjectIdSpec;
 use crate::error::Error;
@@ -47,8 +47,8 @@ use serde_derive::Serialize;
 use std::collections::HashMap;
 use std::str::FromStr;
 
-use cliproc::{cli, proc, stage::*};
 use cliproc::{Arg, Cli, Help, Subcommand};
+use cliproc::{cli, proc, stage::*};
 
 #[derive(PartialEq, Debug, Serialize)]
 struct SerNode {
@@ -282,7 +282,7 @@ impl Tree {
                             return Err(Error::GetUnitNotFound(
                                 root_name.to_string(),
                                 Hint::ShowAvailableUnitsLocal,
-                            ))?
+                            ))?;
                         }
                     };
                     roots.push(Plan::local_to_global(i, &global_graph, &local_graph).index())

@@ -20,8 +20,8 @@ use super::subunit::SubUnit;
 use super::symbols::VhdlSymbol;
 use crate::core::lang;
 use crate::core::lang::reference::RefSet;
-use crate::core::lang::vhdl::symbols::architecture::Architecture;
 use crate::core::lang::vhdl::symbols::VHDLParser;
+use crate::core::lang::vhdl::symbols::architecture::Architecture;
 use crate::core::lang::vhdl::token::identifier::Identifier;
 use crate::util::anyerror::CodeFault;
 use crate::util::filesystem;
@@ -343,29 +343,42 @@ impl std::fmt::Display for HdlNamingError {
                 let current_dir = std::env::current_dir().unwrap();
                 let location_1 = filesystem::remove_base(&current_dir, &path1);
                 let location_2 = filesystem::remove_base(&current_dir, &path2);
-                write!(f, "duplicate design units identified as \"{}\"\n\nlocation 1: {}{}\nlocation 2: {}{}{}", 
+                write!(
+                    f,
+                    "duplicate design units identified as \"{}\"\n\nlocation 1: {}{}\nlocation 2: {}{}{}",
                     iden,
-                    filesystem::into_std_str(location_1), loc1,
-                    filesystem::into_std_str(location_2), loc2,
-                    Hint::ResolveDuplicateIds1)
+                    filesystem::into_std_str(location_1),
+                    loc1,
+                    filesystem::into_std_str(location_2),
+                    loc2,
+                    Hint::ResolveDuplicateIds1
+                )
             }
             Self::DuplicateAcrossDirect(iden, dep, path, pos) => {
                 let current_dir = std::env::current_dir().unwrap();
                 let location = filesystem::remove_base(&current_dir, &path);
-                write!(f, "duplicate design units identified as \"{}\"\n\nlocation: {}{}\nconflicts with direct dependency: {}{}", 
-                iden,
-                filesystem::into_std_str(location), pos,
-                dep,
-                Hint::ResolveDuplicateIds1)
+                write!(
+                    f,
+                    "duplicate design units identified as \"{}\"\n\nlocation: {}{}\nconflicts with direct dependency: {}{}",
+                    iden,
+                    filesystem::into_std_str(location),
+                    pos,
+                    dep,
+                    Hint::ResolveDuplicateIds1
+                )
             }
             Self::DuplicateAcrossLocal(iden, dep, path, pos) => {
                 let current_dir = std::env::current_dir().unwrap();
                 let location = filesystem::remove_base(&current_dir, &path);
-                write!(f, "duplicate design units identified as \"{}\"\n\nlocation: {}{}\nconflicts with local dependency: {}{}", 
-                iden,
-                filesystem::into_std_str(location), pos,
-                dep,
-                Hint::ResolveDuplicateIds1)
+                write!(
+                    f,
+                    "duplicate design units identified as \"{}\"\n\nlocation: {}{}\nconflicts with local dependency: {}{}",
+                    iden,
+                    filesystem::into_std_str(location),
+                    pos,
+                    dep,
+                    Hint::ResolveDuplicateIds1
+                )
             }
         }
     }

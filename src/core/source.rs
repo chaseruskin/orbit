@@ -133,10 +133,10 @@ impl FromStr for Source {
     }
 }
 
-use serde::de::Visitor;
-use serde::de::{self};
 use serde::Serialize;
 use serde::Serializer;
+use serde::de::Visitor;
+use serde::de::{self};
 use std::fmt;
 
 pub fn read_string<'de, D>(deserializer: D) -> Result<Option<Source>, D::Error>

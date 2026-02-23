@@ -21,8 +21,8 @@ use crate::core::project::Mapping;
 use crate::util::anyerror::Fault;
 use std::collections::BTreeMap;
 
-use cliproc::{cli, proc, stage::*};
 use cliproc::{Arg, Cli, Help, Subcommand};
+use cliproc::{cli, proc, stage::*};
 
 use crate::commands::helps::search;
 use crate::core::catalog::{Catalog, PkgName, ProjectLevel};
@@ -287,11 +287,7 @@ impl Search {
                 "{:<24}{:<16}{:<10}{:<25}\n",
                 name.get_name().to_string(),
                 ip.get_man().get_project().get_version().to_string() + {
-                    if is_update_available == true {
-                        "*"
-                    } else {
-                        ""
-                    }
+                    if is_update_available == true { "*" } else { "" }
                 },
                 match ip.get_mapping() {
                     Mapping::Physical => "install",

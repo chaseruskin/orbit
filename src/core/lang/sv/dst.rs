@@ -18,8 +18,8 @@
 use std::collections::HashMap;
 
 use crate::core::lang::{
-    lexer::{Position, Token},
     LangIdentifier,
+    lexer::{Position, Token},
 };
 
 use super::token::token::SystemVerilogToken;

@@ -760,7 +760,7 @@ pub fn install_missing_deps(lf: &LockFile, le: &LockEntry, catalog: &Catalog) ->
                             None => {
                                 return Err(Box::new(Error::EntryNotQueued(
                                     entry.to_project_id_spec(),
-                                )))
+                                )));
                             }
                         }
                     }
@@ -1411,7 +1411,7 @@ impl Plan {
                                         })
                                         .collect(),
                                     Hint::BenchSpecify,
-                                ))?
+                                ))?;
                             }
                         }
                     }
@@ -1491,7 +1491,7 @@ impl Plan {
                                         })
                                         .collect(),
                                     Hint::BenchSpecify,
-                                ))?
+                                ))?;
                             }
                         };
                     }
@@ -1530,7 +1530,7 @@ impl Plan {
                             0 => {
                                 return Err(PlanError::TestbenchNoTest(
                                     local.get_key_by_index(b).unwrap().get_suffix().clone(),
-                                ))
+                                ));
                             }
                             1 => Some(entities[0].0),
                             _ => {
@@ -1548,7 +1548,7 @@ impl Plan {
                                         })
                                         .collect(),
                                     Hint::DutSpecify,
-                                ))?
+                                ))?;
                             }
                         }
                     } else {
@@ -1613,7 +1613,7 @@ impl Plan {
                                     } else {
                                         Hint::TopSpecify
                                     },
-                                ))?
+                                ))?;
                             }
                         }
                     }

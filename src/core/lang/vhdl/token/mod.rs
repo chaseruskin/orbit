@@ -31,7 +31,7 @@ pub mod literal;
 pub mod tokenizer;
 use super::super::highlight;
 
-use literal::{based_integer, AbstLiteral, BaseSpec, BitStrLiteral, Character};
+use literal::{AbstLiteral, BaseSpec, BitStrLiteral, Character, based_integer};
 use tokenizer::*;
 
 pub type Identifier = identifier::Identifier;

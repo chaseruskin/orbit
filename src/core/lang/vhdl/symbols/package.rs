@@ -19,7 +19,7 @@ use std::fmt::Display;
 
 use crate::core::lang::reference::RefSet;
 
-use super::{packagebody::PackageBody, Generics, Identifier, Position};
+use super::{Generics, Identifier, Position, packagebody::PackageBody};
 
 #[derive(Debug, PartialEq)]
 pub struct Package {

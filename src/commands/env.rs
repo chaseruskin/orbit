@@ -26,8 +26,8 @@ use crate::util::environment::Environment;
 use crate::util::environment::ORBIT_WIN_LITERAL_CMD;
 use crate::util::filesystem::Standardize;
 
-use cliproc::{cli, proc, stage::*};
 use cliproc::{Arg, Cli, Help, Subcommand};
+use cliproc::{cli, proc, stage::*};
 
 #[derive(Debug, PartialEq)]
 pub struct Env {

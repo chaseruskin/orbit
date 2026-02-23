@@ -27,8 +27,8 @@ pub struct Sha256Hash {
     digest: [u32; 8],
 }
 
-use serde::de::{self};
 use serde::Serializer;
+use serde::de::{self};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
@@ -147,11 +147,7 @@ pub fn compute_sha256(s: &[u8]) -> Sha256Hash {
     // pad with zeros until data is a multiple of 512 -> 64 bytes
     let zero_cnt_bytes = {
         let zero_cnt = 512 - ((bytes.len() * 8 + 64) % 512);
-        if zero_cnt == 512 {
-            0
-        } else {
-            zero_cnt
-        }
+        if zero_cnt == 512 { 0 } else { zero_cnt }
     } / 8;
 
     for _ in 0..zero_cnt_bytes {

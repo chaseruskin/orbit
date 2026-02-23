@@ -39,7 +39,7 @@ use super::catalog::PkgName;
 use super::fileset;
 use super::lang::sv::token::tokenizer::SystemVerilogTokenizer;
 use super::lang::verilog::token::tokenizer::VerilogTokenizer;
-use super::lang::{sv, verilog, vhdl, Lang, LangIdentifier};
+use super::lang::{Lang, LangIdentifier, sv, verilog, vhdl};
 use super::project::PartialProjectIdSpec;
 
 /// Constructs a project-level graph from a lockfile.
@@ -176,7 +176,7 @@ fn graph_project<'a>(
                                         dependency.get_version().clone()
                                     )
                                 ))),
-                            ))?
+                            ))?;
                         }
                     }
                 }
@@ -270,7 +270,7 @@ fn graph_project<'a>(
                                                 dependency.get_version().clone()
                                             )
                                         ))),
-                                    ))?
+                                    ))?;
                                 }
                             }
                         }
@@ -287,7 +287,7 @@ fn graph_project<'a>(
                                         dependency.get_version().clone()
                                     )
                                 ))),
-                            ))?
+                            ))?;
                         }
                     }
                 }

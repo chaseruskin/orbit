@@ -33,8 +33,8 @@ use colored::Colorize;
 use std::cmp::Ordering;
 use std::env::current_dir;
 
-use cliproc::{cli, proc, stage::*};
 use cliproc::{Arg, Cli, Help, Subcommand};
+use cliproc::{cli, proc, stage::*};
 
 #[derive(Debug, PartialEq)]
 pub struct Info {

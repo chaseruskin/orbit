@@ -19,8 +19,8 @@
 
 use serde_derive::Deserialize;
 
-use super::vhdl::error::VhdlError;
 use super::Lang;
+use super::vhdl::error::VhdlError;
 use std::str::FromStr;
 
 use crate::core::lang::sv::symbols::module::Module;

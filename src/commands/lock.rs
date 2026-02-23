@@ -33,8 +33,8 @@ use crate::util::anyerror::Fault;
 use crate::util::environment::Environment;
 use crate::util::filesystem::LockZone;
 use crate::util::filesystem::PRJ_CATALOG_EX_LOCK_NAME;
-use cliproc::{cli, proc, stage::*};
 use cliproc::{Arg, Cli, Help, Subcommand};
+use cliproc::{cli, proc, stage::*};
 
 #[derive(Debug, PartialEq)]
 pub struct Lock {
@@ -185,7 +185,9 @@ pub fn synchronize_state_with_manifest(
                             ));
                         }
                         None => {
-                            panic!("missing source field for a project in a channel: please open a bug report");
+                            panic!(
+                                "missing source field for a project in a channel: please open a bug report"
+                            );
                         }
                     }
                 }
@@ -231,7 +233,9 @@ pub fn synchronize_state_with_manifest(
                 if let Some(src) = le.get_source() {
                     Install::download_target_from_source(c, src, le.to_project_id_spec(), true)?;
                 } else {
-                    panic!("missing source field from a known released version maintained in a lockfile");
+                    panic!(
+                        "missing source field from a known released version maintained in a lockfile"
+                    );
                 }
             }
             catalog.refresh_downloads()?;
@@ -259,7 +263,9 @@ pub fn synchronize_state_with_manifest(
                 }
                 // Does not exist in catalog, must have been downloaded in previous step!
                 None => {
-                    panic!("entry should have already been downloaded during synchronization but not found in catalog")
+                    panic!(
+                        "entry should have already been downloaded during synchronization but not found in catalog"
+                    )
                 }
             };
             if let Some(bytes) = dwnld_bytes {

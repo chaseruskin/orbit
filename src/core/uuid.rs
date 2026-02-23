@@ -16,8 +16,8 @@
 //
 
 use crate::error::Error;
-use serde::de;
 use serde::Serializer;
+use serde::de;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::fmt::Display;

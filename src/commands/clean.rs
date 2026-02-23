@@ -24,8 +24,8 @@ use crate::*;
 use std::fs;
 use std::path::Path;
 
-use cliproc::{cli, proc, stage::*};
 use cliproc::{Arg, Cli, Help, Subcommand};
+use cliproc::{cli, proc, stage::*};
 
 #[derive(Debug, PartialEq)]
 pub struct Clean {

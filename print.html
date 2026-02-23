@@ -39,10 +39,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-331cec11.js";
+            window.path_to_searchindex_js = "searchindex-080c562b.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-9c44c394.js"></script>
+        <script src="toc-3fa1c024.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -239,33 +239,33 @@
 <ol>
 <li>Download the latest prebuilt package.</li>
 </ol>
-<pre><code>curl -LO https://github.com/chaseruskin/orbit/releases/download/0.28.1/orbit-0.28.1-x86_64-unknown-linux-musl.tar.gz
+<pre><code>curl -LO https://github.com/chaseruskin/orbit/releases/download/0.29.0/orbit-0.29.0-x86_64-unknown-linux-musl.tar.gz
 </code></pre>
 <ol start="2">
 <li>Extract the prebuilt package.</li>
 </ol>
-<pre><code>tar -xf orbit-0.28.1-x86_64-unknown-linux-musl.tar.gz -C orbit-0.28.1
+<pre><code>tar -xf orbit-0.29.0-x86_64-unknown-linux-musl.tar.gz -C orbit-0.29.0
 </code></pre>
 <ol start="3">
 <li>Move the executable to a location already set in the PATH environment variable.</li>
 </ol>
-<pre><code>mv ./orbit-0.28.1/bin/orbit /usr/local/bin/orbit
+<pre><code>mv ./orbit-0.29.0/bin/orbit /usr/local/bin/orbit
 </code></pre>
 <h3 id="macos"><a class="header" href="#macos">macOS</a></h3>
 <ol>
 <li>Download the latest prebuilt package.</li>
 </ol>
-<pre><code>curl -LO https://github.com/chaseruskin/orbit/releases/download/0.28.1/orbit-0.28.1-x86_64-apple-darwin.tar.gz
+<pre><code>curl -LO https://github.com/chaseruskin/orbit/releases/download/0.29.0/orbit-0.29.0-x86_64-apple-darwin.tar.gz
 </code></pre>
 <ol start="2">
 <li>Extract the prebuilt package.</li>
 </ol>
-<pre><code>tar -xf orbit-0.28.1-x86_64-apple-darwin.tar.gz -C orbit-0.28.1
+<pre><code>tar -xf orbit-0.29.0-x86_64-apple-darwin.tar.gz -C orbit-0.29.0
 </code></pre>
 <ol start="3">
 <li>Move the executable to a location already set in the PATH environment variable.</li>
 </ol>
-<pre><code>mv ./orbit-0.28.1/bin/orbit /usr/local/bin/orbit
+<pre><code>mv ./orbit-0.29.0/bin/orbit /usr/local/bin/orbit
 </code></pre>
 <h3 id="windows"><a class="header" href="#windows">Windows</a></h3>
 <ol>
@@ -276,7 +276,7 @@
 <p>Unzip the prebuilt package.</p>
 </li>
 </ol>
-<pre><code>$ expand-archive "./orbit-0.28.1-x86_64-windows.zip" -DestinationPath "orbit-0.28.1"
+<pre><code>$ expand-archive "./orbit-0.29.0-x86_64-windows.zip" -DestinationPath "orbit-0.29.0"
 </code></pre>
 <ol start="3">
 <li>Make a new directory to store this package.</li>
@@ -286,21 +286,21 @@
 <ol start="4">
 <li>Move the package to the new directory.</li>
 </ol>
-<pre><code>$ copy-item "./orbit-0.28.1/*" -destination "$env:LOCALAPPDATA/Programs/orbit" -recurse
+<pre><code>$ copy-item "./orbit-0.29.0/*" -destination "$env:LOCALAPPDATA/Programs/orbit" -recurse
 </code></pre>
 <ol start="5">
 <li>Edit the user-level PATH environment variable in <em><strong>Control Panel</strong></em> by adding <strong>%LOCALAPPDATA%\Programs\orbit\bin</strong>.</li>
 </ol>
 <h2 id="2-installing-with-cargo"><a class="header" href="#2-installing-with-cargo">2. Installing with Cargo</a></h2>
 <p>To install the latest version through Cargo:</p>
-<pre><code>$ cargo install --git https://github.com/chaseruskin/orbit.git --bin orbit --tag 0.28.1
+<pre><code>$ cargo install --git https://github.com/chaseruskin/orbit.git --bin orbit --tag 0.29.0
 </code></pre>
 <p>This will build the <code>orbit</code> binary and place it a path already set in the PATH environment variable.</p>
 <h2 id="checking-if-orbit-is-installed-correctly"><a class="header" href="#checking-if-orbit-is-installed-correctly">Checking if Orbit is installed correctly</a></h2>
 <p>To verify Orbit is working correctly on your system, let’s open a new terminal session and print it’s current version.</p>
 <pre><code>$ orbit --version
 </code></pre>
-<pre><code>orbit 0.28.1
+<pre><code>orbit 0.29.0
 </code></pre>
 <p>This should print out your version of Orbit you installed.</p>
 <p>You can also review the license for Orbit:</p>
@@ -973,7 +973,7 @@ uuid = "8ah2qa261k8wgv55sd1qq17w9"
 </ol>
 <h2 id="specifying-multiple-dependencies-for-a-project"><a class="header" href="#specifying-multiple-dependencies-for-a-project">Specifying multiple dependencies for a project</a></h2>
 <p>After the quick detour back to the gates project, we are ready to tackle our final challenge in this mini tutorial series: the full adder. Like our previous projects, navigate to a directory in your file system where you would like to store the project.</p>
-<pre><code>orbit new full-add --lib adding
+<pre><code>$ orbit new full-add --lib adding
 </code></pre>
 <p>For the rest of this tutorial, we will be working relative to the project directory “/full-add” that currently stores our new full-add project.</p>
 <p>For this final project, we will need circuits described in both the gate project and half-add project. Let’s quickly recall if version 1.0.0 of gates has the OR gate we will need.</p>
@@ -2812,7 +2812,7 @@ $ orbit get nor_gate --project gates:1.5
 ELSE IF minor levels are not equal:
     RETURN version with larger minor level value.
 ELSE:
-    RETURN version with larger patch level value. 
+    RETURN version with larger micro level value. 
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="filesets"><a class="header" href="#filesets">Filesets</a></h1>
@@ -3161,24 +3161,24 @@ precedence:
 </li>
 <li><a href="#the-test-section">[test]</a> - The test settings.
 <ul>
-<li><a href="#the-default-target-field">default-target</a> - Set the default target for tests.</li>
+<li><a href="#the-target-field">target</a> - Set the default target for tests.</li>
 <li><a href="#the-auto-discovery-field">auto-discovery</a> - Enable or disable testbench auto discovery.</li>
 </ul>
 </li>
 <li><a href="#the-build-section">[build]</a> - The build settings.
 <ul>
-<li><a href="#the-default-target-field">default-target</a> - Set the default target for builds.</li>
+<li><a href="#the-target-field">target</a> - Set the default target for builds.</li>
 <li><a href="#the-auto-discovery-field">auto-discovery</a> - Enable or disable top-level auto discovery.</li>
 </ul>
 </li>
 <li><a href="#the-publish-section">[publish]</a> - The publish settings.
 <ul>
-<li><a href="#the-default-channels-field">default-channels</a> - Set the default channels to publish a project to.</li>
+<li><a href="#the-channels-field-1">channels</a> - Set the default channels to publish a project to.</li>
 </ul>
 </li>
 <li><a href="#the-install-section">[install]</a> - The install settings.
 <ul>
-<li><a href="#the-default-protocol-field">default-protocol</a> - Set the default protocol for installing projects.</li>
+<li><a href="#the-protocol-field">protocol</a> - Set the default protocol for installing projects.</li>
 </ul>
 </li>
 <li><a href="#the-vhdl-format-section">[vhdl-format]</a> - VHDL code formatting.</li>
@@ -3238,10 +3238,10 @@ target-dir = "target"
 </code></pre>
 <p>When this key is not defined, the default value for the build directory is “target”.</p>
 <h3 id="the-test-section"><a class="header" href="#the-test-section">The <code>[test]</code> section</a></h3>
-<h3 id="the-default-target-field"><a class="header" href="#the-default-target-field">The <code>default-target</code> field</a></h3>
-<p>The optional <code>default-target</code> key sets the default target when starting the build process through the test entry point (<code>orbit test</code>).</p>
+<h3 id="the-target-field"><a class="header" href="#the-target-field">The <code>target</code> field</a></h3>
+<p>The optional <code>target</code> key sets the default target when starting the build process through the test entry point (<code>orbit test</code>).</p>
 <pre><code class="language-toml">[test]
-default-target = "modelsim"
+target = "modelsim"
 </code></pre>
 <p>If the default target is set to be used and its name cannot be found among the known targets, the build process will error.</p>
 <h3 id="the-auto-discovery-field"><a class="header" href="#the-auto-discovery-field">The <code>auto-discovery</code> field</a></h3>
@@ -3252,10 +3252,10 @@ auto-discovery = true
 </code></pre>
 <p>If this field is omitted, then auto discovery is enabled by default. Auto discovery is only attempted when the user does not provide the <code>--dut</code> and <code>--tb</code> options to <code>orbit test</code>.</p>
 <h3 id="the-build-section"><a class="header" href="#the-build-section">The <code>[build]</code> section</a></h3>
-<h3 id="the-default-target-field-1"><a class="header" href="#the-default-target-field-1">The <code>default-target</code> field</a></h3>
-<p>The optional <code>default-target</code> key sets the default target when starting the build process through the build entry point (<code>orbit build</code>).</p>
+<h3 id="the-target-field-1"><a class="header" href="#the-target-field-1">The <code>target</code> field</a></h3>
+<p>The optional <code>target</code> key sets the default target when starting the build process through the build entry point (<code>orbit build</code>).</p>
 <pre><code class="language-toml">[build]
-default-target = "vivado"
+target = "vivado"
 </code></pre>
 <p>If the default target is set to be used and its name cannot be found among the known targets, the build process will error.</p>
 <h3 id="the-auto-discovery-field-1"><a class="header" href="#the-auto-discovery-field-1">The <code>auto-discovery</code> field</a></h3>
@@ -3266,17 +3266,17 @@ auto-discovery = true
 </code></pre>
 <p>If this field is omitted, then auto discovery is enabled by default. Auto discovery is only attempted when the user does not provide the <code>--top</code> option to <code>orbit build</code>.</p>
 <h3 id="the-publish-section"><a class="header" href="#the-publish-section">The <code>[publish]</code> section</a></h3>
-<h3 id="the-default-channels-field"><a class="header" href="#the-default-channels-field">The <code>default-channels</code> field</a></h3>
-<p>The optional <code>default-channels</code> field is an array of strings that represent the names of known channels. When this field is provided and the current project omits the <code>channels</code> field from its manifest, the project will be published to the list of channels defined here. If the current project’s manifest does have the <code>channels</code> field defined, then the <code>default-channels</code> field is not applied.</p>
+<h3 id="the-channels-field-1"><a class="header" href="#the-channels-field-1">The <code>channels</code> field</a></h3>
+<p>The optional <code>channels</code> field is an array of strings that represent the names of known channels. When this field is provided and the current project omits the <code>channels</code> field from its manifest, the project will be published to the list of channels defined here. If the current project’s manifest does have the <code>channels</code> field defined, then the <code>channels</code> field is not applied.</p>
 <pre><code class="language-toml">[publish]
-default-channels = ["hyperspace-labs"]
+channels = ["hyperspace-labs"]
 </code></pre>
-<p>If the <code>default-channels</code> field is set and at least one of the names cannot be found among the known channels, the publishing process will error.</p>
+<p>If the <code>channels</code> field is set and at least one of the names cannot be found among the known channels, the publishing process will error.</p>
 <h3 id="the-install-section"><a class="header" href="#the-install-section">The <code>[install]</code> section</a></h3>
-<h3 id="the-default-protocol-field"><a class="header" href="#the-default-protocol-field">The <code>default-protocol</code> field</a></h3>
-<p>The optional <code>default-protocol</code> field can be used to specify which protocol should have priority when trying to access a project from the internet.</p>
+<h3 id="the-protocol-field"><a class="header" href="#the-protocol-field">The <code>protocol</code> field</a></h3>
+<p>The optional <code>protocol</code> field can be used to specify which protocol should have priority when trying to access a project from the internet.</p>
 <pre><code class="language-toml">[install]
-default-protocol = "git"
+protocol = "git"
 </code></pre>
 <p>If the default protocol has patterns configured and none of the patterns match the given project’s repository URL, then it is not used. If the default protocol is set to be used and its name cannot be found among the known protocols, the installation process will error.</p>
 <h3 id="the-vhdl-format-section"><a class="header" href="#the-vhdl-format-section">The <code>[vhdl-format]</code> section</a></h3>
@@ -4007,7 +4007,6 @@ returned from the user-defined execution process is propagated through Orbit.</p
 <p><code>--command &lt;path&gt;</code><br>            Overwrite the target’s command</p>
 <p><code>--list, -l</code><br>            View available targets and exit</p>
 <p><code>--fileset &lt;key=glob&gt;...</code><br>            A glob-style pattern identified by name to include in the blueprint</p>
-<p><code>--keep, -k</code><br>            Do not clean the target folder before execution</p>
 <p><code>--force</code><br>            Force the target to execute</p>
 <p><code>--verbose</code><br>            Display the command being executed</p>
 <p><code>args</code><br>            Arguments to pass to the target</p>
@@ -4062,7 +4061,6 @@ returned from the user-defined execution process is propagated through Orbit.</p
 <p><code>--list, -l</code><br>            View available targets and exit</p>
 <p><code>--fileset &lt;key=glob&gt;...</code><br>            A glob-style pattern identified by name to include in the blueprint</p>
 <p><code>--force</code><br>            Force the target to execute</p>
-<p><code>--keep, -k</code><br>            Do not clean the target folder before execution</p>
 <p><code>--verbose</code><br>            Display the command being executed</p>
 <p><code>args</code><br>            Arguments to pass to the target</p>
 <h2 id="examples-11"><a class="header" href="#examples-11"><strong>EXAMPLES</strong></a></h2>
@@ -4071,13 +4069,33 @@ orbit build --target quartus --top riscv_cpu
 orbit build -- --some-arg1 --some-arg2
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div>
-<h1 id="orbit-doc"><a class="header" href="#orbit-doc"><strong>orbit doc</strong></a></h1>
+<h1 id="orbit-clean"><a class="header" href="#orbit-clean"><strong>orbit clean</strong></a></h1>
 <h2 id="name-10"><a class="header" href="#name-10"><strong>NAME</strong></a></h2>
-<p>doc - generate a project’s documentation</p>
+<p>clean - remove the target directory</p>
 <h2 id="synopsis-9"><a class="header" href="#synopsis-9"><strong>SYNOPSIS</strong></a></h2>
-<pre><code>orbit doc [options]
+<pre><code>orbit clean [options]
 </code></pre>
 <h2 id="description-9"><a class="header" href="#description-9"><strong>DESCRIPTION</strong></a></h2>
+<p>Remove artifacts that Orbit has generated in the past.</p>
+<p>By default, this command deletes all directories found within the current
+project’s target directory. To select a single target’s directory for removal,
+use the <code>--target</code> option.</p>
+<h2 id="options-9"><a class="header" href="#options-9"><strong>OPTIONS</strong></a></h2>
+<p><code>--doc</code><br>            Whether or not to clean just the documentation directory</p>
+<p><code>--target, -t &lt;name&gt;</code><br>            Target output directory to just remove</p>
+<p><code>--target-dir &lt;dir&gt;</code><br>            The relative directory where the targets exist</p>
+<h2 id="examples-12"><a class="header" href="#examples-12"><strong>EXAMPLES</strong></a></h2>
+<pre><code>orbit clean
+orbit clean --target modelsim
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="orbit-doc"><a class="header" href="#orbit-doc"><strong>orbit doc</strong></a></h1>
+<h2 id="name-11"><a class="header" href="#name-11"><strong>NAME</strong></a></h2>
+<p>doc - generate a project’s documentation</p>
+<h2 id="synopsis-10"><a class="header" href="#synopsis-10"><strong>SYNOPSIS</strong></a></h2>
+<pre><code>orbit doc [options]
+</code></pre>
+<h2 id="description-10"><a class="header" href="#description-10"><strong>DESCRIPTION</strong></a></h2>
 <p>Generates documentation for a project and all of its dependencies based on
 inline markdown comments.</p>
 <p>Documentation is extracted from comments embedded in the source code. A
@@ -4088,23 +4106,23 @@ item as long as there are no lines between the comments that is not a comment.
 Comments used for document generation are interpreted as Markdown.</p>
 <p>The BROWSER environment variable is required to be set when using the <code>--open</code>
 flag.</p>
-<h2 id="options-9"><a class="header" href="#options-9"><strong>OPTIONS</strong></a></h2>
+<h2 id="options-10"><a class="header" href="#options-10"><strong>OPTIONS</strong></a></h2>
 <p><code>--open</code><br>            Open the docs in a browser after the operation</p>
 <p><code>--no-deps</code><br>            Don’t build documentation for dependencies</p>
 <p><code>--document-private-units</code><br>            Document private units</p>
 <p><code>--target-dir &lt;dir&gt;</code><br>            Directory for all generated artifacts and intermediate files</p>
-<h2 id="examples-12"><a class="header" href="#examples-12"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-13"><a class="header" href="#examples-13"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit doc
 orbit doc --no-deps
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="orbit-publish"><a class="header" href="#orbit-publish"><strong>orbit publish</strong></a></h1>
-<h2 id="name-11"><a class="header" href="#name-11"><strong>NAME</strong></a></h2>
+<h2 id="name-12"><a class="header" href="#name-12"><strong>NAME</strong></a></h2>
 <p>publish - post a project to a channel</p>
-<h2 id="synopsis-10"><a class="header" href="#synopsis-10"><strong>SYNOPSIS</strong></a></h2>
+<h2 id="synopsis-11"><a class="header" href="#synopsis-11"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit publish [options]
 </code></pre>
-<h2 id="description-10"><a class="header" href="#description-10"><strong>DESCRIPTION</strong></a></h2>
+<h2 id="description-11"><a class="header" href="#description-11"><strong>DESCRIPTION</strong></a></h2>
 <p>Performs a series of checks for a local project and then releases it to its
 specified channel(s).</p>
 <p>There are multiple checks that are performed before a project can be published.
@@ -4132,25 +4150,25 @@ To run the command to completion, use the <code>--ready</code> option.</p>
 <p>If the publishing process fails during the channel’s pre or post commands,
 Orbit will rollback its changes by removing any files it copied into the
 channel as well as any newly created directories it made.</p>
-<h2 id="options-10"><a class="header" href="#options-10"><strong>OPTIONS</strong></a></h2>
+<h2 id="options-11"><a class="header" href="#options-11"><strong>OPTIONS</strong></a></h2>
 <p><code>--ready, -y</code><br>            Run the operation to completion</p>
 <p><code>--channel, -c &lt;name&gt;...</code><br>            Use this channel during publishing</p>
 <p><code>--no-install</code><br>            Do not install the project for future use</p>
 <p><code>--list, -l</code><br>            View available channels and exit</p>
 <p><code>--all-public</code><br>            Publish with all source files being public</p>
-<h2 id="examples-13"><a class="header" href="#examples-13"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-14"><a class="header" href="#examples-14"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit publish
 orbit publish --ready
 orbit publish -c hyperspace-labs -y
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="orbit-search"><a class="header" href="#orbit-search"><strong>orbit search</strong></a></h1>
-<h2 id="name-12"><a class="header" href="#name-12"><strong>NAME</strong></a></h2>
+<h2 id="name-13"><a class="header" href="#name-13"><strong>NAME</strong></a></h2>
 <p>search - browse the catalog</p>
-<h2 id="synopsis-11"><a class="header" href="#synopsis-11"><strong>SYNOPSIS</strong></a></h2>
+<h2 id="synopsis-12"><a class="header" href="#synopsis-12"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit search [options] [&lt;project&gt;]
 </code></pre>
-<h2 id="description-11"><a class="header" href="#description-11"><strong>DESCRIPTION</strong></a></h2>
+<h2 id="description-12"><a class="header" href="#description-12"><strong>DESCRIPTION</strong></a></h2>
 <p>Returns a list of the projects found in the catalog.</p>
 <p>The returned list of projects is organized by row with each row consisting of four
 columns: the project’s name, latest version, catalog state, and UUID.</p>
@@ -4174,7 +4192,7 @@ the <code>--match</code> option.</p>
 <p>If a project has a higher version that exists and is not currently installed,
 then an asterisk character “*” will appear next the project’s version. To
 update the project to the latest version, see the <code>install</code> command.</p>
-<h2 id="options-11"><a class="header" href="#options-11"><strong>OPTIONS</strong></a></h2>
+<h2 id="options-12"><a class="header" href="#options-12"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;project&gt;</code><br>            Project id specification</p>
 <p><code>--install, -i</code><br>            Filter projects installed to the cache</p>
 <p><code>--download, -d</code><br>            Filter projects downloaded to the archive</p>
@@ -4182,19 +4200,19 @@ update the project to the latest version, see the <code>install</code> command.<
 <p><code>--keyword &lt;term&gt;...</code><br>            Include projects that have this keyword</p>
 <p><code>--limit &lt;n&gt;</code><br>            Maximum number of results to return</p>
 <p><code>--match</code><br>            Return results that pass each filter</p>
-<h2 id="examples-14"><a class="header" href="#examples-14"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-15"><a class="header" href="#examples-15"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit search axi
 orbit search --keyword memory --keyword ecc
 orbit search --keyword cdc --limit 20 -i
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="orbit-install"><a class="header" href="#orbit-install"><strong>orbit install</strong></a></h1>
-<h2 id="name-13"><a class="header" href="#name-13"><strong>NAME</strong></a></h2>
+<h2 id="name-14"><a class="header" href="#name-14"><strong>NAME</strong></a></h2>
 <p>install - store an immutable reference to a project</p>
-<h2 id="synopsis-12"><a class="header" href="#synopsis-12"><strong>SYNOPSIS</strong></a></h2>
+<h2 id="synopsis-13"><a class="header" href="#synopsis-13"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit install [options]
 </code></pre>
-<h2 id="description-12"><a class="header" href="#description-12"><strong>DESCRIPTION</strong></a></h2>
+<h2 id="description-13"><a class="header" href="#description-13"><strong>DESCRIPTION</strong></a></h2>
 <p>This command will place a project into the cache. By default, the specified
 version is the ‘latest’ released version of the project that Orbit has
 identified.</p>
@@ -4215,7 +4233,7 @@ field in the current project’s manifest, granting the assumption that all
 source files should be public. It can only be present when installing from a
 local project and when the “project.public” field does not exist.</p>
 <p>To remove a project from the catalog, see the <code>remove</code> command.</p>
-<h2 id="options-12"><a class="header" href="#options-12"><strong>OPTIONS</strong></a></h2>
+<h2 id="options-13"><a class="header" href="#options-13"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;project&gt;</code><br>            Project id specification</p>
 <p><code>--url &lt;url&gt;</code><br>            Url to install the project from the internet</p>
 <p><code>--path &lt;path&gt;</code><br>            Path to install the project from local file system</p>
@@ -4225,7 +4243,7 @@ local project and when the “project.public” field does not exist.</p>
 <p><code>--list, -l</code><br>            View available protocols and exit</p>
 <p><code>--all-deps</code><br>            Install all dependencies (including development)</p>
 <p><code>--all-public</code><br>            Install with all source files being public</p>
-<h2 id="examples-15"><a class="header" href="#examples-15"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-16"><a class="header" href="#examples-16"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit install
 orbit install lcd_driver:2.0
 orbit install adder:1.0.0 --url https://my.adder/project.zip
@@ -4233,12 +4251,12 @@ orbit install alu:2.3.7 --path ./projects/alu --force
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="orbit-remove"><a class="header" href="#orbit-remove"><strong>orbit remove</strong></a></h1>
-<h2 id="name-14"><a class="header" href="#name-14"><strong>NAME</strong></a></h2>
+<h2 id="name-15"><a class="header" href="#name-15"><strong>NAME</strong></a></h2>
 <p>remove - delete a project from the catalog</p>
-<h2 id="synopsis-13"><a class="header" href="#synopsis-13"><strong>SYNOPSIS</strong></a></h2>
+<h2 id="synopsis-14"><a class="header" href="#synopsis-14"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit remove [options] &lt;project&gt;
 </code></pre>
-<h2 id="description-13"><a class="header" href="#description-13"><strong>DESCRIPTION</strong></a></h2>
+<h2 id="description-14"><a class="header" href="#description-14"><strong>DESCRIPTION</strong></a></h2>
 <p>Deletes save data for a known project from the catalog. The project’s data for
 its particular version is removed from the catalog’s cache and the catalog’s
 archive.</p>
@@ -4246,22 +4264,22 @@ archive.</p>
 correct project is okay to be removed. To skip this interactive prompt and assume
 it is correct without confirmation, use the <code>--force</code> option.</p>
 <p>To add a project to the catalog, see the <code>install</code> command.</p>
-<h2 id="options-13"><a class="header" href="#options-13"><strong>OPTIONS</strong></a></h2>
+<h2 id="options-14"><a class="header" href="#options-14"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;project&gt;</code><br>            Project id specification</p>
 <p><code>--force</code><br>            Skip interactive prompts</p>
 <p><code>--verbose</code><br>            Display where the removal occurs</p>
-<h2 id="examples-16"><a class="header" href="#examples-16"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-17"><a class="header" href="#examples-17"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit remove gates
 orbit remove gates:1.0.1 --force
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="orbit-env"><a class="header" href="#orbit-env"><strong>orbit env</strong></a></h1>
-<h2 id="name-15"><a class="header" href="#name-15"><strong>NAME</strong></a></h2>
+<h2 id="name-16"><a class="header" href="#name-16"><strong>NAME</strong></a></h2>
 <p>env - print orbit environment information</p>
-<h2 id="synopsis-14"><a class="header" href="#synopsis-14"><strong>SYNOPSIS</strong></a></h2>
+<h2 id="synopsis-15"><a class="header" href="#synopsis-15"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit env [options]
 </code></pre>
-<h2 id="description-14"><a class="header" href="#description-14"><strong>DESCRIPTION</strong></a></h2>
+<h2 id="description-15"><a class="header" href="#description-15"><strong>DESCRIPTION</strong></a></h2>
 <p>Displays environment variables as key-value pairs related to Orbit.</p>
 <p>By default, this command prints information as a shell script. If one or more
 variable names are given as arguments using <code>&lt;key&gt;</code>, then it will print the
@@ -4270,21 +4288,21 @@ value of each provided variable on its own line.</p>
 <p>Environment variables that are known only at runtime are not displayed. Be
 sure to review the documentation for a list of all environment variables set
 by Orbit.</p>
-<h2 id="options-14"><a class="header" href="#options-14"><strong>OPTIONS</strong></a></h2>
+<h2 id="options-15"><a class="header" href="#options-15"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;key&gt;...</code><br>            Display this variable’s value</p>
-<h2 id="examples-17"><a class="header" href="#examples-17"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-18"><a class="header" href="#examples-18"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit env
 orbit env ORBIT_HOME
 orbit env ORBIT_MANIFEST_DIR ORBIT_PROJECT_NAME
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="orbit-config"><a class="header" href="#orbit-config"><strong>orbit config</strong></a></h1>
-<h2 id="name-16"><a class="header" href="#name-16"><strong>NAME</strong></a></h2>
+<h2 id="name-17"><a class="header" href="#name-17"><strong>NAME</strong></a></h2>
 <p>config - modify configuration data</p>
-<h2 id="synopsis-15"><a class="header" href="#synopsis-15"><strong>SYNOPSIS</strong></a></h2>
+<h2 id="synopsis-16"><a class="header" href="#synopsis-16"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit config [options] [&lt;path&gt;]
 </code></pre>
-<h2 id="description-15"><a class="header" href="#description-15"><strong>DESCRIPTION</strong></a></h2>
+<h2 id="description-16"><a class="header" href="#description-16"><strong>DESCRIPTION</strong></a></h2>
 <p>Provides an entry point to the current configuration data through the
 command-line.</p>
 <p>To list the configuration files that are currently being used, use the
@@ -4314,14 +4332,14 @@ the command-line. More complex fields may require manual edits by opening its
 respective file.</p>
 <p>If the item to be pushed to a key’s list using <code>--push</code> already exists in the
 list, it will not be added again.</p>
-<h2 id="options-15"><a class="header" href="#options-15"><strong>OPTIONS</strong></a></h2>
+<h2 id="options-16"><a class="header" href="#options-16"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;path&gt;</code><br>            The destination to read/write configuration data</p>
 <p><code>--push &lt;key=value&gt;...</code><br>            Add a new value to a key’s list</p>
 <p><code>--pop &lt;key&gt;...</code><br>            Remove the last value from a key’s list</p>
 <p><code>--set &lt;key=value&gt;...</code><br>            Store the value as the key’s entry</p>
 <p><code>--unset &lt;key&gt;...</code><br>            Delete the key’s entry</p>
 <p><code>--list, -l</code><br>            Print the list of configuration files and exit</p>
-<h2 id="examples-18"><a class="header" href="#examples-18"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-19"><a class="header" href="#examples-19"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit config --push include="profiles/hyperspacelab"
 orbit config ~/.orbit/config.toml --unset env.vivado_path
 </code></pre>

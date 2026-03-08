@@ -116,7 +116,8 @@ impl Subcommand<Context> for Test {
         c.jump_to_working_project()?;
 
         // create the ip manifest
-        let current_project = Project::load(c.get_project_path().unwrap().clone(), true, false)?;
+        let current_project =
+            Project::load(c.get_project_path().unwrap().clone(), true, true, false)?;
 
         // @todo: recreate the ip graph from the lockfile, then read each installation
         // 2025-08-24 is this still relevant? -> probably no

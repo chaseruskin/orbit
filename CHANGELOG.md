@@ -15,6 +15,18 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## UNRELEASED
+
+### Features
+- Allows one to just specify the `path` for a direct dependency without needing to also match it's `version` when specifying dependencies
+- Adds support for multiple locations for dependencies using `path` and `version`
+- Allows `version` to be optional when developing locally and specifying `path` for a dependency (`version` is still required for publishing)
+- Allows packages to be set as root for tree when using `orbit tree -e all`
+
+### Fixes
+- Checks an explicit version (not 0.0.0) is set in the project's manifest when publishing
+- Fixes VHDL packages not appearing under VHDL contexts when running `orbit tree -e all`
+
 ## 0.29.0
 
 ### Features

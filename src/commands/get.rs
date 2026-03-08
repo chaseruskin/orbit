@@ -186,7 +186,7 @@ impl Subcommand<Context> for Get {
         };
 
         // load the manifest from the path
-        let ip = Project::load(ip_path, is_local_ip, false)?;
+        let ip = Project::load(ip_path, is_local_ip, is_local_ip, false)?;
 
         let result = self.run(&ip, is_local_ip, &c);
 

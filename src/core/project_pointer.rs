@@ -19,9 +19,9 @@ use super::{
     manifest::{self, Manifest, PROJECT_MANIFEST_FILE},
     project::Project,
 };
+use crate::error::Error;
 use crate::error::LastError;
 use crate::util::anyerror::Fault;
-use crate::{core::manifest::FromFile, error::Error};
 use std::path::PathBuf;
 
 /// The project pointer stores the manifest for a project, to be used to grab the project from another
@@ -40,11 +40,11 @@ impl ProjectPointer {
     pub fn read(path: PathBuf) -> Result<Self, Fault> {
         let man_path = path.join(PROJECT_MANIFEST_FILE);
         if man_path.exists() == false || man_path.is_file() == false {
-            return Err(Error::IpLoadFailed(LastError(
+            return Err(Error::ProjectLoadFailed(LastError(
                 Error::ManifestPathNotFound(man_path.to_string_lossy().to_string()).to_string(),
             )))?;
         }
-        let man = Manifest::from_file(&man_path)?;
+        let man = Manifest::from_file(&man_path, false)?;
         Ok(Self { manifest: man })
     }
 

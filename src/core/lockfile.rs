@@ -523,6 +523,10 @@ pub mod v1 {
             self.path.is_some()
         }
 
+        pub fn is_relative_only(&self) -> bool {
+            self.path.is_some() && self.version.is_unknown()
+        }
+
         pub fn get_path(&self) -> &Option<PathBuf> {
             &self.path
         }

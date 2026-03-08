@@ -140,7 +140,7 @@ impl New {
         // );
 
         // write the lockfile
-        let local_ip = Project::load(self.path.clone(), true, false)?;
+        let local_ip = Project::load(self.path.clone(), true, true, false)?;
         Lock::write_new_lockfile(&local_ip, true, priv_by_def)?;
 
         // println!(

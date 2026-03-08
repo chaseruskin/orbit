@@ -21,6 +21,7 @@ use crate::commands::plan;
 use crate::commands::plan::Plan;
 use crate::core::algo;
 use crate::core::algo::ProjectFileNode;
+use crate::core::algo::ProjectKey;
 use crate::core::algo::ProjectNode;
 use crate::core::catalog::Catalog;
 use crate::core::context::Context;
@@ -32,11 +33,12 @@ use crate::core::lang::node::IdentifierFormat;
 use crate::core::lang::node::SubUnitNode;
 use crate::core::lang::reference::CompoundIdentifier;
 use crate::core::lang::vhdl::token::Identifier as VhdlIdentifier;
+use crate::core::lang::vhdl::token::identifier::Identifier;
 use crate::core::project::Project;
-use crate::core::project::ProjectIdSpec;
 use crate::error::Error;
 use crate::error::Hint;
 use crate::util::anyerror::Fault;
+use crate::util::filesystem;
 use crate::util::filesystem::LockZone;
 use crate::util::filesystem::PRJ_CATALOG_EX_LOCK_NAME;
 use crate::util::graph::EdgeStatus;
@@ -87,7 +89,7 @@ impl SerNode {
     }
 
     pub fn from_project_graph(
-        graph: &GraphMap<ProjectIdSpec, ProjectNode<'_>, ()>,
+        graph: &GraphMap<ProjectKey, ProjectNode<'_>, ()>,
         id: usize,
     ) -> Self {
         let name = graph
@@ -203,7 +205,7 @@ impl Subcommand<Context> for Tree {
         c.jump_to_working_project()?;
 
         // get the ip manifest
-        let project = Project::load(c.get_project_path().unwrap().clone(), true, false)?;
+        let project = Project::load(c.get_project_path().unwrap().clone(), true, true, false)?;
 
         // before we gather the catalog, request an "APPEND" action to the cache
         let (_cache_ap_path, cache_ap_lock) = crate::util::filesystem::acquire_lock(
@@ -273,8 +275,14 @@ impl Tree {
                     )) {
                         Some(id) => {
                             // verify the unit is a component
-                            if id.as_ref().get_symbol().is_component() == false {
-                                return Err(PlanError::BadEntity(root_name.clone()))?;
+                            if only_modules == true {
+                                if id.as_ref().get_symbol().is_component() == false {
+                                    return Err(PlanError::BadEntity(root_name.clone()))?;
+                                }
+                            } else {
+                                if id.as_ref().get_symbol().is_hierarchical() == false {
+                                    return Err(PlanError::BadEntity(root_name.clone()))?;
+                                }
                             }
                             id.index()
                         }
@@ -412,18 +420,23 @@ impl Tree {
                     }
                 }
                 false => {
-                    println!(
+                    let prj = project_graph
+                        .get_node_by_index(twig.1)
+                        .unwrap()
+                        .as_ref()
+                        .as_project();
+                    print!(
                         "{}{}",
                         branch_str,
-                        project_graph
-                            .get_node_by_index(twig.1)
-                            .unwrap()
-                            .as_ref()
-                            .as_project()
-                            .get_man()
-                            .get_project()
-                            .into_project_id_spec()
+                        prj.get_man().get_project().into_project_id_spec()
                     );
+                    if prj.get_mapping().is_relative() {
+                        print!(
+                            " ({})",
+                            filesystem::into_std_str(prj.get_root().to_path_buf())
+                        );
+                    }
+                    println!();
                 }
             }
         }
@@ -488,6 +501,29 @@ impl Tree {
         // add edges according to verilog
         Plan::connect_edges_from_verilog(&mut graph_map, &mut component_pairs, only_modules);
 
+        // go through all contexts and make the connections
+        if only_modules == false {
+            // Capture the list of primary-only units (contexts) such that we can make the connections
+            let mut solo_pri_nodes = Vec::new();
+            for (name, node, _) in graph_map.iter() {
+                if let Some(cxt) = node.get_symbol().as_context() {
+                    let hdl_lib = node.get_library().as_vhdl_name().unwrap().clone();
+                    for dep in cxt.get_refs() {
+                        solo_pri_nodes.push((dep.clone(), name.clone(), hdl_lib.clone()));
+                    }
+                }
+            }
+            for (dep, name, hdl_lib) in solo_pri_nodes {
+                Self::add_dep_as_edge(
+                    &dep.clone(),
+                    &hdl_lib,
+                    &component_pairs,
+                    &mut graph_map,
+                    name.clone(),
+                );
+            }
+        }
+
         // go through all subunits and make the connections
         let mut sub_nodes_iter = sub_nodes.into_iter();
         while let Some((lang_lib, node)) = sub_nodes_iter.next() {
@@ -521,65 +557,77 @@ impl Tree {
             };
 
             for dep in edges {
-                // need to locate the key with a suffix matching `dep` if it was a component instantiation
-                if dep.get_prefix().is_none() {
-                    if let Some(lib) = component_pairs.get(dep.get_suffix()) {
-                        let b = graph_map.add_edge_by_key(
-                            &CompoundIdentifier::new(lib.clone(), dep.get_suffix().clone()),
-                            &node_name,
-                            (),
-                        );
-                        match b {
-                            // create black box entity
-                            EdgeStatus::MissingSource => {
-                                let dep_name =
-                                    CompoundIdentifier::new(lib.clone(), dep.get_suffix().clone());
-
-                                graph_map.add_node(
-                                    dep_name.clone(),
-                                    HdlNode::black_box(HdlSymbol::BlackBox(
-                                        dep.get_suffix().to_string(),
-                                    )),
-                                );
-                                graph_map.add_edge_by_key(&dep_name, &node_name, ());
-                            }
-                            _ => (),
-                        }
-                    // this entity does not exist or was not logged
-                    } else {
-                        // create new node for black box entity
-                        if graph_map.has_node_by_key(dep) == false {
-                            graph_map.add_node(
-                                dep.clone(),
-                                HdlNode::black_box(HdlSymbol::BlackBox(
-                                    dep.get_suffix().to_string(),
-                                )),
-                            );
-                        }
-                        graph_map.add_edge_by_key(&dep, &node_name, ());
-                    }
-                // the dependency has a prefix (a library) with it
-                } else {
-                    let local_lib_id = CompoundIdentifier::new(
-                        LangIdentifier::Vhdl(hdl_lib.clone()),
-                        dep.get_suffix().clone(),
-                    );
-                    // if the prefix is "work", replace it with the current unit's hdl library
-                    let resolved_dep_id = match dep.get_prefix().unwrap() {
-                        LangIdentifier::Vhdl(i) => {
-                            if i == &VhdlIdentifier::new_working() {
-                                &local_lib_id
-                            } else {
-                                dep
-                            }
-                        }
-                        _ => dep,
-                    };
-                    graph_map.add_edge_by_key(&resolved_dep_id, &node_name, ());
-                };
+                Self::add_dep_as_edge(
+                    dep,
+                    hdl_lib,
+                    &component_pairs,
+                    &mut graph_map,
+                    node_name.clone(),
+                );
             }
         }
 
         Ok(graph_map)
+    }
+
+    fn add_dep_as_edge(
+        dep: &CompoundIdentifier,
+        hdl_lib: &Identifier,
+        component_pairs: &HashMap<LangIdentifier, LangIdentifier>,
+        graph_map: &mut GraphMap<CompoundIdentifier, HdlNode, ()>,
+        node_name: CompoundIdentifier,
+    ) {
+        // need to locate the key with a suffix matching `dep` if it was a component instantiation
+        if dep.get_prefix().is_none() {
+            if let Some(lib) = component_pairs.get(dep.get_suffix()) {
+                let b = graph_map.add_edge_by_key(
+                    &CompoundIdentifier::new(lib.clone(), dep.get_suffix().clone()),
+                    &node_name,
+                    (),
+                );
+                match b {
+                    // create black box entity
+                    EdgeStatus::MissingSource => {
+                        let dep_name =
+                            CompoundIdentifier::new(lib.clone(), dep.get_suffix().clone());
+
+                        graph_map.add_node(
+                            dep_name.clone(),
+                            HdlNode::black_box(HdlSymbol::BlackBox(dep.get_suffix().to_string())),
+                        );
+                        graph_map.add_edge_by_key(&dep_name, &node_name, ());
+                    }
+                    _ => (),
+                }
+            // this entity does not exist or was not logged
+            } else {
+                // create new node for black box entity
+                if graph_map.has_node_by_key(dep) == false {
+                    graph_map.add_node(
+                        dep.clone(),
+                        HdlNode::black_box(HdlSymbol::BlackBox(dep.get_suffix().to_string())),
+                    );
+                }
+                graph_map.add_edge_by_key(&dep, &node_name, ());
+            }
+        // the dependency has a prefix (a library) with it
+        } else {
+            let local_lib_id = CompoundIdentifier::new(
+                LangIdentifier::Vhdl(hdl_lib.clone()),
+                dep.get_suffix().clone(),
+            );
+            // if the prefix is "work", replace it with the current unit's hdl library
+            let resolved_dep_id = match dep.get_prefix().unwrap() {
+                LangIdentifier::Vhdl(i) => {
+                    if i == &VhdlIdentifier::new_working() {
+                        &local_lib_id
+                    } else {
+                        dep
+                    }
+                }
+                _ => dep,
+            };
+            graph_map.add_edge_by_key(&resolved_dep_id, &node_name, ());
+        }
     }
 }

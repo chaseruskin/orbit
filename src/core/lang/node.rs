@@ -17,7 +17,7 @@
 
 use crate::core::algo::ProjectFileNode;
 use crate::core::lang::vhdl::subunit::SubUnit;
-use crate::core::lang::vhdl::symbols::VhdlSymbol;
+use crate::core::lang::vhdl::symbols::{Context, VhdlSymbol};
 use crate::util::anyerror::AnyError;
 use colored::Colorize;
 
@@ -52,6 +52,18 @@ impl HdlSymbol {
             Self::Verilog(v) => v.as_module().is_some(),
             Self::Vhdl(v) => v.as_entity().is_some(),
             Self::SystemVerilog(v) => v.as_module().is_some(),
+            Self::BlackBox(_) => true,
+        }
+    }
+
+    /// Checks if the symbol is a unit that can be shown in the hierarchy (Kind::All).
+    pub fn is_hierarchical(&self) -> bool {
+        match &self {
+            Self::Verilog(_) => true,
+            Self::Vhdl(v) => {
+                v.as_entity().is_some() || v.as_context().is_some() || v.as_package().is_some()
+            }
+            Self::SystemVerilog(_) => true,
             Self::BlackBox(_) => true,
         }
     }
@@ -103,6 +115,14 @@ impl HdlSymbol {
     pub fn as_entity(&self) -> Option<&Entity> {
         match &self {
             Self::Vhdl(v) => v.as_entity(),
+            _ => None,
+        }
+    }
+
+    /// Return the symbol as its [Context], if it is one.
+    pub fn as_context(&self) -> Option<&Context> {
+        match &self {
+            Self::Vhdl(v) => v.as_context(),
             _ => None,
         }
     }

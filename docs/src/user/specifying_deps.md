@@ -43,10 +43,17 @@ gates = "1"
 1. Specify the local file sytem path to the root directory of the external project using the `path` field to use it as the source for the dependency:
 ``` toml
 [dependencies]
-gates = { path = "../gates", version = "1.0.1-dev" }
+gates = { path = "../gates" }
 ```
 
-Note that the `version` field is required and its value must match the `version` defined in the local dependency's manifest file.
+### Multiple locations
+
+It is possible to specify both a version and a path location. The path dependency will be used locally (in which case the version is checked against the local copy), and when published to a channel, it will use the version.
+``` toml
+[dependencies]
+gates = { path = "../gates", version = "2.1" }
+```
+An example where this can be useful is when you have split up a project into multiple projects within the same repository. You can then use path dependencies to point to the local projects within the repository to use the local version during development, and then use the version once it is published.
 
 ## Including a dependency only for development
 

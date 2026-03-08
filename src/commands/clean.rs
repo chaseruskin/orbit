@@ -56,8 +56,12 @@ impl Subcommand<Context> for Clean {
         // verify running from an ip directory and enter ip's root directory
         c.jump_to_working_project()?;
 
-        let current_project =
-            Project::load(c.get_project_path().unwrap().to_path_buf(), true, false)?;
+        let current_project = Project::load(
+            c.get_project_path().unwrap().to_path_buf(),
+            true,
+            true,
+            false,
+        )?;
 
         // determine the build directory based on cli priority
         let default_target_dir = c.get_target_dir();

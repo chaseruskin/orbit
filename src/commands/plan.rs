@@ -47,14 +47,13 @@ use std::hash::Hash;
 use std::path::PathBuf;
 
 use crate::commands::install::Install;
-use crate::core::algo;
 use crate::core::algo::ProjectFileNode;
 use crate::core::algo::ProjectNode;
+use crate::core::algo::{self, ProjectKey};
 use crate::core::catalog::Catalog;
 use crate::core::lockfile::LockEntry;
 use crate::core::lockfile::LockFile;
 use crate::core::project::Project;
-use crate::core::project::ProjectIdSpec;
 use crate::util::graphmap::Node;
 
 #[derive(Debug, PartialEq)]
@@ -786,7 +785,7 @@ pub fn install_ip_from_downloads(
         return Err(e);
     }
     // load the project
-    let unzipped_dep = match Project::load(dir.clone(), false, false) {
+    let unzipped_dep = match Project::load(dir.clone(), false, false, false) {
         Ok(x) => x,
         Err(e) => {
             fs::remove_dir_all(dir)?;
@@ -1283,7 +1282,7 @@ impl Plan {
     /// out of date or `force` is `true`.
     pub fn write_lockfile<'c>(
         target: &Project,
-        project_graph: &GraphMap<ProjectIdSpec, ProjectNode, ()>,
+        project_graph: &GraphMap<ProjectKey, ProjectNode, ()>,
         force: bool,
         verbose: bool,
     ) -> Result<Option<LockFile>, Fault> {

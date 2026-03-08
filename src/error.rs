@@ -15,6 +15,7 @@
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
+use crate::core::uuid::Uuid;
 use colored::Colorize;
 use std::{fmt::Display, path::PathBuf};
 
@@ -120,13 +121,15 @@ pub enum Error {
     #[error("unit \"{0}\" is not a usable design component{1}")]
     GetUnitNotComponent(String, Hint),
     #[error("failed to load project: {0}")]
-    IpLoadFailed(LastError),
+    ProjectLoadFailed(LastError),
     #[error("failed to parse project name: {0}")]
-    IpNameParseFailed(LastError),
+    ProjectNameParseFailed(LastError),
     #[error("manifest requests relative dependency {0} as version {1}, but actual version is {2}")]
     DependencyIpRelativeBadVersion(Name, PartialVersion, Version),
     #[error("listed name {0} does not match project's actual name {1}")]
     DependencyIpRelativeBadName(Name, Name),
+    #[error("manifest declares relative dependency {0} with uuid {1}, but actual uuid is {2}")]
+    DependencyProjectRelativeBadUuid(Name, Uuid, Uuid),
     #[error("failed to load lockfile: {0}")]
     LockfileLoadFailed(LastError),
     #[error("failed to install: {0}")]
@@ -153,6 +156,8 @@ pub enum Error {
     PublishMissingLockfile(Hint),
     #[error("the project manifest's source field is required to publish, but is undefined")]
     PublishMissingSource,
+    #[error("the project manifest's version field is required to publish, but is undefined")]
+    PublishMissingVersion,
     #[error("project {0} is already published to at least one of the specified channels")]
     PublishAlreadyExists(ProjectIdSpec),
     #[error("default channel \"{0}\" does not exist")]
@@ -175,8 +180,10 @@ pub enum Error {
     ChannelPathNotFound(PathBuf),
     #[error("channel's resolved path {0:?} is not a directory")]
     ChannelPathNotDir(PathBuf),
-    #[error("project has \"{0}\" listed as a relative dependency")]
+    #[error("project has \"{0}\" listed as a relative dependency without a version")]
     PublishRelativeDepExists(Name),
+    #[error("failed to find relative dependency {0}:{1} in the catalog{2}")]
+    PublishRelativeDepVersionNotFound(Name, Version, Hint),
     #[error("failed to pass publish checkpoint: {0}")]
     PublishFailedCheckpoint(LastError),
     #[error("cyclic dependency with local project \"{0}\"")]
@@ -290,6 +297,7 @@ pub enum Hint {
     SpecifyIpSpecForDownload,
     MakeLock,
     PublishWithReady,
+    PublishDependency,
     RegenerateLockfile,
     ShowVersions,
     ShowConfigFiles,
@@ -348,6 +356,7 @@ impl Display for Hint {
             Self::PublishWithReady => {
                 "use the \"--ready\" flag to publish the project to its channels"
             }
+            Self::PublishDependency => "publish the dependency at its specified version",
             Self::RegenerateLockfile => "verify the project's lockfile exists and is up to date",
             Self::ShowVersions => "use `orbit info <project> --versions` to see all known versions",
             Self::ShowConfigFiles => {

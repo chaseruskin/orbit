@@ -10,13 +10,13 @@ fileset.data = "*.dat"
 command = ["cat", "{{ orbit.blueprint }}"]
 
 [test]
-default-target = "foo"
+target = "foo"
 
 [build]
-default-target = "foo"
+target = "foo"
 
 [install]
-default-protocol = "gitit"
+protocol = "gitit"
 
 [vhdl-format]
 highlight-syntax = true

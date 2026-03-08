@@ -330,7 +330,7 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<Identifier, PrimaryU
 #[derive(Debug)]
 pub enum HdlNamingError {
     DuplicateIdentifier(String, PathBuf, Position, PathBuf, Position),
-    DuplicateAcrossDirect(String, ProjectIdSpec, PathBuf, Position),
+    DuplicateAcrossDirect(String, ProjectIdSpec, PathBuf, Position, bool),
     DuplicateAcrossLocal(String, ProjectIdSpec, PathBuf, Position),
 }
 
@@ -354,9 +354,12 @@ impl std::fmt::Display for HdlNamingError {
                     Hint::ResolveDuplicateIds1
                 )
             }
-            Self::DuplicateAcrossDirect(iden, dep, path, pos) => {
+            Self::DuplicateAcrossDirect(iden, dep, path, pos, is_working_prj) => {
                 let current_dir = std::env::current_dir().unwrap();
-                let location = filesystem::remove_base(&current_dir, &path);
+                let location = match is_working_prj {
+                    true => filesystem::remove_base(&current_dir, &path),
+                    false => path.clone(),
+                };
                 write!(
                     f,
                     "duplicate design units identified as \"{}\"\n\nlocation: {}{}\nconflicts with direct dependency: {}{}",

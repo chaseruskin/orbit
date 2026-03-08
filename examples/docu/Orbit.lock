@@ -4,6 +4,6 @@ version = 1
 
 [[project]]
 name = "docu"
-version = "0.1.0"
+version = "0.0.0"
 uuid = "61kfbsth23uk2tgxgwljeo29t"
 dependencies = []

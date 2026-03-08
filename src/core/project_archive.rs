@@ -181,7 +181,7 @@ impl ProjectArchive {
             return Err(e);
         }
         // load the project
-        let extracted_ip = match Project::load(dir.clone(), false, false) {
+        let extracted_ip = match Project::load(dir.clone(), false, false, false) {
             Ok(x) => x,
             Err(e) => {
                 fs::remove_dir_all(dir)?;

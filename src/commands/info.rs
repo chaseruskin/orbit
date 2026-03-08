@@ -27,11 +27,13 @@ use crate::core::visibility::Visibility;
 use crate::error::{Error, Hint};
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
+use crate::util::filesystem;
 use crate::util::filesystem::LockZone;
 use crate::util::filesystem::PRJ_CATALOG_EX_LOCK_NAME;
 use colored::Colorize;
 use std::cmp::Ordering;
 use std::env::current_dir;
+use std::path::PathBuf;
 
 use cliproc::{Arg, Cli, Help, Subcommand};
 use cliproc::{cli, proc, stage::*};
@@ -75,7 +77,7 @@ impl Subcommand<Context> for Info {
 
         let dev_prj: Option<Result<Project, Fault>> = {
             match Context::find_project_path(&current_dir().unwrap()) {
-                Some(dir) => Some(Project::load(dir, true, false)),
+                Some(dir) => Some(Project::load(dir, true, true, false)),
                 None => None,
             }
         };
@@ -202,14 +204,14 @@ impl Subcommand<Context> for Info {
         }
 
         // print the manifest data "pretty"
-        let s = self.format_manifest_info(&prj.get_man());
+        let s = self.format_manifest_info(&prj.get_man(), prj.get_root());
         print!("{}", s);
         Ok(())
     }
 }
 
 impl Info {
-    fn format_manifest_info(&self, man: &Manifest) -> String {
+    fn format_manifest_info(&self, man: &Manifest, root: &PathBuf) -> String {
         let mut result = String::new();
         let prj = man.get_project();
         result.push_str(&format!("{}", prj.get_name().to_string().green().bold()));
@@ -246,6 +248,15 @@ impl Info {
             result.push_str(&format!("{}:", "dependencies".green().bold()));
             for (name, dep) in deps {
                 result.push_str(&format!("\n    {}:{}", name, dep.get_version()));
+                if dep.is_relative() {
+                    result.push_str(&format!(
+                        " ({})",
+                        filesystem::into_std_str(filesystem::resolve_rel_path2(
+                            root,
+                            &dep.as_path().unwrap().to_path_buf()
+                        ))
+                    ));
+                }
             }
             result.push_str("\n");
         }

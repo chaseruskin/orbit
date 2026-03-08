@@ -6,7 +6,7 @@ version = 1
 name = "a"
 version = "0.1.1"
 uuid = "9lgqxpmr3a5far3mod7d7a40k"
-checksum = "72b57e62382fa66e77e38c872e5cbd4c280a1b923ceb37e88c2798a1043fb550"
+path = "../a"
 dependencies = []
 
 [[project]]

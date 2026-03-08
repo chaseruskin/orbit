@@ -212,7 +212,7 @@ impl Subcommand<Context> for Install {
             let target = match &self.prj {
                 Some(entry) => match search_path.exists() {
                     true => {
-                        let ip = Project::load(search_dir.to_path_buf(), true, false)?;
+                        let ip = Project::load(search_dir.to_path_buf(), true, true, false)?;
                         if ip.get_man().get_project().get_name() == entry.get_name()
                             && (entry.get_version().is_latest()
                                 || version::is_compatible(
@@ -255,7 +255,7 @@ impl Subcommand<Context> for Install {
                 },
                 // make sure there is only 1 ip to load
                 None => match search_path.exists() {
-                    true => Project::load(search_dir.to_path_buf(), true, false)?,
+                    true => Project::load(search_dir.to_path_buf(), true, true, false)?,
                     false => {
                         if temp_dir_for_zip.is_none() {
                             Err(Error::Custom(format!(
@@ -309,7 +309,8 @@ impl Subcommand<Context> for Install {
                                 return Err(e);
                             }
                             // load the project
-                            let unzipped_ip = match Project::load(dir.clone(), false, false) {
+                            let unzipped_ip = match Project::load(dir.clone(), false, false, false)
+                            {
                                 Ok(x) => x,
                                 Err(e) => {
                                     fs::remove_dir_all(dir)?;
@@ -335,7 +336,7 @@ impl Subcommand<Context> for Install {
                             }
                         // use the physical/local location of the ip? (does this ever occur?)
                         } else {
-                            Some(Project::load(slot.get_root().clone(), false, false)?)
+                            Some(Project::load(slot.get_root().clone(), false, true, false)?)
                         }
                     } else {
                         return Err(Error::Custom(format!(
@@ -650,7 +651,7 @@ impl Install {
             return Err(e);
         }
         // load the project
-        let unzipped_ip = match Project::load(dir.clone(), false, false) {
+        let unzipped_ip = match Project::load(dir.clone(), false, false, false) {
             Ok(x) => x,
             Err(e) => {
                 fs::remove_dir_all(dir)?;
@@ -723,7 +724,8 @@ impl Install {
                             continue;
                         }
                         // check for same UUID
-                        let cached_ip = Project::load(entry.path().to_path_buf(), false, false)?;
+                        let cached_ip =
+                            Project::load(entry.path().to_path_buf(), false, false, false)?;
                         if cached_ip.get_uuid() == src.get_uuid() {
                             // remove the slot no matter if it is dynamic or not
                             fs::remove_dir_all(entry.path())?;
@@ -758,7 +760,7 @@ impl Install {
         // clean up the temporary directory ourself
         fs::remove_dir_all(dest)?;
 
-        let installed_ip = Project::load(cache_slot, false, false)?;
+        let installed_ip = Project::load(cache_slot, false, false, false)?;
 
         // write the checksum to the directory (this file is excluded from auditing)
         installed_ip.write_cache_checksum(&checksum)?;

@@ -265,7 +265,7 @@ impl Remove {
                         continue;
                     }
                     // check for same UUID
-                    let cached_ip = Project::load(entry.path().to_path_buf(), false, false)?;
+                    let cached_ip = Project::load(entry.path().to_path_buf(), false, false, false)?;
                     // remove the slot if it is dynamic
                     if cached_ip.is_dynamic() == true {
                         fs::remove_dir_all(entry.path())?;

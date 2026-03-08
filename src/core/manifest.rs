@@ -22,6 +22,7 @@ use crate::core::lang::vhdl::token::Identifier;
 use crate::core::name::Name;
 use crate::core::project::ProjectIdSpec;
 use crate::core::source::Source;
+use crate::core::version::Version;
 use crate::core::{source, version};
 use crate::error::Error;
 use crate::error::LastError;
@@ -119,6 +120,14 @@ pub struct Dependency {
 impl Dependency {
     pub fn is_relative(&self) -> bool {
         self.path.is_some()
+    }
+
+    /// Checks if the project only has a path defined and no version field defined.
+    pub fn is_relative_only(&self) -> bool {
+        // Being unable to convert from a partial version to a version means a version is defined...
+        self.is_relative()
+            && (self.version.as_version().is_some()
+                && self.version.as_version().unwrap().is_unknown() == true)
     }
 
     pub fn get_version(&self) -> &DepVersion {
@@ -244,6 +253,11 @@ impl<'de> serde::Deserialize<'de> for Dependency {
                     }
                 }
                 let path = path;
+                let version = if path.is_some() && version.is_none() {
+                    Some(Version::default().to_partial_version())
+                } else {
+                    version
+                };
                 let version = version.ok_or_else(|| de::Error::missing_field("version"))?;
                 let id = id;
                 Ok(Dependency {
@@ -320,8 +334,8 @@ where
     }
 }
 
-impl FromFile for Manifest {
-    fn from_file(path: &PathBuf) -> Result<Self, Fault> {
+impl Manifest {
+    pub fn from_file(path: &PathBuf, sel_local_deps: bool) -> Result<Self, Fault> {
         // open file
         let contents = std::fs::read_to_string(&path)?;
         // parse toml syntax
@@ -348,15 +362,22 @@ impl FromFile for Manifest {
 
         // verify contents of manifest
         for (name, dep) in man.get_deps_list_mut(true, false) {
-            if dep.is_relative() == true {
+            if dep.is_relative_only() == true && sel_local_deps == false {
+                panic!("an internal error has occurred! (dependency with multiple locations)")
+            }
+            // Resolve relative path dependencies (only if is working project).
+            if dep.is_relative() == true && sel_local_deps == true {
                 if dep.as_project().is_none() {
                     let project = Project::relate(
                         dep.as_path().unwrap().clone(),
                         &path.parent().unwrap().to_path_buf(),
                     )?;
-                    // verify the project loaded has the correct version assigned by the user
+                    // verify the project loaded has the correct version assigned by the user (if assigned).
                     let project_version = project.get_man().get_project().get_version();
-                    if version::is_compatible(dep.get_version(), project_version) == false {
+                    // Only check version compatibility if a version was explicitly given for the dep
+                    if dep.is_relative_only() == false
+                        && version::is_compatible(dep.get_version(), project_version) == false
+                    {
                         return Err(Error::DependencyIpRelativeBadVersion(
                             name.clone(),
                             dep.get_version().clone(),
@@ -371,7 +392,18 @@ impl FromFile for Manifest {
                             project_name.clone(),
                         ))?;
                     }
+                    // Verify the project loaded has the correct UUID assigned by the user (if assigned).
+                    if let Some(u) = &dep.uuid {
+                        if u != project.get_uuid() {
+                            return Err(Error::DependencyProjectRelativeBadUuid(
+                                name.clone(),
+                                u.clone(),
+                                project.get_uuid().clone(),
+                            ))?;
+                        }
+                    }
                     dep.uuid = Some(project.get_uuid().clone());
+                    dep.version = project_version.to_partial_version();
                     dep.relative_project = Some(project);
                 }
             }
@@ -774,7 +806,7 @@ mod test {
     #[ignore]
     fn ut_json() {
         // Use this test to manually inspect how the Orbit.json file will display data
-        let ip = Project::load(PathBuf::from("tests/s1"), true, false).unwrap();
+        let ip = Project::load(PathBuf::from("tests/s1"), true, false, false).unwrap();
         let jdat = JsonMeta::new(&ip).unwrap();
         println!("{}", serde_json::to_string_pretty(&jdat).unwrap());
         panic!();

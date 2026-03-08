@@ -251,12 +251,12 @@ impl Project {
         Ok(())
     }
 
-    /// Loads an ip from the `root` path, which is read from a manifest file located
+    /// Loads a project from the `root` path, which is read from a manifest file located
     /// at `base_path`.
     pub fn relate(root: PathBuf, base_path: &PathBuf) -> Result<Self, Fault> {
         // resolve the path if it is relative
         let resolved_root = filesystem::resolve_rel_path2(&base_path, &root);
-        let mut relative_ip = Project::load(resolved_root, false, false)?;
+        let mut relative_ip = Project::load(resolved_root, false, true, false)?;
         relative_ip.mapping = Mapping::Relative(root);
         // verify this ip has a lockfile
         let lock_path = relative_ip.get_root().join(PROJECT_LOCK_FILE);
@@ -275,29 +275,31 @@ impl Project {
 
     /// Load an [Ip] instance from the `root` path.
     ///
-    /// If `is_working_ip` is true, then it verifies there are no files created
+    /// If `is_working_prj` is true, then it verifies there are no files created
     /// by the user that are reserved for orbit's internal usage.
     pub fn load(
         root: PathBuf,
-        is_working_ip: bool,
+        is_working_prj: bool,
+        is_local: bool,
         force_apply_new_uuid: bool,
     ) -> Result<Self, Fault> {
         let man_path = root.join(PROJECT_MANIFEST_FILE);
         if man_path.exists() == false || man_path.is_file() == false {
-            return Err(Error::IpLoadFailed(LastError(
+            return Err(Error::ProjectLoadFailed(LastError(
                 Error::ManifestPathNotFound(man_path.to_string_lossy().to_string()).to_string(),
             )))?;
         }
-        let man = Manifest::from_file(&man_path)?;
+        let sel_local_deps = is_working_prj || is_local;
+        let man = Manifest::from_file(&man_path, sel_local_deps)?;
 
         // verify the public list is okay
         VipList::new(&root, man.get_project().get_publics().as_ref())?;
 
-        if is_working_ip == true {
+        if is_working_prj == true {
             // verify there are no files that created by user that are reserved for orbit's internal use
             match Self::check_illegal_files(&root) {
                 Ok(()) => (),
-                Err(e) => return Err(Error::IpLoadFailed(LastError(e.to_string())))?,
+                Err(e) => return Err(Error::ProjectLoadFailed(LastError(e.to_string())))?,
             }
         }
 
@@ -318,7 +320,7 @@ impl Project {
         let uuid = man.get_project().get_uuid().clone();
 
         // verify the UUIDs between the manifest and lockfile are the same
-        if is_working_ip == true {
+        if is_working_prj == true {
             //  println!("manifest: {:?}", uuid);
             if let Some(lf) = lock.get_self_entry(man.get_project().get_name()) {
                 // println!("lockfile: {:?}", lf.get_uuid());
@@ -337,21 +339,8 @@ impl Project {
             data: man,
             lock: lock,
             uuid: uuid,
-            is_local: is_working_ip,
+            is_local: is_working_prj,
         })
-    }
-
-    /// Checks if the given path hosts a valid manifest file.
-    pub fn is_valid(path: &PathBuf) -> Result<(), Fault> {
-        let man_path = path.join(PROJECT_MANIFEST_FILE);
-        if man_path.exists() == false || man_path.is_file() == false {
-            return Err(Error::ManifestPathNotFound(
-                man_path.to_string_lossy().to_string(),
-            ))?;
-        }
-        // attempt to load the manifest file
-        let _ = Manifest::from_file(&man_path)?;
-        return Ok(());
     }
 
     /// Finds all Manifest files available in the provided path `path`.
@@ -368,7 +357,7 @@ impl Project {
         for mut entry in manifest::find_file(&path, &name, is_exclusive)? {
             // remove the manifest file to access the ip's root directory
             entry.pop();
-            result.push(Project::load(entry, is_working, false)?);
+            result.push(Project::load(entry, is_working, false, false)?);
         }
         Ok(result)
     }

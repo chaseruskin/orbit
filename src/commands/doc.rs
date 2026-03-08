@@ -89,8 +89,12 @@ impl Subcommand<Context> for Doc {
 
         // verify running from a project directory and enter project's root directory
         c.jump_to_working_project()?;
-        let current_project =
-            Project::load(c.get_project_path().unwrap().to_path_buf(), true, false)?;
+        let current_project = Project::load(
+            c.get_project_path().unwrap().to_path_buf(),
+            true,
+            true,
+            false,
+        )?;
 
         let target_name = "doc";
 

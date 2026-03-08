@@ -480,6 +480,11 @@ impl Version {
         }
     }
 
+    /// Checks if the version is a default (0.0.0).
+    pub fn is_unknown(&self) -> bool {
+        self.major == 0 && self.minor == 0 && self.micro == 0 && self.label.is_none()
+    }
+
     /// Increments the `major` level and resets `minor` and `patch` levels.
     pub fn inc_major(&mut self) {
         self.major += 1;

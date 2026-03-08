@@ -20,6 +20,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 
 use crate::util::anyerror::{AnyError, CodeFault, Fault};
+use crate::util::filesystem;
 use crate::util::graphmap::GraphMap;
 use crate::warn;
 use std::hash::Hash;
@@ -65,6 +66,25 @@ pub fn graph_project_from_lock(
     Ok(graph)
 }
 
+#[derive(Debug, PartialEq, Hash, Eq, Clone)]
+pub struct ProjectKey {
+    id: ProjectIdSpec,
+    local_path: Option<String>,
+}
+
+impl ProjectKey {
+    pub fn new(project: &Project) -> Self {
+        Self {
+            id: project.get_man().get_project().into_project_id_spec(),
+            local_path: if project.get_mapping().is_relative() {
+                Some(filesystem::into_std_str(project.get_root().clone()))
+            } else {
+                None
+            },
+        }
+    }
+}
+
 /// Constructs a graph at the project-level.
 ///
 /// Note: this function performs no reduction.
@@ -72,12 +92,12 @@ fn graph_project<'a>(
     root: &'a Project,
     catalog: Option<&'a Catalog<'a>>,
     private_by_default: bool,
-) -> Result<GraphMap<ProjectIdSpec, ProjectNode<'a>, ()>, CodeFault> {
+) -> Result<GraphMap<ProjectKey, ProjectNode<'a>, ()>, CodeFault> {
     // create empty graph
     let mut g = GraphMap::new();
     // construct iterative approach with lists
     let t = g.add_node(
-        root.get_man().get_project().into_project_id_spec(),
+        ProjectKey::new(root),
         ProjectNode::new_keep(root, LangIdentifier::new_working()),
     );
     // Only operate on the local ip if catalog is omitted
@@ -92,7 +112,15 @@ fn graph_project<'a>(
     let able_to_use_lockfile = root.can_use_lock();
 
     // add root's identifiers and parse files according to the correct language settings
-    let mut unit_map = root.collect_units(true, false, private_by_default)?;
+    let mut unit_map: HashMap<LangIdentifier, (crate::core::lang::LangUnit, ProjectIdSpec)> = root
+        .collect_units(true, false, private_by_default)?
+        .into_iter()
+        .map(|(k, v)| (k, (v, root.get_man().get_project().into_project_id_spec())))
+        .collect();
+
+    // Use this map to track if a parent is a relative dependency to chain relative dependencies together.
+    let mut relative_map: HashMap<usize, bool> = HashMap::new();
+    relative_map.insert(t, true);
 
     let mut is_root: bool = true;
 
@@ -101,16 +129,17 @@ fn graph_project<'a>(
         let reqs = prj.get_man().get_deps_list(is_root, true);
         // read dependencies
         for (pkgid, dependency) in reqs {
-            // check if we are looking in cache or going local
-            match dependency.is_relative() {
+            // check if we are looking in cache or going local (based on if parent was relative as well)
+            match dependency.is_relative() && *relative_map.get(&num).unwrap_or(&false) {
+                // (&false) {
                 true => {
-                    // check if it is a local ip
+                    // check if it is a local project
                     match dependency.as_project() {
                         Some(relative_prj) => {
                             // check if node is already in graph ????
-                            let s = if let Some(existing_node) = g.get_node_by_key(
-                                &relative_prj.get_man().get_project().into_project_id_spec(),
-                            ) {
+                            let s = if let Some(existing_node) =
+                                g.get_node_by_key(&ProjectKey::new(relative_prj))
+                            {
                                 existing_node.index()
                             } else {
                                 // check if identifiers are already taken in graph
@@ -119,57 +148,68 @@ fn graph_project<'a>(
                                 if let Some(dupe) =
                                     units.iter().find(|(key, _)| unit_map.contains_key(key))
                                 {
+                                    let dupe_name = dupe.0;
                                     let dupe = unit_map.get(dupe.0).unwrap();
                                     if is_root == true {
                                         return Err(CodeFault(
                                             None,
                                             Box::new(HdlNamingError::DuplicateAcrossDirect(
-                                                dupe.get_name().to_string(),
+                                                dupe.0.get_name().to_string(),
                                                 relative_prj
                                                     .get_man()
                                                     .get_project()
                                                     .into_project_id_spec(),
                                                 PathBuf::from(
-                                                    dupe.get_source_files().first().unwrap(),
+                                                    dupe.0.get_source_files().first().unwrap(),
                                                 ),
-                                                dupe.get_position().clone(),
+                                                dupe.0.get_position().clone(),
+                                                is_root,
                                             )),
                                         ))?;
                                     } else {
+                                        let local_src = units.get(dupe_name).unwrap();
                                         return Err(CodeFault(
                                             None,
                                             Box::new(HdlNamingError::DuplicateAcrossDirect(
-                                                dupe.get_name().to_string(),
-                                                relative_prj
-                                                    .get_man()
-                                                    .get_project()
-                                                    .into_project_id_spec(),
+                                                local_src.get_name().to_string(),
+                                                dupe.1.clone(),
                                                 PathBuf::from(
-                                                    dupe.get_source_files().first().unwrap(),
+                                                    local_src.get_source_files().first().unwrap(),
                                                 ),
-                                                dupe.get_position().clone(),
+                                                local_src.get_position().clone(),
+                                                is_root,
                                             )),
                                         ))?;
                                     }
                                 }
                                 // update the hashset with the new unique non-taken identifiers
                                 for (key, unit) in units {
-                                    unit_map.insert(key, unit);
+                                    unit_map.insert(
+                                        key,
+                                        (
+                                            unit,
+                                            relative_prj
+                                                .get_man()
+                                                .get_project()
+                                                .into_project_id_spec(),
+                                        ),
+                                    );
                                 }
                                 let lib = relative_prj.get_hdl_library();
                                 g.add_node(
-                                    relative_prj.get_man().get_project().into_project_id_spec(),
+                                    ProjectKey::new(relative_prj),
                                     ProjectNode::new_keep(relative_prj, lib),
                                 )
                             };
                             g.add_edge_by_index(s, num, ());
                             processing.push((s, &relative_prj));
+                            relative_map.insert(s, true);
                         }
                         None => {
                             return Err(CodeFault(
                                 None,
                                 Box::new(AnyError(format!(
-                                    "unknown project {}",
+                                    "unknown local project {}",
                                     PartialProjectIdSpec::new(
                                         pkgid.clone(),
                                         None,
@@ -197,10 +237,10 @@ fn graph_project<'a>(
                                 dependency.get_version().clone(),
                             )) {
                                 Some(cached_prj) => {
-                                    // check if node is already in graph ????
-                                    let s = if let Some(existing_node) = g.get_node_by_key(
-                                        &cached_prj.get_man().get_project().into_project_id_spec(),
-                                    ) {
+                                    // check if node is already in the project graph
+                                    let s = if let Some(existing_node) =
+                                        g.get_node_by_key(&ProjectKey::new(cached_prj))
+                                    {
                                         existing_node.index()
                                     } else {
                                         // check if identifiers are already taken in graph
@@ -218,20 +258,25 @@ fn graph_project<'a>(
                                                     None,
                                                     Box::new(
                                                         HdlNamingError::DuplicateAcrossDirect(
-                                                            dupe.get_name().to_string(),
+                                                            dupe.0.get_name().to_string(),
                                                             cached_prj
                                                                 .get_man()
                                                                 .get_project()
                                                                 .into_project_id_spec(),
                                                             PathBuf::from(
-                                                                dupe.get_source_files()
+                                                                dupe.0
+                                                                    .get_source_files()
                                                                     .first()
                                                                     .unwrap(),
                                                             ),
-                                                            dupe.get_position().clone(),
+                                                            dupe.0.get_position().clone(),
+                                                            is_root,
                                                         ),
                                                     ),
                                                 ))?;
+                                            // We can perform DST
+                                            } else {
+                                                ()
                                             }
                                             true
                                         } else {
@@ -240,15 +285,21 @@ fn graph_project<'a>(
                                         // update the hashset with the new unique non-taken identifiers
                                         if dst == false {
                                             for (key, unit) in units {
-                                                unit_map.insert(key, unit);
+                                                unit_map.insert(
+                                                    key,
+                                                    (
+                                                        unit,
+                                                        cached_prj
+                                                            .get_man()
+                                                            .get_project()
+                                                            .into_project_id_spec(),
+                                                    ),
+                                                );
                                             }
                                         }
                                         let lib = cached_prj.get_hdl_library();
                                         g.add_node(
-                                            cached_prj
-                                                .get_man()
-                                                .get_project()
-                                                .into_project_id_spec(),
+                                            ProjectKey::new(cached_prj),
                                             match dst {
                                                 true => ProjectNode::new_alter(cached_prj, lib),
                                                 false => ProjectNode::new_keep(cached_prj, lib),
@@ -257,8 +308,10 @@ fn graph_project<'a>(
                                     };
                                     g.add_edge_by_index(s, num, ());
                                     processing.push((s, cached_prj));
+                                    relative_map.insert(s, false);
                                 }
                                 // TODO: try to use the lock file to fill in missing pieces
+                                // ^ I think this TODO is no longer true since new manifest/lockfile coherency function (maybe should turn to a panic).
                                 None => {
                                     return Err(CodeFault(
                                         None,
@@ -276,11 +329,12 @@ fn graph_project<'a>(
                         }
                         // todo: try to use the lock file to fill in missing pieces
                         // @TODO: check the queue for this project and attempt to install
+                        // ^ I think this TODO is no longer true since new manifest/lockfile coherency function (maybe should turn to a panic).
                         None => {
                             return Err(CodeFault(
                                 None,
                                 Box::new(AnyError(format!(
-                                    "unknown project {}",
+                                    "unknown catalog project {}",
                                     PartialProjectIdSpec::new(
                                         pkgid.clone(),
                                         None,
@@ -303,12 +357,12 @@ pub fn compute_final_project_graph<'a>(
     target: &'a Project,
     catalog: Option<&'a Catalog<'a>>,
     private_by_default: bool,
-) -> Result<GraphMap<ProjectIdSpec, ProjectNode<'a>, ()>, CodeFault> {
+) -> Result<GraphMap<ProjectKey, ProjectNode<'a>, ()>, CodeFault> {
     // collect rough outline of ip graph (after this function, the correct files according to language are kept)
     let mut rough_project_graph = graph_project(&target, catalog, private_by_default)?;
 
     // keep track of list of neighbors that must perform dst and their lookup-tables to use after processing all direct impacts
-    let mut transforms = HashMap::<ProjectIdSpec, HashMap<LangIdentifier, String>>::new();
+    let mut transforms = HashMap::<ProjectKey, HashMap<LangIdentifier, String>>::new();
 
     // iterate through the graph to find all DST nodes to create their replacements
     {
@@ -318,7 +372,7 @@ pub fn compute_final_project_graph<'a>(
             if node.as_ref().is_direct_conflict() == true {
                 // remember units if true that a transform occurred
                 let lut = node.as_ref().as_project().generate_dst_lut();
-                match transforms.get_mut(key) {
+                match transforms.get_mut(&key) {
                     // update the hashmap for the key
                     Some(entry) => lut.into_iter().for_each(|pair| {
                         entry.insert(pair.0, pair.1);
@@ -377,7 +431,7 @@ pub fn compute_final_project_graph<'a>(
 
 /// Take the project graph and create the entire space of HDL files that could be used for the current design.
 pub fn build_project_file_list<'a>(
-    project_graph: &'a GraphMap<ProjectIdSpec, ProjectNode<'a>, ()>,
+    project_graph: &'a GraphMap<ProjectKey, ProjectNode<'a>, ()>,
     current_project: &Project,
 ) -> Vec<ProjectFileNode<'a>> {
     let mut files = Vec::new();
@@ -414,10 +468,10 @@ pub fn build_project_file_list<'a>(
 /// Useful for initializing or creating new ip and having to make the lockfile.
 pub fn minimal_graph_map<'a>(
     current_prj: &'a Project,
-) -> GraphMap<ProjectIdSpec, ProjectNode<'a>, ()> {
+) -> GraphMap<ProjectKey, ProjectNode<'a>, ()> {
     let mut g = GraphMap::new();
     g.add_node(
-        current_prj.get_man().get_project().into_project_id_spec(),
+        ProjectKey::new(current_prj),
         ProjectNode::new_keep(current_prj, LangIdentifier::new_working()),
     );
     g
@@ -477,7 +531,7 @@ impl<'a> ProjectNode<'a> {
         &self.library
     }
 
-    /// Checks if an ip is a direct result requiring DST.
+    /// Checks if a project is a direct result requiring DST.
     fn is_direct_conflict(&self) -> bool {
         match &self.dyn_state {
             DynState::Alter => true,
@@ -509,7 +563,7 @@ impl<'a> ProjectNode<'a> {
         .unwrap();
 
         // create the ip from the temporary dir
-        let temp_prj = Project::load(temp_path, false, false).unwrap();
+        let temp_prj = Project::load(temp_path, false, false, false).unwrap();
 
         // edit all vhdl files
         let files = temp_prj.gather_current_files();
@@ -589,7 +643,7 @@ fn install_dst(
 
     // check if already exists and return early with manifest if exists
     if cache_path.exists() == true && is_rel == false {
-        return Project::load(cache_path, false, false).unwrap();
+        return Project::load(cache_path, false, false, false).unwrap();
     }
 
     if is_rel == false {
@@ -615,7 +669,7 @@ fn install_dst(
     // clean up temporary directory
     std::fs::remove_dir_all(&source_prj.get_root()).unwrap();
 
-    let cached_prj = match Project::load(cache_path.clone(), false, false) {
+    let cached_prj = match Project::load(cache_path.clone(), false, false, false) {
         Ok(r) => r,
         Err(e) => {
             // clean up corrupt cache entry directory

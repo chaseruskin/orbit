@@ -209,7 +209,7 @@ impl Channel {
             .from_config(context.get_config())?;
         if let Some(path) = context.get_project_path() {
             // read project manifest for env variables
-            env = env.from_project(&Project::load(path.clone(), true, false)?)?;
+            env = env.from_project(&Project::load(path.clone(), true, true, false)?)?;
         }
         for c in channels {
             c.run_sync(&env)?;

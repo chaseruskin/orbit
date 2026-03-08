@@ -61,6 +61,7 @@ impl Subcommand<Context> for Lock {
         let working_ip = Project::load(
             c.get_project_path().unwrap().clone(),
             true,
+            true,
             force_apply_new_uuid,
         )?;
 

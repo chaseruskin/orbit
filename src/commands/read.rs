@@ -146,7 +146,7 @@ impl Subcommand<Context> for Read {
         // must be in a project if omitting the pkgid
         } else {
             let ip = match c.get_project_path() {
-                Some(p) => Project::load(p.to_path_buf(), true, false)?,
+                Some(p) => Project::load(p.to_path_buf(), true, true, false)?,
                 None => return Err(AnyError(format!("not within an existing project")))?,
             };
 

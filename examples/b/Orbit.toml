@@ -5,5 +5,5 @@ uuid = "31g4wf2pe7o8e8h8xu4iwufeq"
 library = "alphabet"
 license = "MIT OR Apache-2.0"
 
-[dependencies]
-a = "0.1.1"
+[dev-dependencies]
+a = { path = "../a", version = "0.1.1" }

@@ -109,7 +109,12 @@ impl Subcommand<Context> for Publish {
         // verify running from an ip directory and enter ip's root directory
         c.jump_to_working_project()?;
 
-        let local_ip = Project::load(c.get_project_path().unwrap().to_path_buf(), true, false)?;
+        let local_ip = Project::load(
+            c.get_project_path().unwrap().to_path_buf(),
+            true,
+            true,
+            false,
+        )?;
 
         // initialize environment
         let env = Environment::new()
@@ -250,27 +255,67 @@ impl Publish {
         priv_by_def: bool,
         all_pub: bool,
     ) -> Result<(), Fault> {
-        // verify the lock file is generated and up to date
-        crate::info!("verifying lockfile is up to date ...");
-        if local_ip.can_use_lock() == false {
-            return Err(Box::new(Error::PublishMissingLockfile(Hint::MakeLock)));
+        // Verify the project has an explicit version.
+        crate::info!("verifying project manifest's version field is defined ...");
+        if local_ip.get_man().get_project().get_version().is_unknown() {
+            return Err(Box::new(Error::PublishMissingVersion));
         }
 
-        // verify the ip has zero relative dependencies
-        crate::info!("verifying all dependencies are stable ...");
-        if let Some(dep) = local_ip.get_lock().inner().iter().find(|f| f.is_relative()) {
-            return Err(Box::new(Error::PublishRelativeDepExists(
-                dep.get_name().clone(),
-            )));
-        }
-
-        // verify the ip has a source
+        // Verify the project has a source.
         crate::info!("verifying project manifest's source field is defined ...");
         if local_ip.get_man().get_project().get_source().is_none() {
             return Err(Box::new(Error::PublishMissingSource));
         }
 
-        // verify internal design unit visibility
+        // Verify the lock file is generated and up to date.
+        crate::info!("verifying lockfile is up to date ...");
+        if local_ip.can_use_lock() == false {
+            return Err(Box::new(Error::PublishMissingLockfile(Hint::MakeLock)));
+        }
+
+        // Verify the project has zero relative-only dependencies.
+        crate::info!("verifying all dependencies are stable ...");
+        if let Some(dep) = local_ip
+            .get_lock()
+            .inner()
+            .iter()
+            .find(|f| f.is_relative_only())
+        {
+            return Err(Box::new(Error::PublishRelativeDepExists(
+                dep.get_name().clone(),
+            )));
+        }
+        // Verify this version of the relative dependency exists in the catalog (it can be used).
+        for rel_dep in local_ip
+            .get_lock()
+            .inner()
+            .iter()
+            .filter(|f| f.is_relative())
+        {
+            if let Some(vers) = catalog.get_possible_versions(rel_dep.get_uuid()) {
+                if vers
+                    .iter()
+                    .find(|v| v.get_version() == rel_dep.get_version())
+                    .is_some()
+                {
+                    ()
+                } else {
+                    return Err(Box::new(Error::PublishRelativeDepVersionNotFound(
+                        rel_dep.get_name().clone(),
+                        rel_dep.get_version().clone(),
+                        Hint::PublishDependency,
+                    )));
+                }
+            } else {
+                return Err(Box::new(Error::PublishRelativeDepVersionNotFound(
+                    rel_dep.get_name().clone(),
+                    rel_dep.get_version().clone(),
+                    Hint::PublishDependency,
+                )));
+            }
+        }
+
+        // Verify internal design unit visibility.
         crate::info!("verifying source file visibility ...");
         if let Err(e) = Self::check_design_unit_visibility_okay(&local_ip, priv_by_def, all_pub) {
             return Err(Box::new(Error::PublishUnitVisibilityFailed(LastError(
@@ -278,7 +323,7 @@ impl Publish {
             ))))?;
         }
 
-        // verify the graph build with no errors
+        // Verify the graph builds with no errors.
         crate::info!("verifying hardware graph construction ...");
         if let Err(e) = Self::check_graph_builds_okay(&local_ip, &catalog, priv_by_def) {
             return Err(Box::new(Error::PublishHdlGraphFailed(LastError(
@@ -322,7 +367,8 @@ impl Publish {
             fs::remove_dir_all(tmp_archive_staging_dir)?;
             return Err(e);
         }
-        let unzipped_ip = match Project::load(tmp_archive_staging_dir.clone(), false, false) {
+        let unzipped_ip = match Project::load(tmp_archive_staging_dir.clone(), false, false, false)
+        {
             Ok(x) => x,
             Err(e) => {
                 fs::remove_dir_all(tmp_archive_staging_dir)?;

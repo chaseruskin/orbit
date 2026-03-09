@@ -30,6 +30,7 @@ use crate::core::lang::vhdl::interface::Architectures;
 use crate::core::lang::vhdl::symbols::entity::Entity;
 use crate::core::lang::vhdl::token::Identifier as VhdlIdentifier;
 use crate::core::legend::EntityJson;
+use crate::core::legend::Legend;
 use crate::core::legend::ModuleJson;
 use crate::core::project::PartialProjectIdSpec;
 use crate::core::project::Project;
@@ -77,7 +78,7 @@ impl FromStr for LangConversion {
 
 #[derive(Debug, PartialEq)]
 pub struct Get {
-    unit: VhdlIdentifier,
+    unit: Option<VhdlIdentifier>,
     project: Option<PartialProjectIdSpec>,
     signals: bool,
     component: bool,
@@ -121,7 +122,7 @@ impl Subcommand<Context> for Get {
             //     .unwrap_or_default(),
             project: cli.get(Arg::option("project").switch('p').value("spec"))?,
             name: cli.get(Arg::option("name").value("identifier"))?,
-            unit: cli.require(Arg::positional("unit"))?,
+            unit: cli.get(Arg::positional("unit"))?,
         })
     }
 
@@ -129,9 +130,17 @@ impl Subcommand<Context> for Get {
         // --name can only be used with --instance is set
         if self.name.is_some() && self.instance == false {
             return Err(AnyError(format!(
-                "'{}' can only be used with '{}'",
+                "\"{}\" can only be used with \"{}\"",
                 "--name".yellow(),
                 "--instance".yellow()
+            )))?;
+        }
+
+        if self.unit.is_none() && self.json == false {
+            return Err(AnyError(format!(
+                "positional argument \"{}\" must be provided unless using \"{}\"",
+                "<unit>".blue(),
+                "--json".yellow()
             )))?;
         }
 
@@ -149,7 +158,7 @@ impl Subcommand<Context> for Get {
             .downloads(c.get_downloads_path())?
             .available(&c.get_config().get_channels())?;
 
-        let mut is_local_ip = false;
+        let mut is_local_prj = false;
         // try to auto-determine the ip (check if in a working ip)
         let ip_path = if let Some(spec) = &self.project {
             // find the path to the provided ip by searching through the catalog
@@ -176,19 +185,26 @@ impl Subcommand<Context> for Get {
                 return Err(AnyError(format!("no project found in cache")))?;
             }
         } else {
-            let ip = Context::find_project_path(&env::current_dir().unwrap());
-            is_local_ip = true;
-            if ip.is_none() == true {
+            let prj = Context::find_project_path(&env::current_dir().unwrap());
+            is_local_prj = true;
+            if prj.is_none() == true {
                 return Err(AnyError(format!("no project provided or detected")))?;
             } else {
-                ip.unwrap()
+                prj.unwrap()
             }
         };
 
         // load the manifest from the path
-        let ip = Project::load(ip_path, is_local_ip, is_local_ip, false)?;
+        let prj = Project::load(ip_path, is_local_prj, is_local_prj, false)?;
 
-        let result = self.run(&ip, is_local_ip, &c);
+        let display_legend = self.unit.is_none() && self.json == true;
+
+        let result = match display_legend {
+            // Produce output in JSON for all units.
+            true => self.run_multi(&prj, is_local_prj, &c),
+            // Produce output for a single unit.
+            false => self.run_single(&prj, is_local_prj, &c),
+        };
 
         // release our "APPEND" action to the cache
         crate::util::filesystem::release_lock(&cache_ap_lock)?;
@@ -198,11 +214,60 @@ impl Subcommand<Context> for Get {
 }
 
 impl Get {
-    fn run(&self, project: &Project, is_local: bool, c: &Context) -> Result<(), Fault> {
+    fn run_multi<'a>(
+        &self,
+        project: &'a Project,
+        is_local: bool,
+        c: &Context,
+    ) -> Result<(), Fault> {
+        let mapping =
+            project.collect_units(true, is_local == false, c.are_units_private_by_default())?;
+        // Provide a consistent ordering of the units, so let's go with alphabetical order
+        let mut sorted_keys: Vec<&LangIdentifier> = mapping.keys().collect();
+        sorted_keys.sort();
+
+        let mut legend = Legend::new();
+
+        for key in sorted_keys {
+            let unit = mapping.get(key).unwrap();
+            let sources = unit.get_source_files();
+
+            match unit.get_lang() {
+                Lang::Vhdl => {
+                    if let Some(vhdl) = unit.get_vhdl_symbol() {
+                        if let Some(entity) = vhdl.as_entity() {
+                            legend.add_entity(&entity, &sources);
+                        }
+                    }
+                }
+                Lang::Verilog => {
+                    if let Some(vlog) = unit.get_verilog_symbol() {
+                        if let Some(module) = vlog.as_module() {
+                            legend.add_module(&module, &sources);
+                        }
+                    }
+                }
+                Lang::SystemVerilog => {
+                    if let Some(sysv) = unit.get_systemverilog_symbol() {
+                        if let Some(module) = sysv.as_module() {
+                            legend.add_module(&module, &sources);
+                        }
+                    }
+                }
+            }
+        }
+
+        println!("{}", serde_json::to_string(legend.get_keys())?);
+        Ok(())
+    }
+
+    fn run_single(&self, project: &Project, is_local: bool, c: &Context) -> Result<(), Fault> {
+        let req_unit = self.unit.as_ref().unwrap();
+
         // collect all hdl files and parse them
         let selected_unit = Self::fetch_entity(
             &project,
-            &LangIdentifier::Vhdl(self.unit.clone()),
+            &LangIdentifier::Vhdl(req_unit.clone()),
             c.are_units_private_by_default(),
         )?;
         let unit = match selected_unit {
@@ -238,7 +303,7 @@ impl Get {
                         project.get_man().get_project().into_project_id_spec(),
                     ),
                 };
-                return Err(Error::GetUnitNotFound(self.unit.to_string(), hint))?;
+                return Err(Error::GetUnitNotFound(req_unit.to_string(), hint))?;
             }
         };
 
@@ -513,12 +578,12 @@ impl Get {
     }
 
     fn fetch_entity(
-        ip: &Project,
+        prj: &Project,
         name: &LangIdentifier,
         priv_by_default: bool,
     ) -> Result<Option<LangUnit>, Fault> {
         // check if we can use the cached metadata
-        if let Some(cached) = Project::read_cache_metadata(ip.get_root()) {
+        if let Some(cached) = Project::read_cache_metadata(prj.get_root()) {
             let units = cached.get_units();
             if let Some(unit) = units.iter().find(|p| &p.get_name() == name) {
                 let files = unit
@@ -526,7 +591,7 @@ impl Get {
                     .iter()
                     .map(|f| {
                         if PathBuf::from(f).is_relative() {
-                            PathBuf::standardize(ip.get_root().join(f))
+                            PathBuf::standardize(prj.get_root().join(f))
                                 .as_os_str()
                                 .to_string_lossy()
                                 .to_string()
@@ -542,7 +607,8 @@ impl Get {
                 Ok(None)
             }
         } else {
-            let mut mapping = ip.collect_units(true, false, priv_by_default)?;
+            // NOTE: It is a not a hard requirement to enforce unit-level "privacy" among projects (hide_private = false).
+            let mut mapping = prj.collect_units(true, false, priv_by_default)?;
             let result = mapping.remove(name);
             Ok(result)
         }

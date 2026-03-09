@@ -24,7 +24,6 @@ Usage:
 Options:
     <project>             project ID specification
     --versions, -v        display the list of known versions
-    --units, -u           display the cores for this project
-    --all, -a             include any private or hidden results
+    --units, -u           display the units for this project
 
 Use 'orbit help info' to read more about the command."#;

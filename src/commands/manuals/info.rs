@@ -28,10 +28,10 @@ DESCRIPTION
     
     To display manifest information, no additional options are required.
     
-    To display the available cores within the project, use the '--units' option. 
+    To display the available units within the project, use the '--units' option. 
     For non-local projects, its protected and private design units are hidden
-    from the results. To display design units of all visibility levels the '--all' 
-    option must also be present.
+    from the results. To include design units of all visibility levels, use the 
+    '--force' flag.
     
     To display the known versions for a project, use the '--versions' option.
 
@@ -43,14 +43,11 @@ OPTIONS
         Display the list of known versions
 
     --units, -u
-        Display the cores for this project
-
-    --all, -a
-        Include any private or hidden results
+        Display the units for this project
 
 EXAMPLES
     orbit info --units
-    orbit info gates:1.0.0 -u --all
+    orbit info gates:1.0.0 --units --force
     orbit info gates --versions
-    orbit info gates:1 -v
+    orbit info gates:1 --versions
 "#;

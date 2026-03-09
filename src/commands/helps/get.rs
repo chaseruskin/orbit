@@ -16,10 +16,10 @@
 //
 
 // Automatically generated from the mansync.py script.
-pub const HELP: &str = r#"Display integration code for a core.
+pub const HELP: &str = r#"Display integration code for a unit.
 
 Usage:
-    orbit get [options] <unit>
+    orbit get [options] [<unit>]
 
 Arguments:
     <unit>                primary design unit identifier

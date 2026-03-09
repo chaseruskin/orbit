@@ -50,6 +50,12 @@ The following schema is implemented for the JSON output of `orbit get`:
 }
 ```
 
+To get a list of structured data for each unit in a project, omit the `<unit>` argument while still providing the `--json` flag, like this:
+```
+$ orbit get --json
+```
+Each unit in the list uses the same schema that is used on a per-unit basis, which is described above.
+
 ## Hierarchies
 
 The `orbit tree` command allows one to view how units are related to one another by displaying a dependency tree. 

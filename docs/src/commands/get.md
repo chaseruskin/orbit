@@ -2,12 +2,12 @@
 
 ## __NAME__
 
-get - display integration code for a core
+get - display integration code for a unit
 
 ## __SYNOPSIS__
 
 ```
-orbit get [options] <unit>
+orbit get [options] [<unit>]
 ```
 
 ## __DESCRIPTION__
@@ -48,7 +48,8 @@ projects.
 
 Exporting the unit's declaration information can be accomplished by using the
 `--json` option. The valid json is unformatted for encouragement to be 
-processed by other programs.
+processed by other programs. Retrieve a list of all the unit declarations
+for the project by omitting `<unit>` while still using the `--json` option.
 
 By default, the code snippets will be displayed in the design unit's native
 hardware description language. To return the code snippets in a particular
@@ -100,5 +101,6 @@ orbit get and_gate --project gates:1.0.0 --component
 orbit get ram --project mem:2 -csi
 orbit get uart -si --name uart_inst0
 orbit get or_gate -p gates --json
+orbit get --json
 ```
 

@@ -43,8 +43,9 @@ pub struct Info {
     // TODO: narrow the displayed version list with a range?
     versions: bool,
     units: bool,
+    force: bool,
     spec: Option<PartialProjectIdSpec>,
-    all: bool,
+    // TODO: allow outputs to be in json format?
     // TODO: view changelog?
     // TODO: view readme?
 }
@@ -53,7 +54,7 @@ impl Subcommand<Context> for Info {
     fn interpret<'c>(cli: &'c mut Cli<Memory>) -> cli::Result<Self> {
         cli.help(Help::with(info::HELP))?;
         Ok(Info {
-            all: cli.check(Arg::flag("all").switch('a'))?,
+            force: cli.check(Arg::flag("force"))?,
             versions: cli.check(Arg::flag("versions").switch('v'))?,
             units: cli.check(Arg::flag("units").switch('u'))?,
             spec: cli.get(Arg::positional("project"))?,
@@ -124,7 +125,7 @@ impl Subcommand<Context> for Info {
             }
         };
 
-        // load the ip's manifest
+        // load the project's manifest
         if self.units == true {
             if prj.get_mapping().is_physical() == true {
                 // try to read from cache file
@@ -134,7 +135,10 @@ impl Subcommand<Context> for Info {
                 };
                 if let Some(mut cache) = cache_data {
                     let mut units = cache.get_units_mut();
-                    print!("{}", Self::format_cached_units_table(&mut units, self.all));
+                    print!(
+                        "{}",
+                        Self::format_cached_units_table(&mut units, self.force)
+                    );
                 } else {
                     // force computing the primary design units if a physical ip (non-archived)
                     let units = prj.collect_units(true, false, c.are_units_private_by_default())?;
@@ -142,7 +146,7 @@ impl Subcommand<Context> for Info {
                         "{}",
                         Self::format_units_table(
                             units.into_iter().map(|(_, unit)| unit).collect(),
-                            self.all,
+                            self.force,
                             is_local_ip,
                         )
                     );

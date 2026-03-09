@@ -74,29 +74,29 @@ impl<'a> Legend<'a> {
         Self { keys: Vec::new() }
     }
 
-    // pub fn add_module(&mut self, module: &'a Module, file: &'a str) {
-    //     self.keys
-    //         .push(UnitKey::Module(ModuleJson::new(module, file)));
-    // }
+    pub fn add_module(&mut self, module: &'a Module, files: &'a Vec<String>) {
+        self.keys
+            .push(UnitKey::Module(ModuleJson::new(module, files)));
+    }
 
-    // pub fn add_entity(&mut self, entity: &'a Entity, file: &'a str) {
-    //     self.keys
-    //         .push(UnitKey::Entity(EntityJson::new(entity, file)));
-    // }
+    pub fn add_entity(&mut self, entity: &'a Entity, files: &'a Vec<String>) {
+        self.keys
+            .push(UnitKey::Entity(EntityJson::new(entity, files)));
+    }
 
     pub fn get_filename(&self) -> String {
         String::from("legend.json")
     }
 
-    pub fn serialize(&self) -> String {
-        serde_json::to_string_pretty(&self.keys).unwrap()
+    pub fn get_keys(&self) -> &Vec<UnitKey<'a>> {
+        &self.keys
     }
 
     pub fn write(&self, output_path: &PathBuf) -> Result<PathBuf, Error> {
         let legend_path = output_path.join(self.get_filename());
         let mut fd = File::create(&legend_path).expect("could not create legend file");
 
-        let data = self.serialize();
+        let data = serde_json::to_string_pretty(self.get_keys()).unwrap();
 
         fd.write_all(data.as_bytes())
             .expect("failed to write data to legend");

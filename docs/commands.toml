@@ -87,24 +87,23 @@ is provided, then it displays information related to the local project.
 
 To display manifest information, no additional options are required.
 
-To display the available cores within the project, use the `--units` option. 
+To display the available units within the project, use the `--units` option. 
 For non-local projects, its protected and private design units are hidden
-from the results. To display design units of all visibility levels the `--all` 
-option must also be present.
+from the results. To include design units of all visibility levels, use the 
+`--force` flag.
 
 To display the known versions for a project, use the `--versions` option.
 """
 
 options."<project>" = "Project ID specification"
 options."--versions, -v" = "Display the list of known versions"
-options."--units, -u" = "Display the cores for this project"
-options."--all, -a" = "Include any private or hidden results"
+options."--units, -u" = "Display the units for this project"
 
 examples = """
 orbit info --units
-orbit info gates:1.0.0 -u --all
+orbit info gates:1.0.0 --units --force
 orbit info gates --versions
-orbit info gates:1 -v
+orbit info gates:1 --versions
 """
 
 # ------------------------------------------------------------------------------
@@ -167,8 +166,8 @@ orbit read math_pkg -p math --doc "function flog2p1" --save --locate
 # ------------------------------------------------------------------------------
 [get]
 name = "get"
-summary = "display integration code for a core"
-synopsis = "orbit get [options] <unit>"
+summary = "display integration code for a unit"
+synopsis = "orbit get [options] [<unit>]"
 description = """
 Returns hdl code snippets for the provided design unit to be integrated into 
 the current project. The code snippets are returned in the native hdl
@@ -206,7 +205,8 @@ projects.
 
 Exporting the unit's declaration information can be accomplished by using the
 `--json` option. The valid json is unformatted for encouragement to be 
-processed by other programs.
+processed by other programs. Retrieve a list of all the unit declarations
+for the project by omitting `<unit>` while still using the `--json` option.
 
 By default, the code snippets will be displayed in the design unit's native
 hardware description language. To return the code snippets in a particular
@@ -233,6 +233,7 @@ orbit get and_gate --project gates:1.0.0 --component
 orbit get ram --project mem:2 -csi
 orbit get uart -si --name uart_inst0
 orbit get or_gate -p gates --json
+orbit get --json
 """
 
 # ------------------------------------------------------------------------------     

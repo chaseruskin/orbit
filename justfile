@@ -8,6 +8,10 @@ install:
     GIT_DESC_VERSION="$(git describe --tags)" cargo build --release
     cp ./target/release/orbit "$HOME/.cargo/bin/orbit"
 
+debug:
+    GIT_DESC_VERSION="$(git describe --tags)" cargo build
+    cp ./target/debug/orbit "$HOME/.cargo/bin/orbit"
+
 # Run partial section of tests by specifying the modules in MODS
 codev MODS:
     cargo watch -c -x check -x "test -- {{ MODS }}" --ignore test/data

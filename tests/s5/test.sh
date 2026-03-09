@@ -14,19 +14,8 @@ STDOUT=$(orbit tree -e project)
 
 cd ..
 
-# store the ideal value for later comparison
-EXACT="top:0.1.0
-└── sub:0.1.0 ($PWD/sub)"
+# Since there are paths in this expected output, it may vary from OS to OS (Windows and Linux).
+OS=$(uname -s)
 
-# compare the output with the expected value
-if [ "$STDOUT" != "$EXACT" ]; then
-    echo "TEST: RELATIVE_DEPENDENCY - FAIL"
-    echo "--- Expected ---"
-    echo "$EXACT"
-    echo "--- Received ---"
-    echo "$STDOUT"
-    exit 101
-fi
-
-echo "TEST: RELATIVE_DEPENDENCY - PASS"
-exit 0
+# Verify the correct behavior occurred without error
+python comp.py "$STDOUT"

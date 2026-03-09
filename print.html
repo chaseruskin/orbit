@@ -39,7 +39,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-9af3e026.js";
+            window.path_to_searchindex_js = "searchindex-7c184208.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-3fa1c024.js"></script>
@@ -239,33 +239,33 @@
 <ol>
 <li>Download the latest prebuilt package.</li>
 </ol>
-<pre><code>curl -LO https://github.com/chaseruskin/orbit/releases/download/0.29.0/orbit-0.29.0-x86_64-unknown-linux-musl.tar.gz
+<pre><code>curl -LO https://github.com/chaseruskin/orbit/releases/download/0.29.1/orbit-0.29.1-x86_64-unknown-linux-musl.tar.gz
 </code></pre>
 <ol start="2">
 <li>Extract the prebuilt package.</li>
 </ol>
-<pre><code>tar -xf orbit-0.29.0-x86_64-unknown-linux-musl.tar.gz -C orbit-0.29.0
+<pre><code>tar -xf orbit-0.29.1-x86_64-unknown-linux-musl.tar.gz -C orbit-0.29.1
 </code></pre>
 <ol start="3">
 <li>Move the executable to a location already set in the PATH environment variable.</li>
 </ol>
-<pre><code>mv ./orbit-0.29.0/bin/orbit /usr/local/bin/orbit
+<pre><code>mv ./orbit-0.29.1/bin/orbit /usr/local/bin/orbit
 </code></pre>
 <h3 id="macos"><a class="header" href="#macos">macOS</a></h3>
 <ol>
 <li>Download the latest prebuilt package.</li>
 </ol>
-<pre><code>curl -LO https://github.com/chaseruskin/orbit/releases/download/0.29.0/orbit-0.29.0-x86_64-apple-darwin.tar.gz
+<pre><code>curl -LO https://github.com/chaseruskin/orbit/releases/download/0.29.1/orbit-0.29.1-x86_64-apple-darwin.tar.gz
 </code></pre>
 <ol start="2">
 <li>Extract the prebuilt package.</li>
 </ol>
-<pre><code>tar -xf orbit-0.29.0-x86_64-apple-darwin.tar.gz -C orbit-0.29.0
+<pre><code>tar -xf orbit-0.29.1-x86_64-apple-darwin.tar.gz -C orbit-0.29.1
 </code></pre>
 <ol start="3">
 <li>Move the executable to a location already set in the PATH environment variable.</li>
 </ol>
-<pre><code>mv ./orbit-0.29.0/bin/orbit /usr/local/bin/orbit
+<pre><code>mv ./orbit-0.29.1/bin/orbit /usr/local/bin/orbit
 </code></pre>
 <h3 id="windows"><a class="header" href="#windows">Windows</a></h3>
 <ol>
@@ -276,7 +276,7 @@
 <p>Unzip the prebuilt package.</p>
 </li>
 </ol>
-<pre><code>$ expand-archive "./orbit-0.29.0-x86_64-windows.zip" -DestinationPath "orbit-0.29.0"
+<pre><code>$ expand-archive "./orbit-0.29.1-x86_64-windows.zip" -DestinationPath "orbit-0.29.1"
 </code></pre>
 <ol start="3">
 <li>Make a new directory to store this package.</li>
@@ -286,21 +286,21 @@
 <ol start="4">
 <li>Move the package to the new directory.</li>
 </ol>
-<pre><code>$ copy-item "./orbit-0.29.0/*" -destination "$env:LOCALAPPDATA/Programs/orbit" -recurse
+<pre><code>$ copy-item "./orbit-0.29.1/*" -destination "$env:LOCALAPPDATA/Programs/orbit" -recurse
 </code></pre>
 <ol start="5">
 <li>Edit the user-level PATH environment variable in <em><strong>Control Panel</strong></em> by adding <strong>%LOCALAPPDATA%\Programs\orbit\bin</strong>.</li>
 </ol>
 <h2 id="2-installing-with-cargo"><a class="header" href="#2-installing-with-cargo">2. Installing with Cargo</a></h2>
 <p>To install the latest version through Cargo:</p>
-<pre><code>$ cargo install --git https://github.com/chaseruskin/orbit.git --bin orbit --tag 0.29.0
+<pre><code>$ cargo install --git https://github.com/chaseruskin/orbit.git --bin orbit --tag 0.29.1
 </code></pre>
 <p>This will build the <code>orbit</code> binary and place it a path already set in the PATH environment variable.</p>
 <h2 id="checking-if-orbit-is-installed-correctly"><a class="header" href="#checking-if-orbit-is-installed-correctly">Checking if Orbit is installed correctly</a></h2>
 <p>To verify Orbit is working correctly on your system, let’s open a new terminal session and print it’s current version.</p>
 <pre><code>$ orbit --version
 </code></pre>
-<pre><code>orbit 0.29.0
+<pre><code>orbit 0.29.1
 </code></pre>
 <p>This should print out your version of Orbit you installed.</p>
 <p>You can also review the license for Orbit:</p>
@@ -3500,6 +3500,10 @@ post.command = ["git", "commit", "-am", "Publishes {{orbit.project.name}} v{{orb
   ]
 }
 </code></pre>
+<p>To get a list of structured data for each unit in a project, omit the <code>&lt;unit&gt;</code> argument while still providing the <code>--json</code> flag, like this:</p>
+<pre><code>$ orbit get --json
+</code></pre>
+<p>Each unit in the list uses the same schema that is used on a per-unit basis, which is described above.</p>
 <h2 id="hierarchies"><a class="header" href="#hierarchies">Hierarchies</a></h2>
 <p>The <code>orbit tree</code> command allows one to view how units are related to one another by displaying a dependency tree.</p>
 <p>It also allows users to export the dependency tree with the <code>--json</code> flag. This is convenient when you wish to pass this information in a more machine-readable format to another tool/program.</p>
@@ -3766,21 +3770,20 @@ orbit init --uuid
 <p>Displays various bits of information about a particular project. If no project
 is provided, then it displays information related to the local project.</p>
 <p>To display manifest information, no additional options are required.</p>
-<p>To display the available cores within the project, use the <code>--units</code> option.
+<p>To display the available units within the project, use the <code>--units</code> option.
 For non-local projects, its protected and private design units are hidden
-from the results. To display design units of all visibility levels the <code>--all</code>
-option must also be present.</p>
+from the results. To include design units of all visibility levels, use the
+<code>--force</code> flag.</p>
 <p>To display the known versions for a project, use the <code>--versions</code> option.</p>
 <h2 id="options-2"><a class="header" href="#options-2"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;project&gt;</code><br>            Project id specification</p>
 <p><code>--versions, -v</code><br>            Display the list of known versions</p>
-<p><code>--units, -u</code><br>            Display the cores for this project</p>
-<p><code>--all, -a</code><br>            Include any private or hidden results</p>
+<p><code>--units, -u</code><br>            Display the units for this project</p>
 <h2 id="examples-5"><a class="header" href="#examples-5"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit info --units
-orbit info gates:1.0.0 -u --all
+orbit info gates:1.0.0 --units --force
 orbit info gates --versions
-orbit info gates:1 -v
+orbit info gates:1 --versions
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="orbit-read"><a class="header" href="#orbit-read"><strong>orbit read</strong></a></h1>
@@ -3830,9 +3833,9 @@ orbit read math_pkg -p math --doc "function flog2p1" --save --locate
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="orbit-get"><a class="header" href="#orbit-get"><strong>orbit get</strong></a></h1>
 <h2 id="name-5"><a class="header" href="#name-5"><strong>NAME</strong></a></h2>
-<p>get - display integration code for a core</p>
+<p>get - display integration code for a unit</p>
 <h2 id="synopsis-4"><a class="header" href="#synopsis-4"><strong>SYNOPSIS</strong></a></h2>
-<pre><code>orbit get [options] &lt;unit&gt;
+<pre><code>orbit get [options] [&lt;unit&gt;]
 </code></pre>
 <h2 id="description-4"><a class="header" href="#description-4"><strong>DESCRIPTION</strong></a></h2>
 <p>Returns hdl code snippets for the provided design unit to be integrated into
@@ -3864,7 +3867,8 @@ local project, its visibility must be “public”. Design units that are set to
 projects.</p>
 <p>Exporting the unit’s declaration information can be accomplished by using the
 <code>--json</code> option. The valid json is unformatted for encouragement to be
-processed by other programs.</p>
+processed by other programs. Retrieve a list of all the unit declarations
+for the project by omitting <code>&lt;unit&gt;</code> while still using the <code>--json</code> option.</p>
 <p>By default, the code snippets will be displayed in the design unit’s native
 hardware description language. To return the code snippets in a particular
 language, use the <code>--language</code> option. Valid values are “vhdl”, “sv”, or
@@ -3887,6 +3891,7 @@ language, use the <code>--language</code> option. Valid values are “vhdl”, �
 orbit get ram --project mem:2 -csi
 orbit get uart -si --name uart_inst0
 orbit get or_gate -p gates --json
+orbit get --json
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="orbit-tree"><a class="header" href="#orbit-tree"><strong>orbit tree</strong></a></h1>

@@ -38,7 +38,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-9af3e026.js";
+            window.path_to_searchindex_js = "../searchindex-7c184208.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-3fa1c024.js"></script>
@@ -182,9 +182,9 @@
                     <main>
                         <h1 id="orbit-get"><a class="header" href="#orbit-get"><strong>orbit get</strong></a></h1>
 <h2 id="name"><a class="header" href="#name"><strong>NAME</strong></a></h2>
-<p>get - display integration code for a core</p>
+<p>get - display integration code for a unit</p>
 <h2 id="synopsis"><a class="header" href="#synopsis"><strong>SYNOPSIS</strong></a></h2>
-<pre><code>orbit get [options] &lt;unit&gt;
+<pre><code>orbit get [options] [&lt;unit&gt;]
 </code></pre>
 <h2 id="description"><a class="header" href="#description"><strong>DESCRIPTION</strong></a></h2>
 <p>Returns hdl code snippets for the provided design unit to be integrated into
@@ -216,7 +216,8 @@ local project, its visibility must be “public”. Design units that are set to
 projects.</p>
 <p>Exporting the unit’s declaration information can be accomplished by using the
 <code>--json</code> option. The valid json is unformatted for encouragement to be
-processed by other programs.</p>
+processed by other programs. Retrieve a list of all the unit declarations
+for the project by omitting <code>&lt;unit&gt;</code> while still using the <code>--json</code> option.</p>
 <p>By default, the code snippets will be displayed in the design unit’s native
 hardware description language. To return the code snippets in a particular
 language, use the <code>--language</code> option. Valid values are “vhdl”, “sv”, or
@@ -239,6 +240,7 @@ language, use the <code>--language</code> option. Valid values are “vhdl”, �
 orbit get ram --project mem:2 -csi
 orbit get uart -si --name uart_inst0
 orbit get or_gate -p gates --json
+orbit get --json
 </code></pre>
 
                     </main>

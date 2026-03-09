@@ -38,7 +38,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-9af3e026.js";
+            window.path_to_searchindex_js = "../searchindex-7c184208.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-3fa1c024.js"></script>
@@ -190,21 +190,20 @@
 <p>Displays various bits of information about a particular project. If no project
 is provided, then it displays information related to the local project.</p>
 <p>To display manifest information, no additional options are required.</p>
-<p>To display the available cores within the project, use the <code>--units</code> option.
+<p>To display the available units within the project, use the <code>--units</code> option.
 For non-local projects, its protected and private design units are hidden
-from the results. To display design units of all visibility levels the <code>--all</code>
-option must also be present.</p>
+from the results. To include design units of all visibility levels, use the
+<code>--force</code> flag.</p>
 <p>To display the known versions for a project, use the <code>--versions</code> option.</p>
 <h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;project&gt;</code><br>            Project id specification</p>
 <p><code>--versions, -v</code><br>            Display the list of known versions</p>
-<p><code>--units, -u</code><br>            Display the cores for this project</p>
-<p><code>--all, -a</code><br>            Include any private or hidden results</p>
+<p><code>--units, -u</code><br>            Display the units for this project</p>
 <h2 id="examples"><a class="header" href="#examples"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit info --units
-orbit info gates:1.0.0 -u --all
+orbit info gates:1.0.0 --units --force
 orbit info gates --versions
-orbit info gates:1 -v
+orbit info gates:1 --versions
 </code></pre>
 
                     </main>

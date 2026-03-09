@@ -38,7 +38,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-9af3e026.js";
+            window.path_to_searchindex_js = "../searchindex-7c184208.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-3fa1c024.js"></script>
@@ -222,6 +222,10 @@
   ]
 }
 </code></pre>
+<p>To get a list of structured data for each unit in a project, omit the <code>&lt;unit&gt;</code> argument while still providing the <code>--json</code> flag, like this:</p>
+<pre><code>$ orbit get --json
+</code></pre>
+<p>Each unit in the list uses the same schema that is used on a per-unit basis, which is described above.</p>
 <h2 id="hierarchies"><a class="header" href="#hierarchies">Hierarchies</a></h2>
 <p>The <code>orbit tree</code> command allows one to view how units are related to one another by displaying a dependency tree.</p>
 <p>It also allows users to export the dependency tree with the <code>--json</code> flag. This is convenient when you wish to pass this information in a more machine-readable format to another tool/program.</p>

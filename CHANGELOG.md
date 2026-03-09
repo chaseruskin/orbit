@@ -15,10 +15,10 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
-## UNRELEASED
+## 0.29.1
 
 ### Features
-- Allows one to just specify the `path` for a direct dependency without needing to also match it's `version` when specifying dependencies
+- Allows one to just specify the `path` for a direct dependency without needing to also match its `version` when specifying dependencies
 - Adds support for multiple locations for dependencies using `path` and `version`
 - Allows `version` to be optional when developing locally and specifying `path` for a dependency (`version` is still required for publishing)
 - Allows packages to be set as root for tree when using `orbit tree -e all`

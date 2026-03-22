@@ -102,7 +102,7 @@ Filename: .orbit/config.toml
 [[target]]
 name = "yilinx"
 description = "Generate bitstreams for Yilinx FPGAs"
-command = ["python", "yilinx.py"]
+command = ["python", ".orbit/yilinx.py"]
 # Define the type of extra file(s) to collect during planning
 fileset.YDCF = "*.ydc"
 ```

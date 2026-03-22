@@ -246,7 +246,7 @@ pub fn resolve_rel_path(root: &std::path::PathBuf, s: &str) -> String {
         let resolved_path = root.join(&s);
         if std::path::Path::exists(&resolved_path) == true {
             if PathBuf::from(&s).is_relative() == true {
-                // write out full path
+                // Write out full path.
                 PathBuf::standardize(resolved_path).display().to_string()
             } else {
                 s.to_string()

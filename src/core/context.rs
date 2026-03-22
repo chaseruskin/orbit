@@ -35,7 +35,7 @@ use super::lang::vhdl::format::VhdlFormat;
 
 pub const CACHE_TAG_FILE: &str = "CACHEDIR.TAG";
 
-const ORBIT_HIDDEN_DIR: &str = ".orbit";
+pub const ORBIT_HIDDEN_DIR: &str = ".orbit";
 
 pub const CACHE_TAG: &str = "\
 Signature: 8a477f597d28d172789f06886806bc55

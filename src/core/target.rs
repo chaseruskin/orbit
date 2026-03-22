@@ -206,7 +206,7 @@ pub trait Process {
 
         let root_path = self.get_root();
 
-        // only resolve from root if not overloaded
+        // Only resolve from root if not overloaded.
         let command = if overloaded_command.is_none() {
             filesystem::resolve_rel_path(root_path, command)
         } else {

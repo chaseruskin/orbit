@@ -11,7 +11,8 @@ Paths in config files may be absolute, relative, or a bare name without any path
 In particular, the rules are:
 - For environment variables, paths are relative to the current working directory.
 - For config values loaded using `orbit config`, paths are left unresolved and stored as-is in the config file.
-- For config files, paths are relative to the parent directory of the directory where the config files were defined.
+- For config files found directly within a `.orbit` folder, paths are relative to the parent directory of the `.orbit` directory where the config file was defined.
+- For config files not found directly within a `.orbit` folder, paths are relative to the directory where the config file was defined.
 
 This design choice was implemented to allow path definitions to be valid across file systems when sharing configurations. It is recommended to use relative paths when setting a field's value as a path in a `config.toml`.
 
@@ -29,7 +30,7 @@ Orbit supports multiple levels of configuration. Each level has its own order of
 
 1. Local configuration file (current project's `.orbit/config.toml`)
 
-2. Regional configuration files (parent directories of the current working directory)
+2. Regional configuration files (parent directories of the current working directory containing `.orbit/config.toml`)
 
 3. Global configuration file (Orbit's `$ORBIT_HOME/config.toml`)
 

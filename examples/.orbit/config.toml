@@ -27,12 +27,12 @@ highlight-syntax = true
 [[target]]
 name = "gui"
 description = "Set up an interactive ongoing process"
-command = ["python", "gui.py"]
+command = ["python", ".orbit/gui.py"]
 
 [[target]]
 name = "tui"
 description = "Set up an interactive ongoing process"
-command = ["python", "gui.py"]
+command = ["python", ".orbit/gui.py"]
 
 [[target]]
 name = "multi"
@@ -49,7 +49,7 @@ command = ["git", "clone", "{{ orbit.project.source }}"]
 
 [[protocol]]
 name = "bar"
-command = ["python", "bar.py"]
+command = ["python", ".orbit/bar.py"]
 patterns = ["*.url"]
 
 # [[target.fileset]]

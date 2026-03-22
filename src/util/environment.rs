@@ -153,10 +153,9 @@ impl EnvVar {
     /// Will attempt to resolve a relative path if the environment variable is configured to do such a thing.
     pub fn resolve_relative(&mut self, root: &PathBuf) {
         if self.relative == true {
-            let up_one_root = root.parent().unwrap_or(root.as_path());
             let p = PathBuf::from(&self.value);
             if p.is_relative() == true {
-                self.value = into_std_str(up_one_root.join(&p));
+                self.value = into_std_str(root.join(&p));
             }
         }
     }

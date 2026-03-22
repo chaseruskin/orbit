@@ -15,6 +15,7 @@
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
+use crate::core::context::ORBIT_HIDDEN_DIR;
 use crate::core::lang::vhdl::format::VhdlFormat;
 use crate::core::manifest::FromFile;
 use crate::core::protocol::Protocol;
@@ -318,11 +319,12 @@ impl Configs {
         // standardize the path
         let mut to_process = vec![(PathBuf::standardize(&base_config_path), lvl)];
         let mut i = 0;
-        // process all paths
+
+        // Process all paths.
         while to_process.get(i).is_some() == true {
             {
                 let (config_path, local) = to_process.get(i).unwrap();
-                // load the entry file
+                // load the entry file.
                 let cfg = match Config::from_file(&config_path) {
                     Ok(r) => {
                         // verify any config other than global does not have include set
@@ -872,8 +874,20 @@ impl FromFile for Config {
         // parse toml syntax
         match Self::from_str(&contents) {
             Ok(mut r) => {
-                // set roots for plugins and protocols
-                let base = PathBuf::standardize(path).parent().unwrap().to_path_buf();
+                // Set the root directory for targets and protocols.
+                let base = PathBuf::standardize(path)
+                    .parent()
+                    .unwrap_or(&PathBuf::default())
+                    .to_path_buf();
+                let is_hidden_orbit = match base.file_name() {
+                    Some(s) => s == ORBIT_HIDDEN_DIR,
+                    _ => false,
+                };
+                // Pop the hidden .orbit folder if the file follows convention.
+                let base = match is_hidden_orbit {
+                    true => base.parent().unwrap_or(&base).to_path_buf(),
+                    false => base,
+                };
                 if let Some(protos) = &mut r.protocol {
                     protos.iter_mut().for_each(|p| {
                         p.set_root(base.clone());
@@ -889,7 +903,7 @@ impl FromFile for Config {
                         c.set_root(base.clone())?;
                     }
                 }
-                // set root for environment variables
+                // Set root for environment variables.
                 if let Some(envs) = &mut r.env {
                     for (key, env) in envs {
                         env.set_key(key);

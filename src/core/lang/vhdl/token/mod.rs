@@ -509,7 +509,7 @@ impl VhdlToken {
                 note.push(c);
             }
         }
-        println!("{}", note);
+        // println!("{}", note);
         Ok(VhdlToken::Directive(note))
     }
 

@@ -458,14 +458,15 @@ impl Statement {
 
     pub fn into_color_vec(tokens: &Vec<VhdlToken>) -> ColorVec {
         let mut result = ColorVec::new();
-        // determine which delimiters to not add trailing spaces to
+        // Determine which delimiters to not add leading or trailing spaces to.
         let is_spaced_token = |d: &Delimiter| match d {
             Delimiter::ParenL | Delimiter::ParenR => false,
             Delimiter::SingleQuote | Delimiter::Dash => false,
             Delimiter::DoubleStar => false,
+            Delimiter::Dot => false,
             _ => true,
         };
-        // iterate through the tokens
+        // Iterate through the tokens.
         let mut iter = tokens.iter().peekable();
         while let Some(t) = iter.next() {
             let this_trailing_space = match t {

@@ -19,7 +19,7 @@ entity adder is
         WORD_WIDTH : positive := 6
     );
     port (
-        INPUT1    : in  std_logic_vector(WORD_WIDTH-1 downto 0)(3 downto 0);
+        INPUT1    : in  std_logic_vector(const_pkg.WORD_WIDTH-1 downto 0)(3 downto 0);
         input2    : in  std_logic_vector(WORD_WIDTH-1 downto 0);
         carry_in  : in  std_logic;
         sum       : out std_logic_vector(WORD_WIDTH-1 downto 0);
@@ -33,8 +33,13 @@ architecture struct of adder is
     --internal signal to propagate carry bit through each full adder
     signal carry_i : std_logic_vector(WORD_WIDTH downto 0) := (others => not FOO);
 begin
+
+    `protect version = 2
+    `protect begin_commonblock
+
     --first bit being carried in to adder
     carry_i(0) <= carry_in;
+    `protect end
 
     --generate 6 full adder instances  
     ripple_carry : for ii in 0 to WORD_WIDTH-1 generate

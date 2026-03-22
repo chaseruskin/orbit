@@ -584,7 +584,7 @@ impl InterfaceDeclarations {
         if fmt.is_interface_parenthesis_spaced() == true {
             result.push_str(" ");
         }
-        // auto-align by first finding longest offset needed
+        // Auto-align by first finding longest offset needed.
         let offset = match fmt.is_auto_type_aligned() {
             true => self.longest_identifier(),
             false => fmt.get_type_offset() as usize,
@@ -599,7 +599,7 @@ impl InterfaceDeclarations {
             if fmt.get_tab_size() > 0 {
                 result.push_whitespace(fmt.get_tab_size() as usize * tab_count);
             }
-            // compute the offset of the ':' and type of declaration
+            // Compute the offset of the ':' and type of declaration.
             let port_offset = match fmt.is_auto_type_aligned() {
                 true => offset - port.identifier.len() + fmt.get_type_offset() as usize,
                 false => offset,

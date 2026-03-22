@@ -444,7 +444,7 @@ impl Plan {
                 }
             }
 
-            // traverse the ip graph only if we have to
+            // Check if we must traverse the project graph (has a recursive fileset).
             let has_recursive_fset = target
                 .get_filesets()
                 .iter()
@@ -454,11 +454,12 @@ impl Plan {
                 })
                 .unwrap_or(false);
 
-            // look in all projects for the fileset patterns
+            // Look in all projects for the recursive fileset patterns.
             if has_recursive_fset == true {
                 let mut topo_order = prj_graph.get_graph().topological_sort();
-                // remove the last project (the "working project")
+                // Remove the last project (the "working project").
                 topo_order.pop().unwrap();
+                // Iterate through the topological ordering of the projects to collect recursive filesets.
                 let topo_order = topo_order;
                 for i in topo_order {
                     let dep_project = prj_graph
@@ -473,7 +474,7 @@ impl Plan {
                         target,
                         &cli_fset_map,
                         &vtable,
-                        &working_lib,
+                        &dep_project.get_hdl_library(),
                         true,
                         dep_project.get_root(),
                     )?;

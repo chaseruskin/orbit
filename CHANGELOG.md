@@ -15,6 +15,11 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.29.2 - UNRELEASED
+
+### Fixes
+- Uses correct library name for custom recursive filesets collected into the blueprint
+
 ## 0.29.1
 
 ### Features

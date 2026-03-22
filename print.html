@@ -39,7 +39,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-7c184208.js";
+            window.path_to_searchindex_js = "searchindex-2c25a4a8.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-3fa1c024.js"></script>
@@ -540,7 +540,7 @@ print('YILINX:','Bitstream saved at: target/yilinx/fpga.bit')
 <pre><code class="language-toml">[[target]]
 name = "yilinx"
 description = "Generate bitstreams for Yilinx FPGAs"
-command = ["python3", "yilinx.py"]
+command = ["python3", ".orbit/yilinx.py"]
 </code></pre>
 <h3 id="calling-a-target"><a class="header" href="#calling-a-target">Calling a target</a></h3>
 <pre><code>$ orbit build --target yilinx --top and_gate
@@ -835,7 +835,7 @@ or_gate                             entity        public
 <pre><code class="language-toml">[[target]]
 name = "yilinx"
 description = "Generate bitstreams for Yilinx FPGAs"
-command = ["python", "yilinx.py"]
+command = ["python", ".orbit/yilinx.py"]
 # Define the type of extra file(s) to collect during planning
 fileset.YDCF = "*.ydc"
 </code></pre>
@@ -3127,7 +3127,8 @@ precedence:
 <ul>
 <li>For environment variables, paths are relative to the current working directory.</li>
 <li>For config values loaded using <code>orbit config</code>, paths are left unresolved and stored as-is in the config file.</li>
-<li>For config files, paths are relative to the parent directory of the directory where the config files were defined.</li>
+<li>For config files found directly within a <code>.orbit</code> folder, paths are relative to the parent directory of the <code>.orbit</code> directory where the config file was defined.</li>
+<li>For config files not found directly within a <code>.orbit</code> folder, paths are relative to the directory where the config file was defined.</li>
 </ul>
 <p>This design choice was implemented to allow path definitions to be valid across file systems when sharing configurations. It is recommended to use relative paths when setting a field’s value as a path in a <code>config.toml</code>.</p>
 <h2 id="executable-paths-with-arguments"><a class="header" href="#executable-paths-with-arguments">Executable paths with arguments</a></h2>
@@ -3141,7 +3142,7 @@ precedence:
 <p>Local configuration file (current project’s <code>.orbit/config.toml</code>)</p>
 </li>
 <li>
-<p>Regional configuration files (parent directories of the current working directory)</p>
+<p>Regional configuration files (parent directories of the current working directory containing <code>.orbit/config.toml</code>)</p>
 </li>
 <li>
 <p>Global configuration file (Orbit’s <code>$ORBIT_HOME/config.toml</code>)</p>

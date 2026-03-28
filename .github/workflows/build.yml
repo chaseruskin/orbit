@@ -72,6 +72,8 @@ jobs:
         uses: peaceiris/actions-mdbook@v2
         with:
           mdbook-version: 'latest'
+        env:
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
       - name: Install AArch64 Toolchain
         if: ${{ matrix.target == 'aarch64-unknown-linux-musl' }}

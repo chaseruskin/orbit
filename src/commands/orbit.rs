@@ -91,7 +91,7 @@ impl Command for Orbit {
             license: cli.check(Arg::flag("license"))?,
             sync: cli.check(Arg::flag("sync"))?,
             force: cli.check(Arg::flag("force"))?,
-            change_dir: cli.get(Arg::option("change-dir").switch('C').value("DIRECTORY"))?,
+            change_dir: cli.get(Arg::option("cd").switch('C').value("dir"))?,
             cmode: cli
                 .get(Arg::option("color").value("when"))?
                 .unwrap_or_default(),

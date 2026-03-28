@@ -15,7 +15,7 @@ jobs:
         python-version: '3.13'
 
     - name: Download artifacts
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
 
     - name: Display filesystem contents
       run: ls -R
@@ -30,7 +30,7 @@ jobs:
       run: cat ./SHA256SUMS
 
     - name: Upload checksums
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: SHA256SUMS
         path: ./SHA256SUMS

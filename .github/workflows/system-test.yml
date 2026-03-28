@@ -23,15 +23,15 @@ jobs:
         python-version: '3.13'
 
     - name: Setup just
-      uses: extractions/setup-just@v2
+      uses: extractions/setup-just@v3
 
     - name: Download package
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         name: orbit-${{ inputs.version }}-aarch64-apple-darwin
 
     - name: Download checksums
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         name: SHA256SUMS
       
@@ -67,15 +67,15 @@ jobs:
         python-version: '3.13'
 
     - name: Setup just
-      uses: extractions/setup-just@v2
+      uses: extractions/setup-just@v3
 
     - name: Download package
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         name: orbit-${{ inputs.version }}-x86_64-unknown-linux-musl
 
     - name: Download checksums
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         name: SHA256SUMS
 
@@ -108,10 +108,10 @@ jobs:
         python-version: '3.13'
 
     - name: Setup just
-      uses: extractions/setup-just@v2
+      uses: extractions/setup-just@v3
 
     - name: Download package
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         name: orbit-${{ inputs.version }}-x86_64-pc-windows-msvc
 

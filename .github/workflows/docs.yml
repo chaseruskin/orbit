@@ -24,6 +24,8 @@ jobs:
         uses: peaceiris/actions-mdbook@v2
         with:
           mdbook-version: 'latest'
+        env:
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
       - name: Update manual pages
         run: python ./tools/mansync.py
@@ -41,3 +43,5 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./docs/book/
           commit_message: ${{ github.event.head_commit.message }}
+        env:
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true

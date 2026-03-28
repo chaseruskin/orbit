@@ -47,6 +47,7 @@ Options:
     --sync                synchronize configured channels
     --force               bypass interactive prompts
     --color <when>        coloring: auto, always, never
+    -C <directory>        change to directory before doing anything
     --help, -h            print help information
 
 Use 'orbit help <command>' for more information about a command."#;

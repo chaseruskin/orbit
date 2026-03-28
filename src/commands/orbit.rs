@@ -19,10 +19,12 @@ use crate::commands::helps::orbit;
 use crate::core::channel::Channel;
 use crate::core::config;
 use crate::core::context::Context;
+use crate::error::Error;
 use crate::util::anyerror::AnyError;
 use crate::util::environment;
 use crate::util::prompt;
 use crate::util::sha256::Sha256Hash;
+use std::path::PathBuf;
 
 use cliproc::{Arg, Cli, Command, Subcommand};
 use cliproc::{cli, proc, stage::*};
@@ -72,6 +74,7 @@ impl FromStr for ColorMode {
 pub struct Orbit {
     upgrade: bool,
     version: bool,
+    change_dir: Option<PathBuf>,
     license: bool,
     force: bool,
     sync: bool,
@@ -88,6 +91,7 @@ impl Command for Orbit {
             license: cli.check(Arg::flag("license"))?,
             sync: cli.check(Arg::flag("sync"))?,
             force: cli.check(Arg::flag("force"))?,
+            change_dir: cli.get(Arg::option("change-dir").switch('C').value("DIRECTORY"))?,
             cmode: cli
                 .get(Arg::option("color").value("when"))?
                 .unwrap_or_default(),
@@ -96,13 +100,20 @@ impl Command for Orbit {
     }
 
     fn execute(self) -> proc::Result {
-        // synchronize the coloring mode
+        // Change directories before doing anything.
+        if let Some(cd) = &self.change_dir {
+            match std::env::set_current_dir(cd) {
+                Ok(_) => (),
+                Err(e) => return Err(Error::ChangeDirectoryFailed(cd.clone(), e.to_string()))?,
+            }
+        }
+        // Synchronize the coloring mode.
         self.cmode.sync();
-        // prioritize license information
+        // Prioritize license information.
         if self.license == true {
             println!("{}", DISCLAIMER);
             Ok(())
-        // prioritize version information
+        // Prioritize version information.
         } else if self.version == true {
             let disp_version = match option_env!("GIT_DESC_VERSION") {
                 Some(build) => match build.len() {

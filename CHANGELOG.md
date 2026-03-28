@@ -17,6 +17,9 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 ## UNRELEASED
 
+### Features
+- Adds global `-C <directory>` option to change directories before doing anything
+
 ### Fixes
 - Corrects some parsing when handling VHDL generate statement bodies
 

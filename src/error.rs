@@ -32,6 +32,8 @@ use crate::core::{
 pub enum Error {
     #[error("{0}")]
     Custom(String),
+    #[error("failed to change directory to {0:?}: {1}")]
+    ChangeDirectoryFailed(PathBuf, String),
     #[error("a project already exists at {0:?}")]
     IpExistsAtPath(PathBuf),
     #[error("path {0:?} already exists {1}")]

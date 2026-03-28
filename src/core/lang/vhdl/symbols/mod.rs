@@ -1463,7 +1463,7 @@ impl VhdlSymbol {
         let mut clause = Statement::new();
         let mut refs: HashSet<CompoundIdentifier> = RefSet::new();
 
-        // determine if the statement will be a sensitivity list
+        // Determine if the statement will be a sensitivity list.
         let mut paren_count: i32 = 0;
         let is_sensitivity_list = {
             if let Some(t) = tokens.peek() {
@@ -1473,9 +1473,9 @@ impl VhdlSymbol {
             }
         };
 
-        // traverse through token stream
+        // Traverse through token stream.
         while let Some(t) = tokens.next() {
-            // gather sensitivity list as its own statement
+            // Gather sensitivity list as its own statement.
             if is_sensitivity_list == true
                 && (t.as_type().check_delimiter(&Delimiter::ParenL)
                     || t.as_type().check_delimiter(&Delimiter::ParenR))
@@ -1489,7 +1489,7 @@ impl VhdlSymbol {
                     .check_delimiter(&Delimiter::ParenL)
                 {
                     paren_count += 1;
-                    // add token
+                    // Add token.
                 } else if clause
                     .get_tokens()
                     .last()
@@ -1502,11 +1502,11 @@ impl VhdlSymbol {
                         return (clause, refs);
                     }
                 }
-            // exit upon encountering terminator ';'
+            // Exit upon encountering terminator ';'.
             } else if t.as_type().check_delimiter(&Delimiter::Terminator) {
                 // println!("{:?}", clause);
                 return (clause, refs);
-            // extra keywords to help break up statements early
+            // Extra keywords to help break up statements early.
             } else if t.as_type().check_keyword(&Keyword::Generate)
                 || t.as_type().check_keyword(&Keyword::Process)
                 || t.as_type().check_keyword(&Keyword::Begin)
@@ -1519,15 +1519,15 @@ impl VhdlSymbol {
                         .check_keyword(&Keyword::When)
                     && t.as_type().check_delimiter(&Delimiter::Arrow))
             {
-                // add the breaking token to the statement before exiting
+                // Add the breaking token to the statement before exiting.
                 clause.get_tokens_mut().push(t);
                 // println!("{:?}", clause);
                 return (clause, refs);
             } else {
-                // check for compound identifiers as references to other design units
+                // Check for compound identifiers as references to other design units.
                 let mut took_dot: Option<Token<VhdlToken>> = None;
                 if let Some(id) = t.as_type().as_identifier() {
-                    // check if next token is a 'dot' delimiter
+                    // Check if next token is a 'dot' delimiter.
                     if tokens.peek().is_some()
                         && tokens
                             .peek()
@@ -1535,12 +1535,12 @@ impl VhdlSymbol {
                             .as_type()
                             .check_delimiter(&Delimiter::Dot)
                     {
-                        // consume the dot
+                        // Consume the dot.
                         took_dot = tokens.next();
-                        // mark as a reference if the next token is an identifier
+                        // Mark as a reference if the next token is an identifier.
                         if tokens.peek().is_some() {
                             if let Some(id2) = tokens.peek().unwrap().as_type().as_identifier() {
-                                // store the resource reference
+                                // Store the resource reference.
                                 refs.insert(CompoundIdentifier::new_vhdl(id.clone(), id2.clone()));
                             }
                         }
@@ -2035,13 +2035,19 @@ impl VhdlSymbol {
         let mut refs = RefSet::new();
         // collect component names
         let mut deps = RefSet::new();
+        // We assume the last token consumed was `BEGIN`, so include that in the initial count.
+        let mut nested_blocks = 1;
         // println!("*--- statement section");
         while let Some(t) = tokens.peek() {
+            // println!("{:?}", t);
             if t.as_type().check_keyword(&Keyword::End) == true {
                 let (clause, _c_refs) = Self::parse_statement(tokens);
-                // println!("IN BODY AT END: {:?} {:?}", clause, is_subprogram);
+                // println!("IN BODY AT END: {:?} {:?} {}", clause, is_subprogram, nested_blocks);
                 if eval_exit(&clause) == true {
-                    break;
+                    nested_blocks -= 1;
+                    if nested_blocks <= 0 {
+                        break;
+                    }
                 }
             // enter a subprogram
             } else if t.as_type().check_keyword(&Keyword::Function)
@@ -2062,6 +2068,8 @@ impl VhdlSymbol {
                         .as_ref()
                         .check_keyword(&Keyword::Begin)
                 {
+                    nested_blocks += 1;
+                    // println!("{:?}, {}", clause, nested_blocks);
                     continue;
                 }
                 // println!("ENTERING SUBPROGRAM {:?}", clause);

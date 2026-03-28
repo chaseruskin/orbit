@@ -15,6 +15,11 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## UNRELEASED
+
+### Fixes
+- Corrects some parsing when handling VHDL generate statement bodies
+
 ## 0.29.2
 
 ### Fixes

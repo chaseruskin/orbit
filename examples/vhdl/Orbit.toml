@@ -4,7 +4,6 @@ uuid = "ecj831jmc018hhhgl1d4rzgw8"
 version = "0.0.9"
 public = ["adder.vhd"]
 channels = ["hyperspace-labs"]
-ignore = ["fa_tb.vhd"]
 
 [dependencies]
 # gates = "2"

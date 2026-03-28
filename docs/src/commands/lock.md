@@ -12,7 +12,7 @@ orbit lock [options]
 
 ## __DESCRIPTION__
 
-Saves the state of the world for the local project. To accomplish this, Orbit
+Saves the state of the world for the local project. To accomplish this, Orbit 
 reads the local project's manifest file, "Orbit.toml", to resolve any missing
 project dependencies. It writes the information required to reproduce this 
 state to the project's lock file, "Orbit.lock".

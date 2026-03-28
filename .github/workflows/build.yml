@@ -58,24 +58,20 @@ jobs:
         shell: bash
     steps:
       - name: Fetch repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 100
           fetch-tags: true
 
       - name: Setup python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
-          python-version: 3.x
+          python-version: '3.13'
 
       - name: Setup mdbook
         uses: peaceiris/actions-mdbook@v2
         with:
           mdbook-version: 'latest'
-      
-      - name: Install python packages
-        run: |
-          pip install toml
 
       - name: Install AArch64 Toolchain
         if: ${{ matrix.target == 'aarch64-unknown-linux-musl' }}

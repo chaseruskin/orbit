@@ -4,7 +4,7 @@
 #
 # Reads a TOML file to write various forms of documentation (markdown, rust).
 
-import toml, os, sys
+import tomllib, os, sys
 from license import NEW_HEADER
 
 # --- Configurations -----------------------------------------------------------
@@ -315,7 +315,9 @@ def write_rs_help(ptable, dest, command, footer=True) -> int:
 
 def main():
     # open the manual data
-    data = toml.load(INPUT_TOML_PATH)
+    data = {}
+    with open(INPUT_TOML_PATH, 'r') as fd:
+        data = tomllib.loads(fd.read())
 
     COMMANDS = find_all_commands(data, PROGRAM)
     

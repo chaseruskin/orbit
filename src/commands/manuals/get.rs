@@ -23,7 +23,7 @@ SYNOPSIS
     orbit get [options] [<unit>]
 
 DESCRIPTION
-    Returns hdl code snippets for the provided design unit to be integrated into
+    Returns hdl code snippets for the provided design unit to be integrated into 
     the current project. The code snippets are returned in the native hdl
     language of the identified design unit. Code snippets are designed to be
     copy and pasted from the console to the current design for quick code 

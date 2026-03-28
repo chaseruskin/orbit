@@ -12,7 +12,7 @@ orbit publish [options]
 
 ## __DESCRIPTION__
 
-Performs a series of checks for a local project and then releases it to its
+Performs a series of checks for a local project and then releases it to its 
 specified channel(s).
 
 There are multiple checks that are performed before a project can be published. 

@@ -12,7 +12,7 @@ orbit info [options] [<project>]
 
 ## __DESCRIPTION__
 
-Displays various bits of information about a particular project. If no project
+Displays various bits of information about a particular project. If no project 
 is provided, then it displays information related to the local project.
 
 To display manifest information, no additional options are required.

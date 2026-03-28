@@ -23,7 +23,7 @@ SYNOPSIS
     orbit install [options]
 
 DESCRIPTION
-    This command will place a project into the cache. By default, the specified
+    This command will place a project into the cache. By default, the specified 
     version is the 'latest' released version of the project that Orbit has 
     identified.
     

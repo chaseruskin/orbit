@@ -12,7 +12,7 @@ orbit new [options] <path>
 
 ## __DESCRIPTION__
 
-Creates a new project at the target directory `<path>`. The path is assumed to
+Creates a new project at the target directory `<path>`. The path is assumed to 
 not already exist. A new directory will be created at the file system 
 destination that contains a minimal manifest file.
 

@@ -12,7 +12,7 @@ orbit remove [options] <project>
 
 ## __DESCRIPTION__
 
-Deletes save data for a known project from the catalog. The project's data for
+Deletes save data for a known project from the catalog. The project's data for 
 its particular version is removed from the catalog's cache and the catalog's
 archive.
 

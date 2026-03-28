@@ -12,7 +12,7 @@ orbit doc [options]
 
 ## __DESCRIPTION__
 
-Generates documentation for a project and all of its dependencies based on
+Generates documentation for a project and all of its dependencies based on 
 inline markdown comments.
 
 Documentation is extracted from comments embedded in the source code. A

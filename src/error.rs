@@ -40,6 +40,8 @@ pub enum Error {
     PathAlreadyExists(PathBuf, Hint),
     #[error("directory {0:?} is an invalid project name: {1}{2}")]
     CannotAutoExtractNameFromPath(String, LastError, Hint),
+    #[error("failed to load workspace {0:?}: {1}")]
+    WorkspaceManifestFailed(PathBuf, String),
     #[error("environment variable \"BROWSER\" is required to open docs, but is not set")]
     BrowserEnvVarMissing,
     #[error("environment variable \"BROWSER\" is required to open docs, but is an empty string")]
@@ -122,6 +124,8 @@ pub enum Error {
     GetUnitNotFound(String, Hint),
     #[error("unit \"{0}\" is not a usable design component{1}")]
     GetUnitNotComponent(String, Hint),
+    #[error("failed to load workspace: {0}")]
+    WorkspaceLoadFailed(LastError),
     #[error("failed to load project: {0}")]
     ProjectLoadFailed(LastError),
     #[error("failed to parse project name: {0}")]

@@ -17,7 +17,10 @@
 
 use crate::core::config::General;
 use crate::core::config::{Config, Configs, Locality};
+use crate::core::manifest::FromFile;
+use crate::core::manifest::{PROJECT_MANIFEST_FILE, WORKSPACE_MANIFEST_FILE};
 use crate::core::target::Target;
+use crate::core::workspace::WorkspaceManifest;
 use crate::error::{Error, Hint};
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
@@ -53,6 +56,8 @@ pub struct Context {
     archive_path: PathBuf,
     /// The parent path to the current project `Orbit.toml` manifest file.
     project_path: Option<PathBuf>,
+    /// The parent path to the current workspace `Orbit.toml` manifest file.
+    workspace_path: Option<PathBuf>,
     /// Directory name for the intermediate build processes and outputs.    
     build_dir: String,
     /// Language support mode.
@@ -75,6 +80,7 @@ impl Context {
             cache_path: cache,
             archive_path: downloads,
             project_path: None,
+            workspace_path: None,
             plugins: HashMap::new(),
             all_configs: Configs::new(),
             config: Config::new(),
@@ -315,6 +321,11 @@ impl Context {
         self.project_path.as_ref()
     }
 
+    /// Access the workspace directory detected from the current working directory.
+    pub fn get_workspace_path(&self) -> Option<&path::PathBuf> {
+        self.workspace_path.as_ref()
+    }
+
     /// Access the home path.
     pub fn get_home_path(&self) -> &path::PathBuf {
         &self.home_path
@@ -327,6 +338,27 @@ impl Context {
             Ok(r) => r,
             Err(_) => return Err(Error::FailedToGetCurDir),
         }) {
+            Some(cwd) => {
+                unsafe {
+                    env::set_var(s, &cwd);
+                }
+                Some(cwd)
+            }
+            None => None,
+        };
+        Ok(self)
+    }
+
+    /// Determines if the directory is within a current workspace and sets the proper
+    /// runtime environment variable.
+    pub fn current_workspace_dir(mut self, s: &str) -> Result<Context, Error> {
+        self.workspace_path = match Context::find_workspace_path(
+            match &std::env::current_dir() {
+                Ok(r) => r,
+                Err(_) => return Err(Error::FailedToGetCurDir),
+            },
+            &self.project_path,
+        ) {
             Some(cwd) => {
                 unsafe {
                     env::set_var(s, &cwd);
@@ -355,12 +387,72 @@ impl Context {
         Ok(())
     }
 
+    /// Changes current working directory to the detected workspace path.
+    ///
+    /// This method has no effect if the workspace does not exist.
+    pub fn jump_to_working_workspace(&self) -> () {
+        match self.get_workspace_path() {
+            Some(cwd) => {
+                // set the current working directory to here
+                std::env::set_current_dir(&cwd).expect("could not change directories");
+            }
+            None => (),
+        }
+    }
+
     /// Finds the complete path to the current project's directory.
     ///
     /// This function will recursively backtrack down the current working directory
     /// until finding the first directory with a file named "Orbit.toml".
     pub fn find_project_path(dir: &std::path::PathBuf) -> Option<path::PathBuf> {
-        Self::find_target_path(dir, "Orbit.toml")
+        Self::find_target_path(dir, PROJECT_MANIFEST_FILE)
+    }
+
+    pub fn find_workspace_path(
+        dir: &std::path::PathBuf,
+        project_dir: &Option<std::path::PathBuf>,
+    ) -> Option<path::PathBuf> {
+        let mut cur = dir.clone();
+        // Search for the workspace file.
+        loop {
+            match std::fs::read_dir(&cur) {
+                // the directory was able to be read (it exists)
+                Ok(mut entries) => {
+                    let result = entries.find_map(|p| match p {
+                        Ok(file) => {
+                            if file.file_name() == WORKSPACE_MANIFEST_FILE {
+                                let path = cur.to_path_buf();
+                                if let Ok(ws) = WorkspaceManifest::from_file(
+                                    &path.join(WORKSPACE_MANIFEST_FILE),
+                                ) {
+                                    // Check if we are in no-mans land or the current project is a part of this workspace.
+                                    if project_dir.is_none()
+                                        || ws.has_member(&path, project_dir.as_ref().unwrap())
+                                    {
+                                        Some(path)
+                                    } else {
+                                        None
+                                    }
+                                } else {
+                                    None
+                                }
+                            } else {
+                                None
+                            }
+                        }
+                        _ => None,
+                    });
+                    if let Some(r) = result {
+                        break Some(r);
+                    }
+                }
+                // failed to read the directory
+                Err(_) => {}
+            }
+            if cur.pop() == false {
+                break None;
+            }
+        }
     }
 
     /// Finds the complete path to the current directory that hosts the `target_file`.
@@ -371,14 +463,18 @@ impl Context {
     /// This function has no assumptions on if the directory is readable or not (bypasses read_dir errors).
     pub fn find_target_path(dir: &std::path::PathBuf, target_file: &str) -> Option<path::PathBuf> {
         let mut cur = dir.clone();
-        // search for the manifest file
+        // Search for the manifest file.
         loop {
             match std::fs::read_dir(&cur) {
                 // the directory was able to be read (it exists)
                 Ok(mut entries) => {
                     let result = entries.find_map(|p| match p {
                         Ok(file) => {
-                            if file.file_name() == target_file {
+                            if file.file_name() == target_file
+                                && WorkspaceManifest::can_parse(
+                                    &cur.to_path_buf().join(target_file),
+                                ) == false
+                            {
                                 Some(cur.to_path_buf())
                             } else {
                                 None

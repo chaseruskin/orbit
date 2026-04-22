@@ -278,6 +278,7 @@ type Dependencies = HashMap<ProjectName, Dependency>;
 
 pub const PROJECT_MANIFEST_FILE: &str = "Orbit.toml";
 pub const PROJECT_JSON_FILE: &str = "Orbit.json";
+pub const WORKSPACE_MANIFEST_FILE: &str = "Orbit.toml";
 
 // Files reserved for internal cache use
 pub const ORBIT_SUM_FILE: &str = ".orbit-checksum";
@@ -335,6 +336,15 @@ where
 }
 
 impl Manifest {
+    /// Returns true if the contents at `path` can be parsed into a [Manifest].
+    pub fn can_parse(path: &PathBuf) -> bool {
+        let text = std::fs::read_to_string(&path);
+        if text.is_err() {
+            return false;
+        }
+        Self::from_str(&text.unwrap()).is_ok()
+    }
+
     pub fn from_file(path: &PathBuf, sel_local_deps: bool) -> Result<Self, Fault> {
         // open file
         let contents = std::fs::read_to_string(&path)?;
@@ -601,7 +611,7 @@ fn vec_is_empty<T>(field: &Vec<T>) -> bool {
     field.is_empty()
 }
 
-fn map_is_empty<K, V>(field: &HashMap<K, V>) -> bool {
+pub fn map_is_empty<K, V>(field: &HashMap<K, V>) -> bool {
     field.is_empty()
 }
 

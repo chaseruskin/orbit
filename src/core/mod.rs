@@ -38,3 +38,4 @@ pub mod target;
 pub mod uuid;
 pub mod version;
 pub mod visibility;
+pub mod workspace;

@@ -27,6 +27,7 @@ use crate::core::project::Project;
 use crate::core::swap::StrSwapTable;
 use crate::core::target::Process;
 use crate::core::target::Target;
+use crate::core::workspace::Workspace;
 use crate::error::Error;
 use crate::error::LastError;
 use crate::util::environment::EnvVar;
@@ -110,8 +111,13 @@ impl Subcommand<Context> for Build {
         // coordinate the plan
         let plan = target.coordinate_plan(&self.plan)?;
 
-        // verify running from an ip directory and enter ip's root directory
-        c.jump_to_working_project()?;
+        if c.get_workspace_path().is_some() {
+            let _ = Workspace::load(c.get_workspace_path().unwrap().to_path_buf())?;
+            c.jump_to_working_workspace();
+        } else {
+            // verify running from a project's directory and enter the project's root directory.
+            c.jump_to_working_project()?;
+        }
 
         let current_project = Project::load(
             c.get_project_path().unwrap().to_path_buf(),

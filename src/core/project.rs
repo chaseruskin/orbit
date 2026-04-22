@@ -273,7 +273,7 @@ impl Project {
         Ok(relative_ip)
     }
 
-    /// Load an [Ip] instance from the `root` path.
+    /// Load a [Project] instance from the `root` path.
     ///
     /// If `is_working_prj` is true, then it verifies there are no files created
     /// by the user that are reserved for orbit's internal usage.

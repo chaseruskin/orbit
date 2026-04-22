@@ -61,6 +61,11 @@ impl Subcommand<Context> for Env {
                     .to_str()
                     .unwrap(),
             ),
+            EnvVar::new().key(environment::ORBIT_WORKSPACE_DIR).value(
+                PathBuf::standardize(c.get_workspace_path().unwrap_or(&PathBuf::new()))
+                    .to_str()
+                    .unwrap(),
+            ),
             EnvVar::new()
                 .key(environment::NO_COLOR)
                 .value(&std::env::var(environment::NO_COLOR).unwrap_or(String::new())),

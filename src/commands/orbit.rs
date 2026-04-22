@@ -145,6 +145,7 @@ impl Command for Orbit {
                 .cache()?
                 .archive()?
                 .current_project_dir(environment::ORBIT_MANIFEST_DIR)? // must come before .settings() call
+                .current_workspace_dir(environment::ORBIT_WORKSPACE_DIR)? // must come after .current_project_dir() call
                 .settings(config::CONFIG_FILE)?
                 .build_dir(environment::ORBIT_TARGET_DIR)?;
             // update channels
@@ -161,6 +162,7 @@ impl Command for Orbit {
                 .cache()?
                 .archive()?
                 .current_project_dir(environment::ORBIT_MANIFEST_DIR)? // must come before .settings() call
+                .current_workspace_dir(environment::ORBIT_WORKSPACE_DIR)? // must come after .current_project_dir() call
                 .settings(config::CONFIG_FILE)?
                 .build_dir(environment::ORBIT_TARGET_DIR)?;
             Channel::sync(&context)?;

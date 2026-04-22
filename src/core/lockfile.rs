@@ -35,6 +35,7 @@ use std::fmt::Display;
 use std::{path::PathBuf, str::FromStr};
 
 pub const PROJECT_LOCK_FILE: &str = "Orbit.lock";
+pub const WORKSPACE_LOCK_FILE: &str = "Orbit.lock";
 
 const LOCK_VERSION: usize = 1;
 const LOCK_COMMENT: &str =

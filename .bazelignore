@@ -1,0 +1,6 @@
+bazel-bin
+bazel-orbit
+bazel-out
+bazel-testlogs
+target
+examples

@@ -1,0 +1,47 @@
+load("@rules_systemrdl//systemrdl:defs.bzl", "system_rdl_library", "verilog_system_rdl_library")
+
+# Naming convention (all three must agree for PeakRDL + the toolchain to
+# line up):
+#   * addrmap inside uart_regs.rdl              -> "uart_regs"
+#   * system_rdl_library target name            -> "uart_regs"
+#   * Verilog module / package PeakRDL emits    -> uart_regs / uart_regs_pkg
+#
+# PeakRDL's regblock exporter derives output filenames from the addrmap
+# name (uart_regs.sv, uart_regs_pkg.sv), and rules_systemrdl's toolchain
+# expects those filenames to match the system_rdl_library target name.
+#
+# gazelle_orbit recognizes `verilog_system_rdl_library` directly (it's in
+# the plugin's read-only library kinds), so downstream HDL that does
+# `import uart_regs_pkg::*;` or `uart_regs u_inst(...)` resolves to
+# this rule without a wrapping verilog_library.
+#
+# Building requires a rules_systemrdl toolchain (PeakRDL + Python). See
+# https://hw-bzl.github.io/rules_systemrdl/.
+
+system_rdl_library(
+    name = "uart_regs_rdl",
+    srcs = ["uart_regs.rdl"],
+    exporter_args = {
+        "regblock": [
+            "--cpuif",
+            "axi4-lite-flat",
+        ],
+    },
+    output_name = "uart_regs",
+)
+
+verilog_system_rdl_library(
+    name = "uart_regs",
+    lib = ":uart_regs_rdl",
+    tags = [
+        # Tag-based unit declarations (one option; see the gazelle_orbit
+        # README for the canonical `# gazelle:resolve orbit ...` form,
+        # which is more idiomatic but lives away from the rule). Tags
+        # keep the data co-located with the rule it describes, which is
+        # convenient when a single rule provides several units.
+        "orbit_library=uart_regs",
+        "orbit_unit=uart_regs",
+        "orbit_unit=uart_regs_pkg",
+    ],
+    visibility = ["//visibility:public"],
+)

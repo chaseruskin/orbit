@@ -1,0 +1,21 @@
+load("@rules_vhdl//vhdl:defs.bzl", "vhdl_library")
+
+vhdl_library(
+    name = "nand_gate",
+    srcs = ["nand_gate.vhd"],
+    library = "gates",
+    tags = ["gazelle_orbit"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//primitives:and_gate",
+        "//primitives:inverter",
+    ],
+)
+
+vhdl_library(
+    name = "or_gate",
+    srcs = ["or_gate.vhd"],
+    library = "gates",
+    tags = ["gazelle_orbit"],
+    visibility = ["//visibility:public"],
+)

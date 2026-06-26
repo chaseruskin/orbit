@@ -1,0 +1,52 @@
+load("@orbit_crates//:defs.bzl", "aliases", "all_crate_deps")
+load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_library")
+
+exports_files([
+    "Cargo.toml",
+    "Cargo.lock",
+    "LICENSE",
+])
+
+rust_library(
+    name = "orbit",
+    srcs = glob(
+        ["src/**/*.rs"],
+        exclude = [
+            "src/main.rs",
+            "src/bin/**",
+        ],
+    ),
+    aliases = aliases(),
+    crate_name = "orbit",
+    edition = "2024",
+    proc_macro_deps = all_crate_deps(proc_macro = True),
+    rustc_env = {
+        "CARGO_PKG_REPOSITORY": "https://github.com/chaseruskin/orbit",
+        "CARGO_PKG_VERSION": "0.29.2",
+    },
+    deps = all_crate_deps(normal = True),
+)
+
+rust_binary(
+    name = "orbit_cli",
+    srcs = ["src/main.rs"],
+    edition = "2024",
+    visibility = ["//visibility:public"],
+    deps = [":orbit"] + all_crate_deps(normal = True),
+)
+
+rust_binary(
+    name = "install",
+    srcs = ["src/bin/install.rs"],
+    edition = "2024",
+    deps = [":orbit"] + all_crate_deps(normal = True),
+)
+
+# Convenience alias so external consumers can refer to the gazelle binary as
+# just `@gazelle_orbit` (Bazel resolves a bare module ref to a target whose
+# name matches the package — here, the root package's `gazelle_orbit` target).
+alias(
+    name = "gazelle_orbit",
+    actual = "//gazelle:gazelle_orbit",
+    visibility = ["//visibility:public"],
+)

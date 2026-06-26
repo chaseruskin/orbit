@@ -1,0 +1,55 @@
+###############################################################################
+## Bazel Configuration Flags
+##
+## `.bazelrc` is a Bazel configuration file.
+## https://bazel.build/docs/best-practices#bazelrc-file
+###############################################################################
+
+# Skip building runfiles links for faster builds.
+build --nobuild_runfile_links
+
+# Disable network access in sandboxes by default.
+build --sandbox_default_allow_network=false
+
+###############################################################################
+## Incompatibility flags
+###############################################################################
+
+# https://github.com/bazelbuild/bazel/issues/8195
+build --incompatible_disallow_empty_glob=true
+
+# https://github.com/bazelbuild/bazel/issues/12821
+build --nolegacy_external_runfiles
+
+# https://github.com/bazelbuild/bazel/issues/23043.
+build --incompatible_autoload_externally=
+
+###############################################################################
+## Bzlmod
+###############################################################################
+
+# Disable the bzlmod lockfile, so we don't accidentally commit MODULE.bazel.lock
+common --lockfile_mode=off
+
+###############################################################################
+## BCR curl SSL backend
+##
+## The BCR `curl` module defaults to BoringSSL, which is C++ and pulls in
+## libstdc++ symbols. Some toolchains (notably the bootlin cross-compilers
+## consumers may use under RBE) drop the C++ runtime in the wrong link
+## order, producing undefined references to `__gxx_personality_v0`,
+## `operator delete`, etc. We already ship OpenSSL via the `openssl`
+## bazel_dep — telling curl to use it avoids the C++ runtime entirely
+## (OpenSSL is pure C). Consumers inheriting our deps need this same flag
+## in their own bazelrc.
+common --@curl//:ssl_lib=openssl
+
+###############################################################################
+## Custom user flags
+##
+## This should always be the last thing in the `.bazelrc` file to ensure
+## consistent behavior when setting flags in that file as `.bazelrc` files are
+## evaluated top to bottom.
+###############################################################################
+
+try-import %workspace%/user.bazelrc

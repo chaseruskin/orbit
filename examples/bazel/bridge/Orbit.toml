@@ -1,0 +1,7 @@
+[project]
+name = "bridge"
+version = "0.1.0"
+uuid = "8r5g2zk1xq4hpn7m3wjvabcde"
+
+[dependencies]
+primitives = { version = "0.1.0", path = "../primitives" }

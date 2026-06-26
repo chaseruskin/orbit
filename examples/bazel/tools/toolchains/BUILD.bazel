@@ -1,0 +1,25 @@
+load("@rules_systemrdl//systemrdl:system_rdl_toolchain.bzl", "system_rdl_toolchain")
+load("@rules_venv//python:py_library.bzl", "py_library")
+
+PLUGINS = [
+]
+
+py_library(
+    name = "peakrdl",
+    deps = [
+        "@pip_deps//peakrdl",
+    ] + PLUGINS,
+)
+
+system_rdl_toolchain(
+    name = "system_rdl_toolchain",
+    peakrdl = ":peakrdl",
+    peakrdl_config = "//:peakrdl.toml",
+)
+
+toolchain(
+    name = "system_rdl",
+    toolchain = ":system_rdl_toolchain",
+    toolchain_type = "@rules_systemrdl//systemrdl:toolchain_type",
+    visibility = ["//visibility:public"],
+)

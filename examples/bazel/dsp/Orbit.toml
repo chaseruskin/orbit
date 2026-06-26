@@ -1,0 +1,7 @@
+[project]
+name = "dsp"
+version = "0.1.0"
+uuid = "023lu4yd3bjhs9s1zcttv27hv"
+
+[dependencies]
+vutils = { version = "0.1.0", path = "../vutils" }

@@ -1,0 +1,43 @@
+load("@gazelle//:def.bzl", "gazelle_binary")
+load("@rules_go//go:def.bzl", "go_library")
+
+# The gazelle_orbit language plugin.
+#
+# The orbit_cli Rust binary ships with the plugin as a runfile, and its
+# rlocationpath is embedded into the Go code via x_defs. The plugin resolves
+# the path through bazel's runfiles library at runtime, so end users don't
+# need to pass --orbit_bin or wire any data deps themselves.
+go_library(
+    name = "orbit",
+    srcs = [
+        "config.go",
+        "generate.go",
+        "lang.go",
+        "orbit.go",
+        "resolve.go",
+    ],
+    data = ["//:orbit_cli"],
+    importpath = "github.com/chaseruskin/orbit/gazelle",
+    visibility = ["//visibility:public"],
+    x_defs = {
+        "orbitBinRlocation": "$(rlocationpath //:orbit_cli)",
+    },
+    deps = [
+        "@gazelle//config",
+        "@gazelle//label",
+        "@gazelle//language",
+        "@gazelle//repo",
+        "@gazelle//resolve",
+        "@gazelle//rule",
+        "@rules_go//go/runfiles",
+    ],
+)
+
+# gazelle_binary bundles our orbit language plugin into a Gazelle executable.
+# This is the only target end users need to wire into their `gazelle(...)`
+# rules — the orbit_cli binary is carried as a runfile of the plugin itself.
+gazelle_binary(
+    name = "gazelle_orbit",
+    languages = [":orbit"],
+    visibility = ["//visibility:public"],
+)

@@ -1,0 +1,21 @@
+load("@rules_verilog//verilog:defs.bzl", "verilog_library")
+
+verilog_library(
+    name = "dsp_top",
+    srcs = ["dsp_top.sv"],
+    tags = ["gazelle_orbit"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":multiplier",
+        "//uart_regs",
+        "//vutils:counter",
+    ],
+)
+
+verilog_library(
+    name = "multiplier",
+    srcs = ["multiplier.v"],
+    tags = ["gazelle_orbit"],
+    visibility = ["//visibility:public"],
+    deps = ["//vutils:reg_n"],
+)

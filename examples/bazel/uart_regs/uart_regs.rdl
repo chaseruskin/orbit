@@ -1,0 +1,10 @@
+// A minimal SystemRDL register block: a UART control/status pair.
+// The addrmap name (`uart_regs`) is what PeakRDL uses to derive output
+// filenames (uart_regs.sv, uart_regs_pkg.sv) and the top-level Verilog
+// module name. The matching system_rdl_library target name + the
+// orbit_unit tags on the verilog_library wrapper keep all of this aligned
+// for both Bazel and gazelle_orbit.
+addrmap uart_regs {
+    reg { field { sw=rw; hw=r; } enable; } ctrl;
+    reg { field { sw=r;  hw=w; } status; } stat;
+};

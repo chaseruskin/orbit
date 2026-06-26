@@ -1,0 +1,23 @@
+load("@rules_verilog//verilog:defs.bzl", "verilog_library")
+
+verilog_library(
+    name = "counter",
+    srcs = ["counter.v"],
+    tags = ["gazelle_orbit"],
+    visibility = ["//visibility:public"],
+    deps = [":reg_n"],
+)
+
+verilog_library(
+    name = "mux2",
+    srcs = ["mux2.v"],
+    tags = ["gazelle_orbit"],
+    visibility = ["//visibility:public"],
+)
+
+verilog_library(
+    name = "reg_n",
+    srcs = ["reg.v"],
+    tags = ["gazelle_orbit"],
+    visibility = ["//visibility:public"],
+)

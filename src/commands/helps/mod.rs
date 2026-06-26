@@ -15,6 +15,7 @@
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
+pub mod analyze;
 pub mod build;
 pub mod clean;
 pub mod config;

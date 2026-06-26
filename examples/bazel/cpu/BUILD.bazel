@@ -1,0 +1,21 @@
+load("@rules_verilog//verilog:defs.bzl", "verilog_library")
+
+verilog_library(
+    name = "alu",
+    srcs = ["alu.sv"],
+    tags = ["gazelle_orbit"],
+    visibility = ["//visibility:public"],
+    deps = ["//vutils:reg_n"],
+)
+
+verilog_library(
+    name = "cpu_top",
+    srcs = ["cpu_top.sv"],
+    tags = ["gazelle_orbit"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":alu",
+        "//vutils:counter",
+        "//vutils:mux2",
+    ],
+)

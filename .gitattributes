@@ -1,0 +1,3 @@
+# Generated lockfiles — collapse in GitHub diffs and exclude from
+# language statistics. Update via `bazel mod tidy` / `bazel sync` etc.
+cargo-bazel-lock.json linguist-generated=true

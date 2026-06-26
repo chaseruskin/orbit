@@ -1,0 +1,10 @@
+load("@gazelle_orbit//hdl:defs.bzl", "hdl_library")
+
+hdl_library(
+    name = "and_wrapper",
+    srcs = ["and_wrapper.sv"],
+    library = "bridge",
+    tags = ["gazelle_orbit"],
+    visibility = ["//visibility:public"],
+    deps = ["//primitives:and_gate"],
+)

@@ -1,0 +1,7 @@
+[project]
+name = "gates"
+version = "0.1.0"
+uuid = "db6iy7tvuiidun7wmkmil6xyy"
+
+[dependencies]
+primitives = { version = "0.1.0", path = "../primitives" }

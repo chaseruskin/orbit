@@ -34,3 +34,7 @@ mansync/
 examples/large
 
 examples/*/target
+
+bazel-*
+user.bazelrc
+MODULE.bazel.lock

@@ -1,0 +1,11 @@
+load("@gazelle//:def.bzl", "gazelle")
+
+exports_files(["peakrdl.toml"])
+
+# Run `bazel run :gazelle` to regenerate the BUILD.bazel files for the HDL
+# packages in this workspace. The gazelle binary is `@gazelle_orbit//gazelle:gazelle_orbit`,
+# which has our orbit language plugin baked in.
+gazelle(
+    name = "gazelle",
+    gazelle = "@gazelle_orbit",
+)

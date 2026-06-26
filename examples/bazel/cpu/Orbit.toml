@@ -1,0 +1,7 @@
+[project]
+name = "cpu"
+version = "0.1.0"
+uuid = "6oo5274hmpbp2fnspx8dhmwtd"
+
+[dependencies]
+vutils = { version = "0.1.0", path = "../vutils" }

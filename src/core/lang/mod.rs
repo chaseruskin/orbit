@@ -66,7 +66,7 @@ pub fn read_to_string(source_file: &str) -> Result<String, CodeFault> {
     let contents = match std::fs::read_to_string(&source_file) {
         Ok(dump) => dump,
         Err(e) => {
-            // try to return a string from utf-16
+            // Try to return a string from UTF-16.
             if e.kind() == std::io::ErrorKind::InvalidData {
                 String::from_utf8_lossy(&match std::fs::read(&source_file) {
                     Ok(r) => r,

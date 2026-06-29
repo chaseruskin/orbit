@@ -26,6 +26,15 @@ jobs:
         pattern: orbit-${{ inputs.version }}-*
         merge-multiple: true
 
+    - name: Create source archive
+      run: |
+        git archive \
+          --format=tar.gz \
+          --prefix=orbit-${{ inputs.version }}/ \
+          -o ./orbit-${{ inputs.version }}-source.tar.gz \
+          HEAD
+        python ./tools/sum.py "./orbit-${{ inputs.version }}-source.tar.gz" >> ./SHA256SUMS
+
     - name: Display filesystem contents
       run: ls -R
 

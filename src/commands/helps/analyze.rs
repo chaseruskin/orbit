@@ -15,32 +15,13 @@
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-// entry program
-pub mod orbit;
+pub const HELP: &str = r#"Analyze HDL design units and their dependencies.
 
-// commands
-mod analyze;
-mod build;
-mod clean;
-mod config;
-mod doc;
-mod download;
-mod env;
-mod get;
-mod help;
-mod info;
-mod init;
-mod install;
-mod new;
-pub mod plan;
-mod publish;
-mod read;
-mod remove;
-mod search;
-mod test;
-mod tree;
+Usage:
+    orbit analyze [options]
 
-// informational content for help about commands
-mod helps;
-mod lock;
-mod manuals;
+Options:
+    --json                export the analysis as valid json
+    --all                 include units from all dependencies, not just the local project
+
+Use 'orbit help analyze' to read more about the command."#;

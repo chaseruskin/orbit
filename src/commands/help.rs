@@ -51,6 +51,7 @@ enum Topic {
     Get,
     Tree,
     Lock,
+    Analyze,
     Build,
     Test,
     Publish,
@@ -66,8 +67,8 @@ enum Topic {
 impl Topic {
     fn list_all() -> String {
         let list = [
-            "new", "init", "info", "read", "get", "tree", "lock", "test", "build", "doc",
-            "publish", "search", "install", "env", "config", "remove", "clean",
+            "new", "init", "info", "read", "get", "tree", "lock", "analyze", "test", "build",
+            "doc", "publish", "search", "install", "env", "config", "remove", "clean",
         ];
         list.into_iter().fold(String::new(), |mut acc, x| {
             acc.push_str(&format!(
@@ -91,6 +92,7 @@ impl std::str::FromStr for Topic {
             "get" => Self::Get,
             "tree" => Self::Tree,
             "lock" => Self::Lock,
+            "analyze" => Self::Analyze,
             "test" => Self::Test,
             "build" => Self::Build,
             "doc" => Self::Doc,
@@ -118,6 +120,7 @@ impl Topic {
             Get => manuals::get::MANUAL,
             Tree => manuals::tree::MANUAL,
             Lock => manuals::lock::MANUAL,
+            Analyze => manuals::analyze::MANUAL,
             Test => manuals::test::MANUAL,
             Build => manuals::build::MANUAL,
             Doc => manuals::doc::MANUAL,

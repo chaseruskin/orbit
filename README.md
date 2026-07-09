@@ -213,6 +213,7 @@ Commands:
     get                   display integration code for a unit
     tree                  show a dependency graph
     lock                  save the world state of a project
+    analyze               print the blueprint
     test, t               run a test
     build, b              plan and execute a target
     clean                 remove the target directory

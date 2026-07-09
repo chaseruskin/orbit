@@ -50,6 +50,21 @@ pub struct Target {
     test: Option<bool>,
 }
 
+impl Default for Target {
+    fn default() -> Self {
+        Self {
+            name: String::default(),
+            description: None,
+            root: None,
+            command: Command::new(),
+            fileset: None,
+            plans: None,
+            build: None,
+            test: None,
+        }
+    }
+}
+
 impl Target {
     pub fn doc(root: PathBuf, browser: String) -> Self {
         Self {

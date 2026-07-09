@@ -254,26 +254,15 @@ impl Project {
     /// Loads a project from the `root` path, which is read from a manifest file located
     /// at `base_path`.
     pub fn relate(root: PathBuf, base_path: &PathBuf) -> Result<Self, Fault> {
-        // resolve the path if it is relative
+        // Resolve the path if it is relative.
         let resolved_root = filesystem::resolve_rel_path2(&base_path, &root);
         let mut relative_ip = Project::load(resolved_root, false, true, false)?;
         relative_ip.mapping = Mapping::Relative(root);
-        // verify this ip has a lockfile
-        let lock_path = relative_ip.get_root().join(PROJECT_LOCK_FILE);
-        if lock_path.exists() == false || lock_path.is_file() == false {
-            return Err(Error::LockfileLoadFailed(LastError(
-                "a lockfile does not exist".to_string(),
-            )))?;
-        }
-        match LockFile::from_file(&lock_path) {
-            Ok(_) => (),
-            Err(e) => return Err(Error::LockfileLoadFailed(LastError(e.to_string())))?,
-        }
         // check to make sure we are not the same package
         Ok(relative_ip)
     }
 
-    /// Load an [Ip] instance from the `root` path.
+    /// Load a [Project] instance from the `root` path.
     ///
     /// If `is_working_prj` is true, then it verifies there are no files created
     /// by the user that are reserved for orbit's internal usage.

@@ -360,12 +360,12 @@ impl Manifest {
         let local_name = man.get_project().get_name().clone();
         let local_version = man.get_project().get_version().clone();
 
-        // verify contents of manifest
+        // Verify contents of manifest.
         for (name, dep) in man.get_deps_list_mut(true, false) {
             if dep.is_relative_only() == true && sel_local_deps == false {
                 panic!("an internal error has occurred! (dependency with multiple locations)")
             }
-            // Resolve relative path dependencies (only if is working project).
+            // Resolve relative path dependencies (only if it is working project).
             if dep.is_relative() == true && sel_local_deps == true {
                 if dep.as_project().is_none() {
                     let project = Project::relate(

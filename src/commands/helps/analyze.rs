@@ -15,32 +15,15 @@
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-// entry program
-pub mod orbit;
+// Automatically generated from the mansync.py script.
+pub const HELP: &str = r#"Print a blueprint.
 
-// commands
-mod analyze;
-mod build;
-mod clean;
-mod config;
-mod doc;
-mod download;
-mod env;
-mod get;
-mod help;
-mod info;
-mod init;
-mod install;
-mod new;
-pub mod plan;
-mod publish;
-mod read;
-mod remove;
-mod search;
-mod test;
-mod tree;
+Usage:
+    orbit analyze [options]
 
-// informational content for help about commands
-mod helps;
-mod lock;
-mod manuals;
+Options:
+    --local               filter entries that belong to the working project
+    --force               force the blueprint to be displayed
+    --plan <format>       set the blueprint file format
+
+Use 'orbit help analyze' to read more about the command."#;

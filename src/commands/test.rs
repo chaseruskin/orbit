@@ -180,7 +180,7 @@ impl Subcommand<Context> for Test {
         // plan the target
         Plan::run(
             &current_project,
-            target_dir,
+            Some(target_dir),
             target,
             catalog,
             self.force,
@@ -191,6 +191,7 @@ impl Subcommand<Context> for Test {
             true,
             is_all,
             auto_discover,
+            false,
             envs,
             c.are_units_private_by_default(),
         )?;

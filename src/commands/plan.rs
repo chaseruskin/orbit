@@ -75,7 +75,7 @@ impl Plan {
     /// If a blueprint was created, it will return the file name for that blueprint.
     pub fn run(
         working_project: &Project,
-        target_dir: &str,
+        target_dir: Option<&str>,
         target: &Target,
         catalog: Catalog,
         force: bool,
@@ -86,9 +86,13 @@ impl Plan {
         is_test: bool,
         is_all: bool,
         auto_discover: bool,
+        filter_by_local: bool,
         envs: Environment,
         priv_by_def: bool,
     ) -> Result<Option<String>, Fault> {
+        let print_blueprint = target_dir.is_none();
+        let target_dir = target_dir.unwrap_or_default();
+
         // create the output path to know where to begin storing files
         let working_ip_path = working_project.get_root().clone();
         let target_path = working_ip_path.join(target_dir);
@@ -111,25 +115,33 @@ impl Plan {
                     );
                     blueprint.add(Entry::Hdl(&ip_file_node));
 
-                    let blueprint_name = blueprint.get_filename();
-                    let blueprint_path = Self::create_outputs(
-                        &blueprint,
-                        envs,
-                        &target_path,
-                        &String::new(),
-                        &String::new(),
-                        &String::new(),
-                        &String::new(),
-                        target,
-                        is_test,
-                        is_all,
-                    )?;
-                    // create a blueprint file
-                    crate::warn!(
-                        "erroneous blueprint created at {:?}",
-                        filesystem::into_std_str(blueprint_path)
-                    );
-                    return Ok(Some(blueprint_name));
+                    let blueprint_word = match print_blueprint {
+                        true => {
+                            crate::warn!("erroneous blueprint reported");
+                            blueprint.to_string()
+                        }
+                        false => {
+                            blueprint.get_filename();
+                            let blueprint_path = Self::create_outputs(
+                                &blueprint,
+                                envs,
+                                &target_path,
+                                &String::new(),
+                                &String::new(),
+                                &String::new(),
+                                &String::new(),
+                                target,
+                                is_test,
+                                is_all,
+                            )?;
+                            crate::warn!(
+                                "erroneous blueprint created at {:?}",
+                                filesystem::into_std_str(blueprint_path)
+                            );
+                            blueprint.get_filename()
+                        }
+                    };
+                    return Ok(Some(blueprint_word));
                 } else {
                     return match e.is_source_err() {
                         true => Err(Error::SourceCodeInvalidSyntax(
@@ -291,11 +303,20 @@ impl Plan {
 
         // println!("{:?}", min_order);
 
-        // generate the file order while merging dependencies for common file path names together
+        // Generate the file order while merging dependencies for common file path names together.
         let file_order = Self::determine_file_order(&global_graph, min_order);
 
-        // remove duplicate files from list while perserving order
+        // Remove duplicate files from list while perserving order.
         let file_order = Self::remove_multi_occurences(&file_order);
+
+        // Remove entries that are not local to the project when filter is enabled.
+        let file_order = match filter_by_local {
+            true => file_order
+                .into_iter()
+                .filter(|pfn| pfn.get_project() == working_project)
+                .collect(),
+            false => file_order,
+        };
 
         // grab the names as strings
         let top_name = match top {
@@ -376,7 +397,7 @@ impl Plan {
         // print information (maybe also print the target saved to .env too?)
         match is_all {
             true => {
-                // Do nothing when using all source files
+                // Do nothing when using all source files.
             }
             false => {
                 match top_name.is_empty() {
@@ -455,7 +476,7 @@ impl Plan {
                 .unwrap_or(false);
 
             // Look in all projects for the recursive fileset patterns.
-            if has_recursive_fset == true {
+            if has_recursive_fset == true && filter_by_local == false {
                 let mut topo_order = prj_graph.get_graph().topological_sort();
                 // Remove the last project (the "working project").
                 topo_order.pop().unwrap();
@@ -480,7 +501,7 @@ impl Plan {
                     )?;
                 }
             }
-            // search the working project
+            // Search the working project for the filesets.
             let current_files: Vec<String> = working_project.gather_current_files();
             Self::add_files_from_filesets_to_blueprint(
                 &mut blueprint,
@@ -499,26 +520,29 @@ impl Plan {
             blueprint.add(Entry::Hdl(ip_file_node));
         }
 
-        let blueprint_name = blueprint.get_filename();
-
-        let blueprint_path = Self::create_outputs(
-            &blueprint,
-            envs,
-            &target_path,
-            &top_name,
-            &top_file,
-            &bench_name,
-            &bench_file,
-            target,
-            is_test,
-            is_all,
-        )?;
-        // create a blueprint file
-        crate::info!(
-            "blueprint created at: {:?}",
-            filesystem::into_std_str(blueprint_path)
-        );
-        Ok(Some(blueprint_name))
+        let blueprint_word = match print_blueprint {
+            true => blueprint.to_string(),
+            false => {
+                let blueprint_path = Self::create_outputs(
+                    &blueprint,
+                    envs,
+                    &target_path,
+                    &top_name,
+                    &top_file,
+                    &bench_name,
+                    &bench_file,
+                    target,
+                    is_test,
+                    is_all,
+                )?;
+                crate::info!(
+                    "blueprint created at: {:?}",
+                    filesystem::into_std_str(blueprint_path)
+                );
+                blueprint.get_filename()
+            }
+        };
+        Ok(Some(blueprint_word))
     }
 
     /// Reads through all of the filesets and properly adds any files found in the `current_files` to the `blueprint`.

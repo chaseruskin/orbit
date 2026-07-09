@@ -180,22 +180,32 @@ impl<'a, 'b> Blueprint<'a, 'b> {
     pub fn write(&self, output_path: &PathBuf) -> Result<(PathBuf, usize), Error> {
         let blueprint_path = output_path.join(self.get_filename());
         let mut fd = File::create(&blueprint_path).expect("could not create blueprint file");
-        // write the data
-        let data = match &self.scheme {
-            Scheme::Tsv => self.steps.iter().fold(String::new(), |mut acc, i| {
-                acc.push_str(i.to_string(&self.scheme).as_ref());
-                acc.push('\n');
-                acc
-            }),
-            Scheme::Json => {
-                let entries: Vec<JsonEntry> =
-                    self.steps.iter().map(|m| m.to_json_entry()).collect();
-                // add a new line because `to_string_pretty` forgets to :)
-                serde_json::to_string_pretty(&entries).unwrap() + "\n"
-            }
-        };
+        // write the data.
+        let data = self.to_string();
         fd.write_all(data.as_bytes())
             .expect("failed to write data to blueprint");
         Ok((blueprint_path, self.steps.len()))
+    }
+}
+
+impl<'a, 'b> Display for Blueprint<'a, 'b> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match &self.scheme {
+                Scheme::Tsv => self.steps.iter().fold(String::new(), |mut acc, i| {
+                    acc.push_str(i.to_string(&self.scheme).as_ref());
+                    acc.push('\n');
+                    acc
+                }),
+                Scheme::Json => {
+                    let entries: Vec<JsonEntry> =
+                        self.steps.iter().map(|m| m.to_json_entry()).collect();
+                    // add a new line because `to_string_pretty` forgets to :)
+                    serde_json::to_string_pretty(&entries).unwrap() + "\n"
+                }
+            }
+        )
     }
 }

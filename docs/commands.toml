@@ -327,6 +327,40 @@ orbit lock
 orbit lock --force
 """
 
+# ------------------------------------------------------------------------------     
+# analyze    
+# ------------------------------------------------------------------------------
+[analyze]
+name = "analyze"
+summary = "print a blueprint"
+synopsis = "orbit analyze [options]"
+description = """
+Prints the blueprint to stdout.
+
+This command performs the planning stage of the build process and displays
+the resulting blueprint contents to stdout. Entries in the blueprint are
+guaranteed to be in a deterministic order.
+
+If the `--plan` option is omitted, then the default plan is used (tsv).
+
+If `--local` is used, then only the entries for source files belonging to
+the current project are included in the final blueprint. If the blueprint
+includes dependency information from a different project, the dependency 
+information is still included for that entry.
+
+If `--force` is used, then a blueprint will be displayed (albeit possibly
+incomplete) regardless if there are HDL parsing or analysis errors.
+"""
+
+options."--local" = "Filter entries that belong to the working project"
+options."--force" = "Force the blueprint to be displayed"
+options."--plan <format>" = "Set the blueprint file format"
+
+examples = """
+orbit analyze --plan json --local
+"""
+
+
 # ------------------------------------------------------------------------------
 # test      
 # ------------------------------------------------------------------------------

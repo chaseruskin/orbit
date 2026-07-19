@@ -41,6 +41,7 @@ use serde_derive::Serialize;
 use std::collections::HashMap;
 use std::fmt::Display;
 use std::hash::Hash;
+use std::path::Path;
 use std::path::PathBuf;
 use std::str::FromStr;
 use sv::symbols::SystemVerilogSymbol;
@@ -62,23 +63,55 @@ use super::visibility::{VipList, Visibility};
 /// Schema version for `orbit get` JSON data
 pub const SCHEMA_VERSION: u32 = 1;
 
-pub fn read_to_string(source_file: &str) -> Result<String, CodeFault> {
-    let contents = match std::fs::read_to_string(&source_file) {
-        Ok(dump) => dump,
-        Err(e) => {
-            // Try to return a string from UTF-16.
-            if e.kind() == std::io::ErrorKind::InvalidData {
-                String::from_utf8_lossy(&match std::fs::read(&source_file) {
-                    Ok(r) => r,
-                    Err(e) => return Err(CodeFault(Some(source_file.to_string()), Box::new(e)))?,
-                })
-                .into_owned()
-            } else {
-                return Err(CodeFault(Some(source_file.to_string()), Box::new(e)))?;
-            }
-        }
-    };
-    Ok(contents)
+/// Reads source as UTF-8, falling back to ISO-8859-1 when UTF-8 validation fails.
+pub fn read_to_string<P: AsRef<Path>>(source_file: P) -> Result<String, CodeFault> {
+    let source_file = source_file.as_ref();
+    let bytes = std::fs::read(source_file).map_err(|e| {
+        CodeFault(
+            Some(source_file.to_string_lossy().into_owned()),
+            Box::new(e),
+        )
+    })?;
+
+    Ok(match String::from_utf8(bytes) {
+        Ok(contents) => contents,
+        Err(e) => e.into_bytes().into_iter().map(char::from).collect(),
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::read_to_string;
+    use std::io::Write;
+
+    #[test]
+    fn reads_utf8_source_without_changing_characters() {
+        let mut source = tempfile::NamedTempFile::new().unwrap();
+        source
+            .write_all("-- UTF-8: ² ä 日本語\n".as_bytes())
+            .unwrap();
+
+        assert_eq!(
+            read_to_string(source.path()).unwrap(),
+            "-- UTF-8: ² ä 日本語\n"
+        );
+    }
+
+    #[test]
+    fn reads_iso_8859_1_source_without_replacement_characters() {
+        let mut source = tempfile::NamedTempFile::new().unwrap();
+        source
+            .write_all(b"-- ISO-8859-1: \xb2 \xe4\nentity latin1 is\nend entity;\n")
+            .unwrap();
+
+        let contents = read_to_string(source.path()).unwrap();
+
+        assert_eq!(
+            contents,
+            "-- ISO-8859-1: ² ä\nentity latin1 is\nend entity;\n"
+        );
+        assert!(!contents.contains('\u{fffd}'));
+    }
 }
 
 #[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]

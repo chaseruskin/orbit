@@ -25,6 +25,7 @@ use super::get::GetError;
 use crate::commands::helps::read;
 use crate::core::catalog::Catalog;
 use crate::core::context::Context;
+use crate::core::lang;
 use crate::core::lang::Lang;
 use crate::core::lang::LangIdentifier;
 use crate::core::lang::lexer::Position;
@@ -44,8 +45,6 @@ use crate::util::anyerror::Fault;
 use crate::util::filesystem::LockZone;
 use crate::util::filesystem::PRJ_CATALOG_EX_LOCK_NAME;
 use crate::util::sha256;
-use std::fs;
-
 use cliproc::{Arg, Cli, Help, Subcommand};
 use cliproc::{cli, proc, stage::*};
 
@@ -169,7 +168,7 @@ impl Read {
         let print_to_console = dest.is_none();
 
         // access the string contents
-        let contents = fs::read_to_string(&path)?;
+        let contents = lang::read_to_string(&path)?;
 
         let (start, end) = match lang {
             Lang::Vhdl => self.read_vhdl(&contents),

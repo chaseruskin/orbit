@@ -18,8 +18,8 @@
 
         <link rel="shortcut icon" href="../favicon-15e1d472.png">
         <link rel="stylesheet" href="../css/variables-8adf115d.css">
-        <link rel="stylesheet" href="../css/general-0392ca55.css">
-        <link rel="stylesheet" href="../css/chrome-fc474251.css">
+        <link rel="stylesheet" href="../css/general-e96d0476.css">
+        <link rel="stylesheet" href="../css/chrome-d279d366.css">
         <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
 
         <!-- Fonts -->
@@ -38,7 +38,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-32a34ee7.js";
+            window.path_to_searchindex_js = "../searchindex-97abda36.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-90d3604d.js"></script>
@@ -183,7 +183,7 @@
                         <h1 id="extensible-builds"><a class="header" href="#extensible-builds">Extensible Builds</a></h1>
 <p>Orbit is an extensible build system for HDLs. Orbit separates the build process into two stages: planning and execution. When the build process happens, both stages are performed together in sequential order. Orbit provides two entry points into the build process: <code>orbit test</code> and <code>orbit build</code>.</p>
 <p>What makes Orbit extensible? Well, Orbit does not define the execution stage by default. It leaves it upon the user to add their own execution processes, called <em>targets</em>. A target can be added by modifying an Orbit configuration file. You can write target scripts for whatever tools are integral to your workflow, such as Vivado, ModelSim, VCS, Design Compiler, or Quartus Prime.</p>
-<p><img src="./../images/dataflow.svg" alt=""></p>
+<p><label class="checkbox-label"><input class="checkbox-img" type="checkbox"><img src="./../images/dataflow.svg" alt=""><span class="img-wrapper"><img src="./../images/dataflow.svg" alt=""></span></label></p>
 <h2 id="planning-stage"><a class="header" href="#planning-stage">Planning stage</a></h2>
 <p>Orbit is the central system of the planning stage. Orbit takes your HDL source files (VHDL, Verilog, and SystemVerilog files) as input and generates the topologically sorted order of the source files saved to a single file known as the <em>blueprint</em> as output. Alongside the blueprint, Orbit sets a series of environment variables specific to the current build process that are available to the specified target during the execution stage for that target’s convenience. These environment variables include things such as the output directory (<code>ORBIT_OUT_DIR</code>) and the name of the top-level design unit (<code>ORBIT_TOP_NAME</code>).</p>
 <p>To create the blueprint, Orbit tokenizes your current project’s HDL source code along with the HDL source code of the current project’s depedendencies found in the catalog to analyze references to other design units across source files. With this information, Orbit generates a graph at the HDL source code level and sorts it in topological order, with the top-level design unit being last.</p>
@@ -245,7 +245,7 @@
 
         <script src="../clipboard-1626706a.min.js"></script>
         <script src="../highlight-fa820ae9.js"></script>
-        <script src="../book-c22b7243.js"></script>
+        <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
 

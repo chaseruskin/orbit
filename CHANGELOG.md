@@ -15,15 +15,16 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
-## UNRELEASED
+## 0.29.3
 
 ### Features
 - Adds global `-C <directory>` option to change directories before doing anything
-- Adds new `analyze` subcommand to print the contents of the current project's blueprint to stdout
+- Adds new `analyze` subcommand to print the contents of the current project's blueprint to stdout (closes #10)
 
 ### Fixes
 - Corrects some parsing when handling VHDL generate statement bodies
 - Relative path project dependencies no longer must have lockfile in order to perform HDL analysis in the current working project
+- Adds support for UTF-8 and ISO-8859-1 source files (closes #22)
 
 ## 0.29.2
 

@@ -58,6 +58,8 @@ ENTRY
 
 Each entry contains information about a source file. Every entry always has 3 components: a fileset, a library, and a filepath. Each component in an entry is separated by a tab character (`\t`).
 
+When at least one project in the design graph declares a [std](./manifest.md#the-std-field), every entry carries a fourth, trailing component: the owning project's std (empty when that project declares none). With no declared std anywhere, the blueprint stays byte-compatible with the 3-component format.
+
 ```
 FILESET	LIBRARY	FILEPATH
 ```
@@ -91,7 +93,7 @@ The file is serialized into a single list, with each item in the list considered
 ]
 ```
 
-Each entry contains information about a source file. Every each entry always has the following fields: fileset, library, filepath, dependencies. The dependencies field contains the filepaths that the current entry directly depends on. If the entry does not depend on any other source files or the entry is from a custom fileset, then the field stores an empty list.
+Each entry contains information about a source file. Every each entry always has the following fields: fileset, library, filepath, dependencies, and — when at least one project in the design graph declares a [std](./manifest.md#the-std-field) — `std` (the owning project's declared revision; absent otherwise). The dependencies field contains the filepaths that the current entry directly depends on. If the entry does not depend on any other source files or the entry is from a custom fileset, then the field stores an empty list.
 
 ``` json
 {

@@ -27,6 +27,7 @@ Orbit also sets environment variables during runtime such that any subprocesses 
 - `ORBIT_PROJECT_UUID` - The uuid of the current project.
 
 - `ORBIT_PROJECT_LIBRARY` - The interpretated HDL library of the current project.
+- `ORBIT_STD` - The current project's declared language standard revision (empty when undeclared); the string-swapping variable is `{{ orbit.std }}`.
 
 - `ORBIT_PROJECT_VERSION` - The version of the current project.
 

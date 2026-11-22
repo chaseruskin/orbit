@@ -552,6 +552,12 @@ impl Plan {
                         &dep_project.get_hdl_library(),
                         true,
                         dep_project.get_root(),
+                        dep_project
+                            .get_man()
+                            .get_project()
+                            .get_std()
+                            .clone()
+                            .unwrap_or_default(),
                     )?;
                 }
             }
@@ -566,6 +572,12 @@ impl Plan {
                 &working_lib,
                 false,
                 working_project.get_root(),
+                working_project
+                    .get_man()
+                    .get_project()
+                    .get_std()
+                    .clone()
+                    .unwrap_or_default(),
             )?;
         }
 
@@ -611,6 +623,7 @@ impl Plan {
         working_lib: &LangIdentifier,
         require_recur: bool,
         project_root: &PathBuf,
+        project_std: String,
     ) -> Result<(), Fault> {
         // collect data for the given target
         if let Some(filesets) = target.get_filesets() {
@@ -636,6 +649,7 @@ impl Plan {
                             fset.get_name().clone(),
                             working_lib.to_string(),
                             f.clone(),
+                            project_std.clone(),
                         ));
                     });
             }
@@ -663,6 +677,7 @@ impl Plan {
                         fset.get_name().clone(),
                         working_lib.to_string(),
                         f.clone(),
+                        project_std.clone(),
                     ));
                 });
         }

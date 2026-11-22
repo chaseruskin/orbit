@@ -33,12 +33,24 @@ $(cat build.err)"
 awk -F '\t' 'NF != 3 { print "row with " NF " fields: " $0; bad = 1 } END { exit bad }' target/probe/blueprint.tsv || fail "a blueprint row gained a std field with no std declared"
 cd ../..
 
+# --- case A2: custom-fileset rows carry the owning project's std ---
+cd declared/root
+orbit build --force --target probe-cfs --plan tsv > cfs.out 2> cfs.err || fail "custom-fileset build failed:
+$(cat cfs.err)"
+grep -q "ALLHDL	dep4.*config\.vhd	2008$" target/probe-cfs/blueprint.tsv || fail "the custom-fileset dependency row lacks its std:
+$(cat target/probe-cfs/blueprint.tsv)"
+grep -q "ALLHDL	demo4.*root_unit\.vhd	93$" target/probe-cfs/blueprint.tsv || fail "the custom-fileset root row lacks its std:
+$(cat target/probe-cfs/blueprint.tsv)"
+cd ../..
+
 # --- case C2: a strict target refuses the mixed-std graph at the CLI ---
 cd declared/root
 if orbit build --force --target strict --plan tsv > strict.out 2> strict.err; then
     fail "the strict target should refuse the mixed 93/2008 graph, but it planned"
 fi
-grep -q 'forbids mixing language standards, but the project graph declares: 93 2008' strict.err || fail "expected the mixed-std face, got:
+grep -q 'forbids mixing language standards' strict.err || fail "expected the mixed-std face, got:
+$(cat strict.err)"
+grep -Eq 'declares: (93 2008|2008 93)$' strict.err || fail "expected both declared stds named, got:
 $(cat strict.err)"
 cd ../..
 

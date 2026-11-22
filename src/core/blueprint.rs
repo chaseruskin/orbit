@@ -85,7 +85,9 @@ const SYSV: &str = "SYSV";
 #[derive(Debug, PartialEq)]
 pub enum Entry<'a, 'b> {
     Hdl(&'b ProjectFileNode<'a>),
-    Auxiliary(String, String, String),
+    /// A custom-fileset row: (fileset, library, filepath, std) — the
+    /// std rides the owning project, empty when it declares none
+    Auxiliary(String, String, String, String),
 }
 
 impl<'a, 'b> Entry<'a, 'b> {
@@ -135,9 +137,9 @@ impl<'a, 'b> Entry<'a, 'b> {
                         )
                     }
                 }
-                Self::Auxiliary(key, lib, file) => {
+                Self::Auxiliary(key, lib, file, std) => {
                     if with_std {
-                        format!("{}\t{}\t{}\t", key, lib, file)
+                        format!("{}\t{}\t{}\t{}", key, lib, file, std)
                     } else {
                         format!("{}\t{}\t{}", key, lib, file)
                     }
@@ -162,13 +164,13 @@ impl<'a, 'b> Entry<'a, 'b> {
                     },
                 }
             }
-            Self::Auxiliary(key, lib, file) => JsonEntry {
+            Self::Auxiliary(key, lib, file, std) => JsonEntry {
                 fileset: key.to_string(),
                 library: lib.to_string(),
                 filepath: file.to_string(),
                 dependencies: vec![],
                 std: match with_std {
-                    true => Some(String::new()),
+                    true => Some(std.clone()),
                     false => None,
                 },
             },

@@ -1,0 +1,26 @@
+# The fixture-scoped (regional) config: echo targets; the blueprint is
+# the deliverable. The probe target carries both plan schemes.
+[[target]]
+name = "probe"
+description = "plans the design and echoes"
+command = ["echo", "planned"]
+plans = ["tsv", "json"]
+
+# The discipline face: refuses a graph whose projects declare differing stds
+[[target]]
+name = "strict"
+description = "plans the design and echoes: refuses mixed stds"
+command = ["echo", "strict-planned"]
+plans = ["tsv", "json"]
+mixed-std = false
+
+# The custom-fileset face: the shipped drive targets ride filesets like
+# this one — their rows must carry the std too
+[[target]]
+name = "probe-cfs"
+description = "plans with a custom ALLHDL fileset and echoes"
+command = ["echo", "cfs-planned"]
+
+[target.fileset.ALLHDL]
+patterns = ["**/*.vhd"]
+recursive = true

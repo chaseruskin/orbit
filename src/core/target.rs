@@ -48,6 +48,10 @@ pub struct Target {
     plans: Option<Vec<Scheme>>,
     build: Option<bool>,
     test: Option<bool>,
+    /// The mixed-language-standard discipline (issue #24): `false` = the
+    /// verb refuses to run when the project graph declares differing stds
+    #[serde(rename = "mixed-std", default)]
+    mixed_std: Option<bool>,
 }
 
 impl Default for Target {
@@ -61,6 +65,7 @@ impl Default for Target {
             plans: None,
             build: None,
             test: None,
+            mixed_std: None,
         }
     }
 }
@@ -76,6 +81,7 @@ impl Target {
             plans: None,
             build: None,
             test: None,
+            mixed_std: None,
         }
     }
 
@@ -93,6 +99,17 @@ impl Target {
     /// Checks if the given target can be used for the test process.
     pub fn can_test(&self) -> bool {
         *self.test.as_ref().unwrap_or(&true)
+    }
+
+    /// Returns the declared mixed-language-standard discipline, if any.
+    pub fn get_mixed_std(&self) -> &Option<bool> {
+        &self.mixed_std
+    }
+
+    /// Checks if the target refuses to run against a project graph that
+    /// declares differing language standards. Unset targets are tolerant.
+    pub fn forbids_mixed_std(&self) -> bool {
+        matches!(self.mixed_std, Some(false))
     }
 
     pub fn get_filesets(&self) -> Option<&Filesets> {
@@ -314,6 +331,27 @@ name = "ffi"
 command = "bash ~/scripts/download.bash" 
 "#;
 
+    const P_3: &str = r#"
+name = "strict"
+command = "bash ./strict.sh"
+mixed-std = false
+"#;
+
+    #[test]
+    fn mixed_std_deser_and_forbid_logic() {
+        let plug = Target::from_str(P_3).unwrap();
+        assert_eq!(plug.get_mixed_std(), &Some(false));
+        assert_eq!(plug.forbids_mixed_std(), true);
+
+        // unset = tolerant: no new failure modes for existing workspaces
+        let loose = Target::from_str(P_2).unwrap();
+        assert_eq!(loose.get_mixed_std(), &None);
+        assert_eq!(loose.forbids_mixed_std(), false);
+
+        let tolerant = Target::from_str("name = \"t\"\ncommand = \"c\"\nmixed-std = true\n").unwrap();
+        assert_eq!(tolerant.forbids_mixed_std(), false);
+    }
+
     #[test]
     fn from_toml_string() {
         let plug = Target::from_str(P_1).unwrap();
@@ -324,6 +362,7 @@ command = "bash ~/scripts/download.bash"
                 command: Command::from_str("python ./scripts/ghdl.py").unwrap(),
                 build: Some(false),
                 test: None,
+                mixed_std: None,
                 plans: None,
                 description: Some(String::from(
                     "Backend script for simulating VHDL with GHDL."
@@ -352,6 +391,7 @@ command = "bash ~/scripts/download.bash"
                 plans: None,
                 build: None,
                 test: None,
+                mixed_std: None,
                 fileset: None,
                 root: None,
             }

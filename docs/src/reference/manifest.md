@@ -16,6 +16,7 @@ Every manifest file consists of the following sections:
     - [documentation](#the-documentation-field) - URL of the project documentation.
     - [authors](#the-authors-field) - The authors of the project.
     - [library](#the-library-field) - The HDL library for the design units within the project.
+- [std](#the-std-field) - The project's language standard revision.
     - [source](#the-source-field) - URL of the project source code.
     - [public](#the-public-field) - Source files to be visible to other project.
     - [keywords](#the-keywords-field) - A list of simple words categorizing the project.
@@ -118,6 +119,18 @@ The optional `library` entry is an identifier used to denote the HDL library for
 # ...
 library = "axi"
 ```
+
+### The `std` field
+
+The optional `std` entry declares the project's language standard revision — one token from the documented vocabularies: VHDL `87 | 93 | 2008 | 2019`, Verilog `95 | 2001 | 2005 | 2012`, SystemVerilog `2005 | 2012 | 2017`. A std is selected per project (per library in HDL terms) and carried to every target: each blueprint row carries its owning project's std, and the root project's std is exported to the target process as `ORBIT_STD` (swap variable `{{ orbit.std }}`).
+
+``` toml
+[project]
+# ...
+std = "93"
+```
+
+An unknown token is a load-time error naming the vocabulary. A token that names the wrong language for one of the project's files is a planning-time error. Each target decides its own mixed-standard discipline through the `mixed-std` field — a strict target refuses to run against a graph whose projects declare differing stds; unset targets tolerate mixing and hand the per-file stds to the target process.
 
 ### The `source` field
 

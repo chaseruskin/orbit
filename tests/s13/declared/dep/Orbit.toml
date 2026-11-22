@@ -1,0 +1,7 @@
+[project]
+name = "std-dep"
+uuid = "35xev9il8gpaacuqnn25dpvao"
+version = "0.1.0"
+library = "dep4"
+std = "2008"
+public = ["*.vhd"]

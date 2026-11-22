@@ -15,6 +15,11 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.29.4 - unreleased
+
+### Features
+- Adds the `[project]` `std` field: a per-project language standard (`87|93|2008|2019` VHDL, `95|2001|2005|2012` Verilog, `2005|2012|2017` SystemVerilog) carried to targets per-file in the blueprint and as `ORBIT_STD`/`{{ orbit.std }}`, with a per-target `mixed-std` discipline and per-language vocabulary faces (closes #24)
+
 ## 0.29.3
 
 ### Features

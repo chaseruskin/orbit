@@ -70,6 +70,9 @@ struct JsonEntry {
     library: String,
     filepath: String,
     dependencies: Vec<String>,
+    /// Present only when some project in the graph declares a std
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    std: Option<String>,
 }
 
 /// Built-in fileset name for VHDL source code files
@@ -82,7 +85,9 @@ const SYSV: &str = "SYSV";
 #[derive(Debug, PartialEq)]
 pub enum Entry<'a, 'b> {
     Hdl(&'b ProjectFileNode<'a>),
-    Auxiliary(String, String, String),
+    /// A custom-fileset row: (fileset, library, filepath, std) — the
+    /// std rides the owning project, empty when it declares none
+    Auxiliary(String, String, String, String),
 }
 
 impl<'a, 'b> Entry<'a, 'b> {
@@ -98,26 +103,53 @@ impl<'a, 'b> Entry<'a, 'b> {
         }
     }
 
-    pub fn to_string(&self, format: &Scheme) -> String {
+    /// The owning project's declared language standard, or an empty
+    /// string when the project declares none.
+    fn node_std(node: &ProjectFileNode) -> String {
+        node.get_project()
+            .get_man()
+            .get_project()
+            .get_std()
+            .clone()
+            .unwrap_or_default()
+    }
+
+    pub fn to_string(&self, format: &Scheme, with_std: bool) -> String {
         match &format {
             Scheme::Tsv => match &self {
                 Self::Hdl(node) => {
                     // match on what type of file we have
                     let source_set = Self::get_builtin_fileset(node);
-                    format!(
-                        "{}\t{}\t{}",
-                        source_set,
-                        node.get_library(),
-                        node.get_file()
-                    )
+                    if with_std {
+                        format!(
+                            "{}\t{}\t{}\t{}",
+                            source_set,
+                            node.get_library(),
+                            node.get_file(),
+                            Self::node_std(node)
+                        )
+                    } else {
+                        format!(
+                            "{}\t{}\t{}",
+                            source_set,
+                            node.get_library(),
+                            node.get_file()
+                        )
+                    }
                 }
-                Self::Auxiliary(key, lib, file) => format!("{}\t{}\t{}", key, lib, file),
+                Self::Auxiliary(key, lib, file, std) => {
+                    if with_std {
+                        format!("{}\t{}\t{}\t{}", key, lib, file, std)
+                    } else {
+                        format!("{}\t{}\t{}", key, lib, file)
+                    }
+                }
             },
-            Scheme::Json => serde_json::to_string_pretty(&self.to_json_entry()).unwrap(),
+            Scheme::Json => serde_json::to_string_pretty(&self.to_json_entry(with_std)).unwrap(),
         }
     }
 
-    fn to_json_entry(&self) -> JsonEntry {
+    fn to_json_entry(&self, with_std: bool) -> JsonEntry {
         match &self {
             Self::Hdl(node) => {
                 let source_set = Self::get_builtin_fileset(node);
@@ -126,13 +158,21 @@ impl<'a, 'b> Entry<'a, 'b> {
                     library: node.get_library().to_string(),
                     filepath: node.get_file().to_string(),
                     dependencies: node.get_dep_files().clone(),
+                    std: match with_std {
+                        true => Some(Self::node_std(node)),
+                        false => None,
+                    },
                 }
             }
-            Self::Auxiliary(key, lib, file) => JsonEntry {
+            Self::Auxiliary(key, lib, file, std) => JsonEntry {
                 fileset: key.to_string(),
                 library: lib.to_string(),
                 filepath: file.to_string(),
                 dependencies: vec![],
+                std: match with_std {
+                    true => Some(std.clone()),
+                    false => None,
+                },
             },
         }
     }
@@ -142,6 +182,10 @@ impl<'a, 'b> Entry<'a, 'b> {
 pub struct Blueprint<'a, 'b> {
     scheme: Scheme,
     steps: Vec<Entry<'a, 'b>>,
+    /// When any project in the graph declares a `std`, every row carries
+    /// its owning project's std as a trailing field; with no declared std
+    /// anywhere the blueprint stays byte-compatible with the 3-field format.
+    with_std: bool,
 }
 
 impl<'a, 'b> Default for Blueprint<'a, 'b> {
@@ -149,6 +193,7 @@ impl<'a, 'b> Default for Blueprint<'a, 'b> {
         Self {
             scheme: Scheme::default(),
             steps: Vec::default(),
+            with_std: false,
         }
     }
 }
@@ -158,7 +203,13 @@ impl<'a, 'b> Blueprint<'a, 'b> {
         Self {
             scheme: scheme,
             steps: Vec::new(),
+            with_std: false,
         }
+    }
+
+    /// Marks the blueprint to carry the trailing std field on every row.
+    pub fn set_with_std(&mut self) {
+        self.with_std = true;
     }
 
     pub fn get_filename(&self) -> String {
@@ -195,13 +246,16 @@ impl<'a, 'b> Display for Blueprint<'a, 'b> {
             "{}",
             match &self.scheme {
                 Scheme::Tsv => self.steps.iter().fold(String::new(), |mut acc, i| {
-                    acc.push_str(i.to_string(&self.scheme).as_ref());
+                    acc.push_str(i.to_string(&self.scheme, self.with_std).as_ref());
                     acc.push('\n');
                     acc
                 }),
                 Scheme::Json => {
-                    let entries: Vec<JsonEntry> =
-                        self.steps.iter().map(|m| m.to_json_entry()).collect();
+                    let entries: Vec<JsonEntry> = self
+                        .steps
+                        .iter()
+                        .map(|m| m.to_json_entry(self.with_std))
+                        .collect();
                     // add a new line because `to_string_pretty` forgets to :)
                     serde_json::to_string_pretty(&entries).unwrap() + "\n"
                 }

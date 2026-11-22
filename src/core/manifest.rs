@@ -308,6 +308,79 @@ impl<'a> JsonMeta<'a> {
     }
 }
 
+/// The documented language-standard vocabularies (issue #24).
+///
+/// A project's `std` token is validated against the union at manifest
+/// load; a blueprint row is validated against its language's set at
+/// emission. The drives map the token to each tool's own selector flag.
+pub const VHDL_STDS: [&str; 4] = ["87", "93", "2008", "2019"];
+pub const VERILOG_STDS: [&str; 4] = ["95", "2001", "2005", "2012"];
+pub const SV_STDS: [&str; 3] = ["2005", "2012", "2017"];
+
+/// Formats the full documented std vocabulary for error faces.
+pub fn std_vocabulary_string() -> String {
+    VHDL_STDS
+        .iter()
+        .chain(VERILOG_STDS.iter())
+        .chain(SV_STDS.iter())
+        .map(|s| String::from(*s))
+        .collect::<Vec<String>>()
+        .join(" ")
+}
+
+/// Checks a `std` token against the documented vocabulary.
+pub fn validate_std(token: &str) -> Result<(), crate::error::Error> {
+    if VHDL_STDS.contains(&token)
+        || VERILOG_STDS.contains(&token)
+        || SV_STDS.contains(&token)
+    {
+        return Ok(());
+    }
+    Err(crate::error::Error::StdVocabulary(
+        String::from(token),
+        std_vocabulary_string(),
+    ))
+}
+
+/// The per-project toolchain face: which orbit target owns each verb.
+///
+/// Written into the project's manifest, it lets a workspace declare
+/// "simulate with nvc, synthesize with vivado" once, inside the repo.
+/// The verbs that take a target each bind one target; `default` is the
+/// fallback for any verb without its own binding.
+#[derive(Deserialize, Serialize, Debug, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct Toolchain {
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    default: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    build: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    test: Option<String>,
+}
+
+impl Toolchain {
+    pub fn new(default: Option<String>, build: Option<String>, test: Option<String>) -> Self {
+        Self {
+            default,
+            build,
+            test,
+        }
+    }
+
+    pub fn get_default(&self) -> &Option<String> {
+        &self.default
+    }
+
+    pub fn get_build(&self) -> &Option<String> {
+        &self.build
+    }
+
+    pub fn get_test(&self) -> &Option<String> {
+        &self.test
+    }
+}
+
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct Manifest {
@@ -320,6 +393,8 @@ pub struct Manifest {
         default
     )]
     dev_dependencies: Dependencies,
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    toolchain: Option<Toolchain>,
 }
 
 pub trait FromFile: FromStr
@@ -343,9 +418,14 @@ impl Manifest {
             Ok(r) => r,
             // enter a blank lock file if failed (do not exit)
             Err(e) => {
+                let mut msg = e.to_string();
+                // teach the [[target]] trap: targets live in orbit config files
+                if msg.contains("unknown field `target`") {
+                    msg += "\n\nhint: targets are defined in orbit config files, not the manifest; bind one per verb in a [toolchain] section instead";
+                }
                 return Err(Error::ManifestParseFailed(
                     path.to_string_lossy().to_string(),
-                    LastError(e.to_string()),
+                    LastError(msg),
                 ))?;
             }
         };
@@ -355,6 +435,12 @@ impl Manifest {
                 path.to_string_lossy().to_string(),
                 LastError(e.to_string()),
             ))?;
+        }
+
+        // verify the declared language standard belongs to the documented
+        // vocabulary (issue #24)
+        if let Some(std) = man.get_project().get_std() {
+            validate_std(std)?;
         }
 
         let local_name = man.get_project().get_name().clone();
@@ -439,6 +525,7 @@ impl Manifest {
                 channels: None,
                 public: None,
                 library: None,
+                std: None,
                 readme: None,
                 ignore: None,
                 authors: None,
@@ -448,7 +535,14 @@ impl Manifest {
             },
             dependencies: Dependencies::new(),
             dev_dependencies: Dependencies::new(),
+            toolchain: None,
         }
+    }
+
+    /// Returns the project's toolchain face (default and per-verb target
+    /// bindings), if declared.
+    pub fn get_toolchain(&self) -> &Option<Toolchain> {
+        &self.toolchain
     }
 
     /// Returns the library name to be used for HDL. If a library is not specified,
@@ -614,6 +708,10 @@ pub struct Package {
     version: ProjectVersion,
     #[serde(deserialize_with = "validate_lib_name", default)]
     library: Option<ProjectName>,
+    /// The project's language standard revision (issue #24): carried to
+    /// targets per-file in the blueprint and by the `ORBIT_STD` variable
+    #[serde(default)]
+    std: Option<String>,
     description: Option<String>,
     /// URL of the project documentation
     documentation: Option<String>,
@@ -650,6 +748,11 @@ impl Package {
 
     pub fn get_description(&self) -> &Option<String> {
         &self.description
+    }
+
+    /// Returns the project's declared language standard revision, if any.
+    pub fn get_std(&self) -> &Option<String> {
+        &self.std
     }
 
     pub fn get_documentation(&self) -> &Option<String> {
@@ -918,6 +1021,69 @@ mod test {
                 Err(e) => panic!("{}", e.to_string()),
             };
         }
+
+        #[test]
+        fn ut_toolchain_deser() {
+            let man: Manifest = toml::from_str(EX8).unwrap();
+            let tc = man.get_toolchain().as_ref().unwrap();
+            assert_eq!(tc.get_default(), &Some(String::from("nvc")));
+            assert_eq!(tc.get_build(), &Some(String::from("nvc-build")));
+            assert_eq!(tc.get_test(), &Some(String::from("nvc")));
+        }
+
+        #[test]
+        fn ut_toolchain_absent() {
+            let man: Manifest = toml::from_str(EX2).unwrap();
+            assert_eq!(man.get_toolchain(), &None);
+        }
+
+        #[test]
+        fn ut_toolchain_serialize_omitted_when_unset() {
+            // a manifest without the face must not grow a [toolchain] section
+            let man: Manifest = toml::from_str(EX2).unwrap();
+            assert_eq!(man.to_string(), EX2);
+        }
+
+        #[test]
+        fn ut_toolchain_serialize_present_when_set() {
+            let man: Manifest = toml::from_str(EX8).unwrap();
+            let text = man.to_string();
+            assert!(text.contains("[toolchain]"));
+            assert!(text.contains("default = \"nvc\""));
+            assert!(text.contains("build = \"nvc-build\""));
+            assert!(text.contains("test = \"nvc\""));
+        }
+
+        #[test]
+        fn ut_toolchain_unknown_key_rejected() {
+            assert!(toml::from_str::<Manifest>(EX9).is_err());
+        }
+
+        #[test]
+        fn ut_std_deser() {
+            let man: Manifest = toml::from_str(EX10).unwrap();
+            assert_eq!(man.get_project().get_std(), &Some(String::from("2008")));
+        }
+
+        #[test]
+        fn ut_std_absent() {
+            let man: Manifest = toml::from_str(EX2).unwrap();
+            assert_eq!(man.get_project().get_std(), &None);
+        }
+
+        #[test]
+        fn ut_std_vocabulary_accepts_documented_tokens() {
+            for token in ["87", "93", "2008", "2019", "95", "2001", "2005", "2012", "2017"] {
+                assert_eq!(validate_std(token), Ok(()), "token {} should be known", token);
+            }
+        }
+
+        #[test]
+        fn ut_std_vocabulary_rejects_unknown_tokens() {
+            assert!(validate_std("banana").is_err());
+            assert!(validate_std("").is_err());
+            assert!(validate_std("93 ").is_err());
+        }
     }
 }
 
@@ -993,4 +1159,40 @@ source = false
 "#;
 
 const ERR1: &str = r#"[project]
+"#;
+
+const EX8: &str = r#"[project]
+name = "toolchain-prj"
+uuid = "0000000000000000000000000"
+version = "0.1.0"
+
+[toolchain]
+default = "nvc"
+build = "nvc-build"
+test = "nvc"
+
+[dependencies]
+some-package = "9.0.0"
+"#;
+
+const EX9: &str = r#"[project]
+name = "toolchain-bad"
+uuid = "0000000000000000000000000"
+
+[toolchain]
+backend = "nvc"
+"#;
+
+const EX10: &str = r#"[project]
+name = "std-prj"
+uuid = "0000000000000000000000000"
+version = "0.1.0"
+std = "2008"
+"#;
+
+const EX11: &str = r#"[project]
+name = "std-prj"
+uuid = "0000000000000000000000000"
+version = "0.1.0"
+std = "banana"
 "#;

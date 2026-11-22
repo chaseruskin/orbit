@@ -51,6 +51,7 @@ run-sys-tests:
     just test-pub
     just test-partv
     just test-rel-dep
+    just test-std
     just test-sep-arch-refs
     just test-recur-filesets
     just test-custom-filesets
@@ -64,6 +65,7 @@ test-all:
     just test-pub
     just test-partv
     just test-rel-dep
+    just test-std
     just test-sep-arch-refs
     just test-recur-filesets
     just test-custom-filesets
@@ -103,7 +105,10 @@ test-rel-dep:
     chmod +x ./tests/s5/test.sh
     cd ./tests/s5; ./test.sh
 
-# TODO: Ip namespace collision 
+# Language std blueprint face: trailing field, json key, vocabulary check
+test-std:
+    chmod +x ./tests/s13/std.sh
+    cd ./tests/s13; ./std.sh
 test-ip-collide:
     chmod +x ./tests/s6/test.sh
     cd ./tests/s6; ./test.sh

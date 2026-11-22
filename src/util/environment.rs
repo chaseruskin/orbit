@@ -365,6 +365,11 @@ impl Environment {
                     .value(&sum.to_string()),
             );
         }
+        // the root project's declared language standard (issue #24); the
+        // swap variable `{{ orbit.std }}` derives from this key automatically
+        if let Some(std) = prj.get_man().get_project().get_std() {
+            self = self.overwrite(EnvVar::new().key(ORBIT_STD).value(std));
+        }
         Ok(self)
     }
 
@@ -490,6 +495,7 @@ pub const ORBIT_PROJECT_UUID: &str = "ORBIT_PROJECT_UUID";
 pub const ORBIT_PROJECT_VERSION: &str = "ORBIT_PROJECT_VERSION";
 pub const ORBIT_PROJECT_LIBRARY: &str = "ORBIT_PROJECT_LIBRARY";
 pub const ORBIT_PROJECT_CHECKSUM: &str = "ORBIT_PROJECT_CHECKSUM";
+pub const ORBIT_STD: &str = "ORBIT_STD";
 
 pub const ORBIT_PROTOCOL: &str = "ORBIT_PROTOCOL";
 pub const ORBIT_TARGET: &str = "ORBIT_TARGET";

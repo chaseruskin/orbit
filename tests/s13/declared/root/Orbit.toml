@@ -1,0 +1,10 @@
+[project]
+name = "std-root"
+uuid = "0jgs7eqrhgn3kd67w5ip0v42j"
+version = "0.1.0"
+library = "demo4"
+std = "93"
+public = ["*.vhd"]
+
+[dependencies]
+std-dep = { path = "../dep", version = "0.1.0", uuid = "35xev9il8gpaacuqnn25dpvao" }

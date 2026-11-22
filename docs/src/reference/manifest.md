@@ -27,6 +27,7 @@ Every manifest file consists of the following sections:
     - [[metadata]](#the-metadata-section) - An unchecked section for custom fields.
 - [[dependencies]](#the-dependencies-section) - Project dependencies.
 - [[dev-dependencies]](#the-dev-dependencies-section) - Project dependencies only used for ongoing development.
+- [[toolchain]](#the-toolchain-section) - Which target owns each verb, declared inside the repo.
 
 ### The `[project]` section
 
@@ -304,3 +305,26 @@ If the project has no development dependencies, the section can be omitted from 
 Refer to the `[dependencies]` section for related capabilities in specifying projects.
 
 See [Specifying Dependencies](./../user/specifying_deps.md) for the complete list of ways dependencies can be specified.
+### The `[toolchain]` section
+
+The optional `[toolchain]` section declares, inside the repo, which target owns each verb. One target owns a whole verb: `build` binds the target that `orbit build` runs, `test` binds the target that `orbit test` runs, and `default` is the fallback for any verb without its own binding.
+
+``` toml
+[toolchain]
+default = "nvc"
+build = "vivado-build"
+test = "nvc"
+```
+
+A target named here must be defined in an orbit config file (global, regional, or included). Targets are _not_ defined in the manifest — a `[[target]]` array written into Orbit.toml is a parse error that hints at this section.
+
+When selecting the target for a verb, Orbit resolves through the following order:
+
+1. the `--target` command line option,
+2. the `ORBIT_TARGET` environment variable,
+3. this section's per-verb key (`build`/`test`),
+4. this section's `default`,
+5. the config file's `[build]`/`[test]` `target` default,
+6. the single candidate: if exactly one target exists for the verb, it is inferred.
+
+A target that exists but declares the other verb only (`build`/`test` fields in its definition) is a loud error at the command line — the verb never reaches a mismatched target process.

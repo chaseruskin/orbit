@@ -386,3 +386,35 @@ impl std::fmt::Display for HdlNamingError {
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::HdlNamingError;
+    use crate::core::name::Name;
+    use crate::core::project::ProjectIdSpec;
+    use crate::core::uuid::Uuid;
+    use crate::core::version::Version;
+    use crate::core::lang::lexer::Position;
+    use std::path::PathBuf;
+    use std::str::FromStr;
+
+    /// Pins the local-dependency face: the message names the unit and the
+    /// conflicting dependency spec. The variant's only producer is the
+    /// planner's relative-branch same-library duplicate check.
+    #[test]
+    fn local_duplicate_names_the_unit_and_dependency() {
+        let e = HdlNamingError::DuplicateAcrossLocal(
+            String::from("config"),
+            ProjectIdSpec::new(
+                Name::from_str("dep4").unwrap(),
+                Uuid::nil(),
+                Version::new(),
+            ),
+            PathBuf::from("dep/rtl/config.vhd"),
+            Position::place(3, 1),
+        );
+        let s = e.to_string();
+        assert!(s.contains("duplicate design units identified as \"config\""));
+        assert!(s.contains("conflicts with local dependency: dep4"));
+    }
+}

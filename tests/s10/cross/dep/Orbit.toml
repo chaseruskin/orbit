@@ -1,0 +1,6 @@
+[project]
+name = "cross-dep"
+uuid = "35xev9il8gpaacuqnn25dpvao"
+version = "0.1.0"
+library = "dep4"
+public = ["*.sv", "*.v", "*.vhd"]

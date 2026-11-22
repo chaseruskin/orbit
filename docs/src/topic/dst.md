@@ -27,6 +27,8 @@ Orbit automatically handles resolving duplicate identifiers for primary design u
 1. All primary design unit identifiers in the current project must be unique within the scope of the project.
 2. All primary design units identifiers in the current project must be unique within the scope of the project's direct dependencies. An identifier can be duplicated for primary design units across indirect dependencies.
 
+Relative (path) dependencies follow the language's namespace rule instead of the transformation rule: a duplicate identifier across projects connected through relative dependencies is only a clash when both units belong to the same HDL library. Different libraries are distinct namespaces, so two projects that each define a `package config` in their own libraries coexist and both appear in the blueprint. The same unit name in the same library across two relative-linked projects is an error — the clash is reported against a direct dependency when the root project is involved, and against a local dependency between two non-root projects. Renaming one of the units or excluding a file through the manifest's `project.ignore` field resolves it.
+
 ## Example
 
 This section walks through a basic demonstration of the DST algorithm. First, it defines some terminology, and then walks through the algorithm's functionality.
@@ -104,7 +106,7 @@ The yellow nodes (`lab2`, `lab1`) are the projects that had their source code mo
 
 The red node (`nand_g.v`) is the HDL design element that must be dynamically renamed due to the namespace clash for `nand_g`. The identifier `nand_g` in lab1 was appended with the first 16 digits of the original project's checksum (`fbe4720d0a40b25c`). This transforms lab1's `nand_g` module into `nand_g_fbe4720d0a40b25c`, which is unique and no longer clashes with `nand_g` in lab3.
 
-> __Note:__ DST specifically chose to _not_ rename the `nand_g` from lab3. If had decided to rename the `nand_g` from lab3, the user would be burdened with tracking and maintaining the new renamed unique identifier in the current project (lab4). Since DST never renames identifiers in direct dependencies, DST is always abstracted away from the user and has zero overhead. While direct dependencies may be modified due to neigboring a project that undergoes DST, direct dependencies are never chosen for DST.
+> __Note:__ DST specifically chose to _not_ rename the `nand_g` from lab3. If had decided to rename the `nand_g` from lab3, the user would be burdened with tracking and maintaining the new renamed unique identifier in the current project (lab4). Since DST never renames identifiers in direct dependencies, DST is always abstracted away from the user and has zero overhead. While direct dependencies may be modified due to neigboring a project that undergoes DST, direct dependencies are never chosen for DST. Relative (path) dependencies are never chosen for DST either — their duplicate semantics are the library-namespace rule described under Limitations.
 
 The orange nodes (`and_g.v`, `xor_g.v`) are the HDL design elements that reference/instantiate the design element that was marked for symbol transformation. Once the project targeted for DST (lab1) resolves the namespace clash, we must update the references for this design element in all the upstream neighboring projects (lab2). Since their references are now broken due to `nand_g` being renamed to `nand_g_fbe4720d0a40b25c`, the source code is analyzed and updated to fix the broken references of `nand_g` to `nand_g_fbe4720d0a40b25c`.
 

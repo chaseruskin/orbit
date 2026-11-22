@@ -1,0 +1,9 @@
+[project]
+name = "chain-mid"
+uuid = "bi6mby2wuwe2k58x0hxhks2yi"
+version = "0.1.0"
+library = "sharedlib"
+public = ["*.sv", "*.v", "*.vhd"]
+
+[dependencies]
+chain-leaf = { path = "../leaf", version = "0.1.0", uuid = "6u7g7kv20csk2uzn7s25p5qfp" }

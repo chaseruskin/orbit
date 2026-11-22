@@ -1,0 +1,9 @@
+[project]
+name = "cross-root"
+uuid = "0jgs7eqrhgn3kd67w5ip0v42j"
+version = "0.1.0"
+library = "demo4"
+public = ["*.sv", "*.v", "*.vhd"]
+
+[dependencies]
+cross-dep = { path = "../dep", version = "0.1.0", uuid = "35xev9il8gpaacuqnn25dpvao" }

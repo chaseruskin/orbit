@@ -1,0 +1,8 @@
+[project]
+name = "tool-prj"
+uuid = "bi6mby2wuwe2k58x0hxhks2yi"
+version = "0.1.0"
+
+[toolchain]
+build = "t1"
+test = "t2"

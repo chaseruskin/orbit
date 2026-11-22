@@ -1,0 +1,8 @@
+[project]
+name = "mtgt-prj"
+uuid = "0jgs7eqrhgn3kd67w5ip0v42j"
+version = "0.1.0"
+
+[[target]]
+name = "local-one"
+command = ["echo", "hello"]

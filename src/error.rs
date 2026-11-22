@@ -76,6 +76,8 @@ pub enum Error {
     TargetNotFoundBuild(String, Hint),
     #[error("no test target named {0:?}{1}")]
     TargetNotFoundTest(String, Hint),
+    #[error("target \"{0}\" is not a {1} target (it declares the other verb only){2}")]
+    TargetWrongVerb(String, &'static str, Hint),
     #[error("no target named {0:?}{1}")]
     TargetNotFound(String, Hint),
     #[error("a target must be specified{0}")]

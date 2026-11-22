@@ -326,6 +326,14 @@ pub struct Toolchain {
 }
 
 impl Toolchain {
+    pub fn new(default: Option<String>, build: Option<String>, test: Option<String>) -> Self {
+        Self {
+            default,
+            build,
+            test,
+        }
+    }
+
     pub fn get_default(&self) -> &Option<String> {
         &self.default
     }
@@ -376,9 +384,14 @@ impl Manifest {
             Ok(r) => r,
             // enter a blank lock file if failed (do not exit)
             Err(e) => {
+                let mut msg = e.to_string();
+                // teach the [[target]] trap: targets live in orbit config files
+                if msg.contains("unknown field `target`") {
+                    msg += "\n\nhint: targets are defined in orbit config files, not the manifest; bind one per verb in a [toolchain] section instead";
+                }
                 return Err(Error::ManifestParseFailed(
                     path.to_string_lossy().to_string(),
-                    LastError(e.to_string()),
+                    LastError(msg),
                 ))?;
             }
         };

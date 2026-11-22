@@ -51,6 +51,8 @@ run-sys-tests:
     just test-pub
     just test-partv
     just test-rel-dep
+    just test-faces
+    just test-infer
     just test-sep-arch-refs
     just test-recur-filesets
     just test-custom-filesets
@@ -64,6 +66,8 @@ test-all:
     just test-pub
     just test-partv
     just test-rel-dep
+    just test-faces
+    just test-infer
     just test-sep-arch-refs
     just test-recur-filesets
     just test-custom-filesets
@@ -103,6 +107,24 @@ test-rel-dep:
     chmod +x ./tests/s5/test.sh
     cd ./tests/s5; ./test.sh
 
+<<<<<<< HEAD
+=======
+# Relative dependency duplicate design units (issue #23 semantics)
+test-rel-dupes:
+    chmod +x ./tests/s10/rel-dupes.sh
+    cd ./tests/s10; ./rel-dupes.sh
+
+# Tool selection faces: toolchain binding, wrong-verb pick, [[target]] hint
+test-faces:
+    chmod +x ./tests/s11/faces.sh
+    cd ./tests/s11; ./faces.sh
+
+# Single-candidate target inference
+test-infer:
+    chmod +x ./tests/s12/infer.sh
+    cd ./tests/s12; ./infer.sh
+
+>>>>>>> e28d2c40 (feat: targets resolve through the manifest toolchain face -- single candidates infer, wrong-verb picks die at the cli (closes #25))
 # TODO: Ip namespace collision 
 test-ip-collide:
     chmod +x ./tests/s6/test.sh

@@ -1,0 +1,6 @@
+# The fixture-scoped (regional) config: exactly one target, so the
+# inference tier has a single candidate.
+[[target]]
+name = "solo"
+description = "the only target in scope"
+command = ["echo", "solo-planned"]

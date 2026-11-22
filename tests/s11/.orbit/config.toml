@@ -1,0 +1,15 @@
+# The fixture-scoped (regional) config: t1 owns the build verb only,
+# t2 owns the test verb only. Capability is declared, not named in.
+[[target]]
+name = "t1"
+description = "the build face: echo after planning"
+command = ["echo", "building"]
+build = true
+test = false
+
+[[target]]
+name = "t2"
+description = "the test face: echo after planning"
+command = ["echo", "testing"]
+build = false
+test = true

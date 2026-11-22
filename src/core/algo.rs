@@ -112,10 +112,13 @@ fn graph_project<'a>(
     let able_to_use_lockfile = root.can_use_lock();
 
     // add root's identifiers and parse files according to the correct language settings
-    let mut unit_map: HashMap<LangIdentifier, (crate::core::lang::LangUnit, ProjectIdSpec)> = root
+    // each entry is keyed by (owning library, unit identifier): a library is a
+    // namespace, so the same identifier under two libraries is not a collision
+    // for the relative branch, while the catalog branch keeps its name-only scan
+    let mut unit_map: HashMap<(LangIdentifier, LangIdentifier), (crate::core::lang::LangUnit, ProjectIdSpec)> = root
         .collect_units(true, false, private_by_default)?
         .into_iter()
-        .map(|(k, v)| (k, (v, root.get_man().get_project().into_project_id_spec())))
+        .map(|(k, v)| ((root.get_hdl_library(), k), (v, root.get_man().get_project().into_project_id_spec())))
         .collect();
 
     // Use this map to track if a parent is a relative dependency to chain relative dependencies together.
@@ -143,13 +146,17 @@ fn graph_project<'a>(
                                 existing_node.index()
                             } else {
                                 // check if identifiers are already taken in graph
+                                // (relative branch: the collision must live in the SAME
+                                // library -- cross-library duplicates are legal units)
+                                let lib = relative_prj.get_hdl_library();
                                 let units =
                                     relative_prj.collect_units(false, true, private_by_default)?;
-                                if let Some(dupe) =
-                                    units.iter().find(|(key, _)| unit_map.contains_key(key))
+                                if let Some(dupe) = units
+                                    .iter()
+                                    .find(|(key, _)| unit_map.contains_key(&(lib.clone(), (**key).clone())))
                                 {
                                     let dupe_name = dupe.0;
-                                    let dupe = unit_map.get(dupe.0).unwrap();
+                                    let dupe = unit_map.get(&(lib.clone(), dupe_name.clone())).unwrap();
                                     if is_root == true {
                                         return Err(CodeFault(
                                             None,
@@ -170,14 +177,13 @@ fn graph_project<'a>(
                                         let local_src = units.get(dupe_name).unwrap();
                                         return Err(CodeFault(
                                             None,
-                                            Box::new(HdlNamingError::DuplicateAcrossDirect(
+                                            Box::new(HdlNamingError::DuplicateAcrossLocal(
                                                 local_src.get_name().to_string(),
                                                 dupe.1.clone(),
                                                 PathBuf::from(
                                                     local_src.get_source_files().first().unwrap(),
                                                 ),
                                                 local_src.get_position().clone(),
-                                                is_root,
                                             )),
                                         ))?;
                                     }
@@ -185,7 +191,7 @@ fn graph_project<'a>(
                                 // update the hashset with the new unique non-taken identifiers
                                 for (key, unit) in units {
                                     unit_map.insert(
-                                        key,
+                                        (lib.clone(), key),
                                         (
                                             unit,
                                             relative_prj
@@ -195,7 +201,6 @@ fn graph_project<'a>(
                                         ),
                                     );
                                 }
-                                let lib = relative_prj.get_hdl_library();
                                 g.add_node(
                                     ProjectKey::new(relative_prj),
                                     ProjectNode::new_keep(relative_prj, lib),
@@ -244,15 +249,24 @@ fn graph_project<'a>(
                                         existing_node.index()
                                     } else {
                                         // check if identifiers are already taken in graph
+                                        // (catalog branch: the scan stays name-only across
+                                        // libraries -- the DST transform resolves clashes
+                                        // for indirect dependencies)
                                         let units = cached_prj.collect_units(
                                             false,
                                             true,
                                             private_by_default,
                                         )?;
                                         let dst = if let Some(dupe) =
-                                            units.iter().find(|(key, _)| unit_map.contains_key(key))
+                                            units.iter().find(|(key, _)| {
+                                                unit_map.keys().any(|(_, u)| u == *key)
+                                            })
                                         {
-                                            let dupe = unit_map.get(dupe.0).unwrap();
+                                            let dupe = unit_map
+                                                .iter()
+                                                .find(|((_, u), _)| u == dupe.0)
+                                                .unwrap()
+                                                .1;
                                             if is_root == true {
                                                 return Err(CodeFault(
                                                     None,
@@ -282,11 +296,12 @@ fn graph_project<'a>(
                                         } else {
                                             false
                                         };
+                                        let lib = cached_prj.get_hdl_library();
                                         // update the hashset with the new unique non-taken identifiers
                                         if dst == false {
                                             for (key, unit) in units {
                                                 unit_map.insert(
-                                                    key,
+                                                    (lib.clone(), key),
                                                     (
                                                         unit,
                                                         cached_prj
@@ -297,7 +312,6 @@ fn graph_project<'a>(
                                                 );
                                             }
                                         }
-                                        let lib = cached_prj.get_hdl_library();
                                         g.add_node(
                                             ProjectKey::new(cached_prj),
                                             match dst {

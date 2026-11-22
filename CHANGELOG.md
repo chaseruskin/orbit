@@ -15,6 +15,11 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.29.4 - unreleased
+
+### Fixes
+- Qualifies the duplicate design-unit check for relative dependencies by HDL library: cross-library duplicates through path dependencies plan and both units appear in the blueprint, while true same-library clashes refuse with the direct/local dependency messages (closes #23)
+
 ## 0.29.3
 
 ### Features

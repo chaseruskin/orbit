@@ -1,0 +1,6 @@
+[project]
+name = "mismatch-prj"
+uuid = "bi6mby2wuwe2k58x0hxhks2yi"
+version = "0.1.0"
+std = "2012"
+public = ["*.vhd"]

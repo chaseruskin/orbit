@@ -1,0 +1,7 @@
+# The fixture-scoped (regional) config: echo targets; the blueprint is
+# the deliverable. The probe target carries both plan schemes.
+[[target]]
+name = "probe"
+description = "plans the design and echoes"
+command = ["echo", "planned"]
+plans = ["tsv", "json"]

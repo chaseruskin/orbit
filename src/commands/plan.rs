@@ -156,6 +156,45 @@ impl Plan {
 
         let files = algo::build_project_file_list(&prj_graph, &working_project);
 
+        // validate each file row's declared std against its language's
+        // vocabulary (issue #24): a std rides the language it names
+        let mut has_std = false;
+        for node in prj_graph.get_map().values() {
+            if let Some(std) = node
+                .as_ref()
+                .as_project()
+                .get_man()
+                .get_project()
+                .get_std()
+            {
+                has_std = true;
+            }
+        }
+        if has_std == true {
+            for f in &files {
+                let std = f
+                    .get_project()
+                    .get_man()
+                    .get_project()
+                    .get_std()
+                    .clone()
+                    .unwrap_or_default();
+                if std.is_empty() == true {
+                    continue;
+                }
+                let lang_stds: &[&str] = if crate::core::fileset::is_vhdl(f.get_file()) {
+                    &crate::core::manifest::VHDL_STDS
+                } else if crate::core::fileset::is_verilog(f.get_file()) {
+                    &crate::core::manifest::VERILOG_STDS
+                } else {
+                    &crate::core::manifest::SV_STDS
+                };
+                if lang_stds.contains(&std.as_str()) == false {
+                    Err(Error::StdVocabulary(std, lang_stds.join(" ")))?;
+                }
+            }
+        }
+
         let global_graph = Self::build_full_graph(&files)?;
 
         let working_lib = working_project.get_hdl_library();
@@ -421,6 +460,9 @@ impl Plan {
 
         // store data in blueprint
         let mut blueprint = Blueprint::new(scheme.clone());
+        if has_std == true {
+            blueprint.set_with_std();
+        }
 
         // [!] collect user-defined filesets
         {

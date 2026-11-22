@@ -1,0 +1,6 @@
+[project]
+name = "same-dep"
+uuid = "35xev9il8gpaacuqnn25dpvao"
+version = "0.1.0"
+library = "sharedlib"
+public = ["*.sv", "*.v", "*.vhd"]

@@ -1,0 +1,9 @@
+[project]
+name = "chain-root"
+uuid = "d4ue9cqgasnjhcqr1837zk3z7"
+version = "0.1.0"
+library = "chainlib"
+public = ["*.sv", "*.v", "*.vhd"]
+
+[dependencies]
+chain-mid = { path = "../mid", version = "0.1.0", uuid = "bi6mby2wuwe2k58x0hxhks2yi" }

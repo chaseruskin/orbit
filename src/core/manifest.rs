@@ -308,6 +308,37 @@ impl<'a> JsonMeta<'a> {
     }
 }
 
+/// The per-project toolchain face: which orbit target owns each verb.
+///
+/// Written into the project's manifest, it lets a workspace declare
+/// "simulate with nvc, synthesize with vivado" once, inside the repo.
+/// The verbs that take a target each bind one target; `default` is the
+/// fallback for any verb without its own binding.
+#[derive(Deserialize, Serialize, Debug, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct Toolchain {
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    default: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    build: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    test: Option<String>,
+}
+
+impl Toolchain {
+    pub fn get_default(&self) -> &Option<String> {
+        &self.default
+    }
+
+    pub fn get_build(&self) -> &Option<String> {
+        &self.build
+    }
+
+    pub fn get_test(&self) -> &Option<String> {
+        &self.test
+    }
+}
+
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct Manifest {
@@ -320,6 +351,8 @@ pub struct Manifest {
         default
     )]
     dev_dependencies: Dependencies,
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    toolchain: Option<Toolchain>,
 }
 
 pub trait FromFile: FromStr
@@ -448,7 +481,14 @@ impl Manifest {
             },
             dependencies: Dependencies::new(),
             dev_dependencies: Dependencies::new(),
+            toolchain: None,
         }
+    }
+
+    /// Returns the project's toolchain face (default and per-verb target
+    /// bindings), if declared.
+    pub fn get_toolchain(&self) -> &Option<Toolchain> {
+        &self.toolchain
     }
 
     /// Returns the library name to be used for HDL. If a library is not specified,
@@ -918,6 +958,43 @@ mod test {
                 Err(e) => panic!("{}", e.to_string()),
             };
         }
+
+        #[test]
+        fn ut_toolchain_deser() {
+            let man: Manifest = toml::from_str(EX8).unwrap();
+            let tc = man.get_toolchain().as_ref().unwrap();
+            assert_eq!(tc.get_default(), &Some(String::from("nvc")));
+            assert_eq!(tc.get_build(), &Some(String::from("nvc-build")));
+            assert_eq!(tc.get_test(), &Some(String::from("nvc")));
+        }
+
+        #[test]
+        fn ut_toolchain_absent() {
+            let man: Manifest = toml::from_str(EX2).unwrap();
+            assert_eq!(man.get_toolchain(), &None);
+        }
+
+        #[test]
+        fn ut_toolchain_serialize_omitted_when_unset() {
+            // a manifest without the face must not grow a [toolchain] section
+            let man: Manifest = toml::from_str(EX2).unwrap();
+            assert_eq!(man.to_string(), EX2);
+        }
+
+        #[test]
+        fn ut_toolchain_serialize_present_when_set() {
+            let man: Manifest = toml::from_str(EX8).unwrap();
+            let text = man.to_string();
+            assert!(text.contains("[toolchain]"));
+            assert!(text.contains("default = \"nvc\""));
+            assert!(text.contains("build = \"nvc-build\""));
+            assert!(text.contains("test = \"nvc\""));
+        }
+
+        #[test]
+        fn ut_toolchain_unknown_key_rejected() {
+            assert!(toml::from_str::<Manifest>(EX9).is_err());
+        }
     }
 }
 
@@ -993,4 +1070,26 @@ source = false
 "#;
 
 const ERR1: &str = r#"[project]
+"#;
+
+const EX8: &str = r#"[project]
+name = "toolchain-prj"
+uuid = "0000000000000000000000000"
+version = "0.1.0"
+
+[toolchain]
+default = "nvc"
+build = "nvc-build"
+test = "nvc"
+
+[dependencies]
+some-package = "9.0.0"
+"#;
+
+const EX9: &str = r#"[project]
+name = "toolchain-bad"
+uuid = "0000000000000000000000000"
+
+[toolchain]
+backend = "nvc"
 "#;

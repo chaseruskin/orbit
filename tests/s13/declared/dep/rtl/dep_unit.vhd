@@ -1,7 +1,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 library work;
-use work.config.all;
+use work.dep_config.all;
 
 entity dep_unit is
 port (

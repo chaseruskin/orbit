@@ -1,6 +1,6 @@
 library ieee;
 use ieee.std_logic_1164.all;
 
-package config is
+package dep_config is
     constant WIDTH : integer := 32;
-end package config;
+end package dep_config;

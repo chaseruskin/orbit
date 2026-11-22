@@ -134,6 +134,8 @@ target = "modelsim"
 
 If the default target is set to be used and its name cannot be found among the known targets, the build process will error.
 
+This default is the last named tier of the target resolution order: the `--target` option, the `ORBIT_TARGET` environment variable, and the project manifest's `[toolchain]` face all sit above it. See the manifest reference's `[toolchain]` section for the complete order.
+
 ### The `auto-discovery` field
 
 The optional `auto-discovery` key sets whether or not to allow Orbit to try to automatically discovery the testbench, if it is unambiguous.
@@ -158,6 +160,8 @@ target = "vivado"
 ```
 
 If the default target is set to be used and its name cannot be found among the known targets, the build process will error.
+
+This default is the last named tier of the target resolution order: the `--target` option, the `ORBIT_TARGET` environment variable, and the project manifest's `[toolchain]` face all sit above it. See the manifest reference's `[toolchain]` section for the complete order.
 
 ### The `auto-discovery` field
 

@@ -17,6 +17,7 @@
 
 use crate::core::config::General;
 use crate::core::config::{Config, Configs, Locality};
+use crate::core::manifest::Toolchain;
 use crate::core::target::Target;
 use crate::error::{Error, Hint};
 use crate::util::anyerror::AnyError;
@@ -44,7 +45,64 @@ Signature: 8a477f597d28d172789f06886806bc55
 ";
 
 /// Shared attributes about the surrounding user run-time environment.
+
+/// The outcome of resolving which target a verb should run.
+#[derive(Debug, PartialEq)]
+enum TargetResolution {
+    /// a tier explicitly named this target
+    Named(String),
+    /// no tier named anything, but exactly one candidate exists
+    Inferred(String),
+    /// nothing to go on
+    Missing,
+}
+
+/// Resolves the target name for a verb through the tier chain:
+/// CLI `--target` > `ORBIT_TARGET` env > manifest `[toolchain]` per-verb
+/// key > manifest `default` > config `[build]`/`[test].target` >
+/// single-candidate inference.
+///
+/// The manifest tier sits above the config default because it is
+/// in-repo: a project declares "test with nvc, synth with vivado" once.
+fn resolve_target_name(
+    cli: &Option<String>,
+    env: Option<String>,
+    config_default: Option<&String>,
+    toolchain: Option<&crate::core::manifest::Toolchain>,
+    is_build: bool,
+    single_candidate: Option<&str>,
+) -> TargetResolution {
+    if let Some(c) = cli {
+        return TargetResolution::Named(c.clone());
+    }
+    if let Some(e) = env {
+        return TargetResolution::Named(e);
+    }
+    if let Some(tc) = toolchain {
+        // per-verb binding: one target owns the whole verb
+        let verb = if is_build {
+            tc.get_build()
+        } else {
+            tc.get_test()
+        };
+        if let Some(v) = verb {
+            return TargetResolution::Named(v.clone());
+        }
+        if let Some(d) = tc.get_default() {
+            return TargetResolution::Named(d.clone());
+        }
+    }
+    if let Some(cd) = config_default {
+        return TargetResolution::Named(cd.clone());
+    }
+    if let Some(sc) = single_candidate {
+        return TargetResolution::Inferred(String::from(sc));
+    }
+    TargetResolution::Missing
+}
+
 pub struct Context {
+
     /// File system path directing to root of orbit data and configurations.
     home_path: PathBuf,
     /// File system path directing to project installations
@@ -416,43 +474,79 @@ impl Context {
         is_build: bool,
     ) -> Result<Option<&Target>, Error> {
         let env_target = Environment::read(environment::ORBIT_TARGET);
-        let target = match target {
-            Some(t) => Some(t),
-            None => {
-                match required {
-                    true => {
-                        // try to use an environment variable
-                        match &env_target {
-                            Some(r) => Some(r),
-                            // try to use the default
-                            None => self.get_config().get_default_target(is_build),
-                        }
-                    }
-                    // allow the list to be printed
-                    false => None,
-                }
-            }
+        // allow the list to be printed
+        if target.is_none() && required == false {
+            return Ok(None);
+        }
+        let filtered = self.get_config().get_targets(is_build);
+        let single_candidate = match filtered.len() {
+            1 => filtered.values().next().map(|t| t.get_name().to_string()),
+            _ => None,
         };
-        match target {
+        let resolution = resolve_target_name(
+            target,
+            env_target,
+            self.get_config().get_default_target(is_build),
+            self.read_manifest_toolchain().as_ref(),
+            is_build,
+            single_candidate.as_deref(),
+        );
+        let name = match resolution {
+            TargetResolution::Named(name) => Some(name),
+            TargetResolution::Inferred(name) => Some(name),
+            TargetResolution::Missing => None,
+        };
+        match name {
             // verify the target name matches
             Some(name) => match self.get_config().get_targets(is_build).get(name.as_str()) {
                 Some(&t) => Ok(Some(t)),
-                None => match is_build {
-                    true => Err(Error::TargetNotFoundBuild(
-                        name.to_string(),
-                        Hint::TargetsListBuild,
-                    )),
-                    false => Err(Error::TargetNotFoundTest(
-                        name.to_string(),
-                        Hint::TargetsListTest,
-                    )),
-                },
+                None => {
+                    // does the target exist but declare the other verb only?
+                    // a mismatch is a loud face here, never a mid-drive confusion
+                    if self.get_config().get_all_targets().contains_key(name.as_str()) {
+                        let verb = if is_build { "build" } else { "test" };
+                        let hint = if is_build {
+                            Hint::TargetsListBuild
+                        } else {
+                            Hint::TargetsListTest
+                        };
+                        Err(Error::TargetWrongVerb(name.to_string(), verb, hint))
+                    } else {
+                        match is_build {
+                            true => Err(Error::TargetNotFoundBuild(
+                                name.to_string(),
+                                Hint::TargetsListBuild,
+                            )),
+                            false => Err(Error::TargetNotFoundTest(
+                                name.to_string(),
+                                Hint::TargetsListTest,
+                            )),
+                        }
+                    }
+                }
             },
             None => match required {
                 true => Err(Error::MissingRequiredTarget),
                 false => Ok(None),
             },
         }
+    }
+
+    /// Reads the `[toolchain]` face from the current project's manifest,
+    /// if the project is discoverable and the section parses.
+    ///
+    /// This is a light, extract-only read: the document is not fully
+    /// validated here (a broken manifest reports honestly when the
+    /// project itself loads); only the `toolchain` table is taken.
+    fn read_manifest_toolchain(&self) -> Option<crate::core::manifest::Toolchain> {
+        #[derive(serde::Deserialize)]
+        struct ToolchainOnly {
+            #[serde(default)]
+            toolchain: Option<crate::core::manifest::Toolchain>,
+        }
+        let prj_path = self.get_project_path()?;
+        let text = std::fs::read_to_string(prj_path.join(crate::core::manifest::PROJECT_MANIFEST_FILE)).ok()?;
+        toml::from_str::<ToolchainOnly>(&text).ok()?.toolchain
     }
 
     pub fn get_vhdl_format(&self) -> VhdlFormat {
@@ -479,6 +573,100 @@ mod test {
     use super::*;
 
     const HOME: &str = "./tests";
+
+    /// Builds a toolchain face for the resolution tests.
+    fn face(default: Option<&str>, build: Option<&str>, test: Option<&str>) -> Option<Toolchain> {
+        Some(Toolchain::new(
+            default.map(String::from),
+            build.map(String::from),
+            test.map(String::from),
+        ))
+    }
+
+    #[test]
+    fn resolution_cli_wins_over_every_tier() {
+        let tc = face(Some("m-default"), Some("m-build"), Some("m-test"));
+        let r = resolve_target_name(
+            &Some(String::from("cli")),
+            Some(String::from("env")),
+            Some(&String::from("config-default")),
+            tc.as_ref(),
+            true,
+            None,
+        );
+        assert_eq!(r, TargetResolution::Named(String::from("cli")));
+    }
+
+    #[test]
+    fn resolution_env_sits_above_the_manifest_face() {
+        let tc = face(Some("m-default"), Some("m-build"), Some("m-test"));
+        let r = resolve_target_name(
+            &None,
+            Some(String::from("env")),
+            Some(&String::from("config-default")),
+            tc.as_ref(),
+            false,
+            None,
+        );
+        assert_eq!(r, TargetResolution::Named(String::from("env")));
+    }
+
+    #[test]
+    fn resolution_manifest_binds_per_verb() {
+        let tc = face(Some("m-default"), Some("m-build"), Some("m-test"));
+        let r = resolve_target_name(&None, None, None, tc.as_ref(), true, None);
+        assert_eq!(r, TargetResolution::Named(String::from("m-build")));
+        let r = resolve_target_name(&None, None, None, tc.as_ref(), false, None);
+        assert_eq!(r, TargetResolution::Named(String::from("m-test")));
+    }
+
+    #[test]
+    fn resolution_manifest_default_is_the_verb_fallback() {
+        let tc = face(Some("m-default"), None, None);
+        let r = resolve_target_name(&None, None, None, tc.as_ref(), true, None);
+        assert_eq!(r, TargetResolution::Named(String::from("m-default")));
+        // the config default only matters when the manifest face is silent
+        let r = resolve_target_name(
+            &None,
+            None,
+            Some(&String::from("config-default")),
+            tc.as_ref(),
+            false,
+            None,
+        );
+        assert_eq!(r, TargetResolution::Named(String::from("m-default")));
+    }
+
+    #[test]
+    fn resolution_config_default_is_the_last_named_tier() {
+        let r = resolve_target_name(
+            &None,
+            None,
+            Some(&String::from("config-default")),
+            None,
+            true,
+            None,
+        );
+        assert_eq!(r, TargetResolution::Named(String::from("config-default")));
+    }
+
+    #[test]
+    fn resolution_infers_a_single_candidate() {
+        let r = resolve_target_name(&None, None, None, None, true, Some("solo"));
+        assert_eq!(r, TargetResolution::Inferred(String::from("solo")));
+        // two or more candidates refuse to infer
+        let r = resolve_target_name(&None, None, None, None, true, None);
+        assert_eq!(r, TargetResolution::Missing);
+        // zero candidates refuse too
+        let r = resolve_target_name(&None, None, None, None, true, None);
+        assert_eq!(r, TargetResolution::Missing);
+    }
+
+    #[test]
+    fn resolution_missing_when_no_tier_answers() {
+        let r = resolve_target_name(&None, None, None, None, true, None);
+        assert_eq!(r, TargetResolution::Missing);
+    }
 
     #[test]
     fn find_target_path() {

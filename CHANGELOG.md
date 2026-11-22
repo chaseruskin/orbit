@@ -15,6 +15,11 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.29.4 - unreleased
+
+### Features
+- Adds the manifest `[toolchain]` section: bind a default target and one target per verb inside the repo, resolved above the config defaults; single-candidate targets are inferred; selecting a target that declares the other verb only dies loudly at the command line (closes #25)
+
 ## 0.29.3
 
 ### Features

@@ -803,6 +803,25 @@ impl Config {
         map
     }
 
+    /// Gathers every defined target regardless of verb capability.
+    ///
+    /// Used to tell "this target exists but declares the other verb only"
+    /// apart from "no such target exists".
+    pub fn get_all_targets(&self) -> HashMap<&str, &Target> {
+        let mut map = HashMap::new();
+
+        if let Some(tars) = &self.target {
+            tars.iter().for_each(|t| match map.get(t.get_name()) {
+                Some(_) => (),
+                None => {
+                    map.insert(t.get_name(), t);
+                    ()
+                }
+            });
+        }
+        map
+    }
+
     pub fn get_targets(&self, is_build: bool) -> HashMap<&str, &Target> {
         let mut map = HashMap::new();
 

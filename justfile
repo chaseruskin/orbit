@@ -105,30 +105,10 @@ test-rel-dep:
     chmod +x ./tests/s5/test.sh
     cd ./tests/s5; ./test.sh
 
-<<<<<<< HEAD
-=======
-# Relative dependency duplicate design units (issue #23 semantics)
-test-rel-dupes:
-    chmod +x ./tests/s10/rel-dupes.sh
-    cd ./tests/s10; ./rel-dupes.sh
-
-# Tool selection faces: toolchain binding, wrong-verb pick, [[target]] hint
-test-faces:
-    chmod +x ./tests/s11/faces.sh
-    cd ./tests/s11; ./faces.sh
-
-# Single-candidate target inference
-test-infer:
-    chmod +x ./tests/s12/infer.sh
-    cd ./tests/s12; ./infer.sh
-
 # Language std blueprint face: trailing field, json key, vocabulary check
 test-std:
     chmod +x ./tests/s13/std.sh
     cd ./tests/s13; ./std.sh
-
->>>>>>> b76fc684 (feat: blueprint rows carry their project's std -- per-file vocabulary checked at emission (closes #24))
-# TODO: Ip namespace collision 
 test-ip-collide:
     chmod +x ./tests/s6/test.sh
     cd ./tests/s6; ./test.sh

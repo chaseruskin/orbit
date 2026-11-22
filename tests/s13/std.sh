@@ -33,6 +33,15 @@ $(cat build.err)"
 awk -F '\t' 'NF != 3 { print "row with " NF " fields: " $0; bad = 1 } END { exit bad }' target/probe/blueprint.tsv || fail "a blueprint row gained a std field with no std declared"
 cd ../..
 
+# --- case C2: a strict target refuses the mixed-std graph at the CLI ---
+cd declared/root
+if orbit build --force --target strict --plan tsv > strict.out 2> strict.err; then
+    fail "the strict target should refuse the mixed 93/2008 graph, but it planned"
+fi
+grep -q 'forbids mixing language standards, but the project graph declares: 93 2008' strict.err || fail "expected the mixed-std face, got:
+$(cat strict.err)"
+cd ../..
+
 # --- case C: a std naming the wrong language refuses at planning ---
 cd mismatch/prj
 orbit lock --force > lock.out 2> lock.err

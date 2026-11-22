@@ -202,6 +202,8 @@ pub enum Error {
     ConfigIncludeInNonglobal,
     #[error("unknown std \"{0}\" (expected one of: {1})")]
     StdVocabulary(String, String),
+    #[error("target \"{0}\" forbids mixing language standards, but the project graph declares: {1}")]
+    MixedStdForbidden(String, String),
     #[error("expects {0} characters but found {1}")]
     UuidWrongSize(usize, usize),
     #[error("invalid character \"{0}\" does not belong to alphabet (a-z0-9)")]

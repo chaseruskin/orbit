@@ -159,6 +159,7 @@ impl Plan {
         // validate each file row's declared std against its language's
         // vocabulary (issue #24): a std rides the language it names
         let mut has_std = false;
+        let mut declared_stds: Vec<String> = Vec::new();
         for node in prj_graph.get_map().values() {
             if let Some(std) = node
                 .as_ref()
@@ -168,7 +169,18 @@ impl Plan {
                 .get_std()
             {
                 has_std = true;
+                if declared_stds.contains(std) == false {
+                    declared_stds.push(std.clone());
+                }
             }
+        }
+        // the mixed-std discipline: a strict target refuses a graph that
+        // declares differing stds (issue #24)
+        if declared_stds.len() > 1 && target.forbids_mixed_std() == true {
+            Err(Error::MixedStdForbidden(
+                target.get_name().to_string(),
+                declared_stds.join(" "),
+            ))?;
         }
         if has_std == true {
             for f in &files {

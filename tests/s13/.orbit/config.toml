@@ -5,3 +5,11 @@ name = "probe"
 description = "plans the design and echoes"
 command = ["echo", "planned"]
 plans = ["tsv", "json"]
+
+# The discipline face: refuses a graph whose projects declare differing stds
+[[target]]
+name = "strict"
+description = "plans the design and echoes: refuses mixed stds"
+command = ["echo", "strict-planned"]
+plans = ["tsv", "json"]
+mixed-std = false

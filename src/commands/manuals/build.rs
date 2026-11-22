@@ -31,9 +31,12 @@ DESCRIPTION
     end of their execution process. This command does not allow the top to be a
     testbench, if you want to set a testbench, see 'orbit test'.
     
-    A target must be provided for the build command to run. A default target can
-    be specified in a configuration file, which will be used when a target is
-    omitted from the command-line.
+    A target must be resolvable for the build command to run. When a target is
+    omitted from the command-line, Orbit resolves it through the following
+    order: the 'ORBIT_TARGET' environment variable, the manifest's
+    '[toolchain]' section ('build', then 'default'), a configuration file's
+    default target, and finally the single candidate — when exactly one build
+    target exists, it is inferred.
     
     When the '--top' option is omitted, all possible top-level units will be
     included, leaving the respective top environment variables empty. Filesets 

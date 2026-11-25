@@ -15,6 +15,11 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.29.4 - unreleased
+
+### Fixes
+- Stops counting a nested concurrent body's `begin` toward the primary-end nesting in the VHDL parser: architectures with processes no longer swallow the design units declared after them in the same file, so multi-unit files contribute every unit to the plan closure
+
 ## 0.29.3
 
 ### Features

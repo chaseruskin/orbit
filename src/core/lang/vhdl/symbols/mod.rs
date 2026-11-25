@@ -2042,7 +2042,6 @@ impl VhdlSymbol {
             // println!("{:?}", t);
             if t.as_type().check_keyword(&Keyword::End) == true {
                 let (clause, _c_refs) = Self::parse_statement(tokens);
-                // println!("IN BODY AT END: {:?} {:?} {}", clause, is_subprogram, nested_blocks);
                 if eval_exit(&clause) == true {
                     nested_blocks -= 1;
                     if nested_blocks <= 0 {
@@ -2068,8 +2067,10 @@ impl VhdlSymbol {
                         .as_ref()
                         .check_keyword(&Keyword::Begin)
                 {
-                    nested_blocks += 1;
-                    // println!("{:?}, {}", clause, nested_blocks);
+                    // a bare `begin` here opens a nested concurrent body (a process
+                    // or block statement); its own `end process;`/`end block;` is
+                    // rejected by the primary-end predicate, so it must not count
+                    // toward the nesting that only a primary `end;` closes
                     continue;
                 }
                 // println!("ENTERING SUBPROGRAM {:?}", clause);
@@ -2097,7 +2098,6 @@ impl VhdlSymbol {
                 // build statements
             } else {
                 let (clause, c_refs) = Self::parse_statement(tokens);
-                // println!("IN BODY: {:?}", clause);
                 refs.extend(c_refs);
                 // check if statement is an instantiation
                 if is_subprogram == false {
@@ -2986,5 +2986,15 @@ end architecture rtl;
         println!("{:?}", syms);
         // verify we captured all 3 sub-entities following procedures
         assert_eq!(syms[1].as_architecture().unwrap().get_refs().len(), 3);
+    }
+
+    #[test]
+    fn test_units_after_multi_process_arch() {
+        let data = std::fs::read_to_string("./tests/t5/multi_unit_proc.vhd").unwrap();
+        let syms = VHDLParser::read(&data).unwrap().into_symbols();
+        // both entity/architecture pairs of the file must be captured: the first
+        // architecture carries processes, and the second pair must not be
+        // swallowed by the process body parse
+        assert_eq!(syms.len(), 4);
     }
 }

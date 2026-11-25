@@ -1,0 +1,7 @@
+# The fixture-scoped (regional) config: orbit discovers this file by walking
+# parent directories, so every project under tests/s10 sees the probe target
+# without touching the developer's global config.
+[[target]]
+name = "probe"
+description = "plans the design and echoes: the blueprint file is the proof"
+command = ["echo", "planned"]

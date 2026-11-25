@@ -15,6 +15,11 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.29.4 - unreleased
+
+### Fixes
+- Expands the plan closure to whole files: a file that enters the plan carries the dependencies of every design unit the file declares, so file-oriented tools (ghdl analyzes whole files) no longer refuse a planned file over a sibling unit's use-clause target that the unit-granular walk never pulled
+
 ## 0.29.3
 
 ### Features

@@ -15,6 +15,11 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.29.4 - unreleased
+
+### Fixes
+- Stops reserving `vpkg` as a keyword: it is not a VHDL reserved word (the genuine 2008 PSL additions `vmode`/`vprop`/`vunit` stay reserved), and the collision made any design unit named `vpkg` -- the Xilinx `unisim_VPKG` helper package's own name -- unplannable
+
 ## 0.29.3
 
 ### Features

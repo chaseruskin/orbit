@@ -1,5 +1,6 @@
 library ieee;
 use ieee.std_logic_1164.all;
+use techmap.aux_pkg.all;
 
 entity gen_mul is
   port (a, b : in std_logic_vector(15 downto 0);

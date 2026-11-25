@@ -21,5 +21,6 @@ $(cat plan.err)"
 fi
 grep -q "mult.vhd" target/probe/blueprint.tsv || fail "the closure is missing mult.vhd: the unit after a process-bearing architecture was swallowed"
 grep -q "techmult.vhd" target/probe/blueprint.tsv || fail "the closure is missing techmult.vhd"
+grep -q "aux_pkg.vhd" target/probe/blueprint.tsv || fail "the closure is missing aux_pkg.vhd: a file riding the plan must carry the dependencies of all its units"
 grep -q "top.vhd" target/probe/blueprint.tsv || fail "the closure is missing top.vhd"
 cd ..

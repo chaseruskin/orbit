@@ -132,7 +132,6 @@ pub enum Keyword {
     Variable, // VHDL-1987 LRM - current
     View,
     Vmode,
-    Vpkg,
     Vprop,
     Vunit,
     Wait,  // VHDL-1987 LRM - current
@@ -256,7 +255,6 @@ impl Keyword {
             "variable" => Self::Variable,
             "view" => Self::View,
             "vmode" => Self::Vmode,
-            "vpkg" => Self::Vpkg,
             "vprop" => Self::Vprop,
             "vunit" => Self::Vunit,
             "wait" => Self::Wait,
@@ -378,7 +376,6 @@ impl Keyword {
             Self::Variable => "variable",
             Self::View => "view",
             Self::Vmode => "vmode",
-            Self::Vpkg => "vpkg",
             Self::Vprop => "vprop",
             Self::Vunit => "vunit",
             Self::Wait => "wait",

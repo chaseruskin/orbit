@@ -303,6 +303,20 @@ impl Plan {
 
         // println!("{:?}", min_order);
 
+        // A file rides whole: file-oriented tools (ghdl analyzes every design
+        // unit in a file, vivado compiles the whole file) need the
+        // dependencies of ALL the units an included file carries, not only
+        // the ones the instantiation walk reached -- a sibling unit's
+        // use-clause still needs its target analyzed or the tool refuses
+        // the file (probed live 2026-11-25: pads_unisim.vhd planned for its
+        // reachable pads while ghdl refused the file over the tristate
+        // pad's `use unisim.OBUFT`, whose file the unit-granular closure
+        // never pulled). Expand the walked order with the file-sibling
+        // closure: every node of an included file joins, and so do its
+        // dependencies, until the set stops growing; the final order stays
+        // topological over the expanded set.
+        let min_order = Self::expand_order_to_file_closure(&global_graph, min_order);
+
         // Generate the file order while merging dependencies for common file path names together.
         let file_order = Self::determine_file_order(&global_graph, min_order);
 
@@ -1669,6 +1683,57 @@ impl Plan {
     /// This function transforms the list of indices from `min_order` in topologically-sorted order
     /// to the list of files in topologically-sorted order based on the information
     /// in the `global_graph`.
+    /// Expands a walked node order to the file-sibling closure: a file that
+    /// enters the plan carries the dependencies of every design unit the file
+    /// declares, not only the units the instantiation walk reached.
+    fn expand_order_to_file_closure<'a>(
+        graph: &'a GraphMap<CompoundIdentifier, HdlNode<'a>, ()>,
+        order: Vec<usize>,
+    ) -> Vec<usize> {
+        // bucket every node of the graph by the files it is declared in
+        let mut buckets: HashMap<String, Vec<usize>> = HashMap::new();
+        for i in 0..graph.get_graph().node_count() {
+            if let Some(n) = graph.get_node_by_index(i) {
+                for f in n.as_ref().get_associated_files() {
+                    buckets.entry(f.get_file().to_string()).or_default().push(i);
+                }
+            }
+        }
+
+        // the walked set grows with file siblings and their dependencies
+        let mut set: HashSet<usize> = order.iter().copied().collect();
+        let mut stack: Vec<usize> = set.iter().copied().collect();
+        while let Some(i) = stack.pop() {
+            if let Some(n) = graph.get_node_by_index(i) {
+                for f in n.as_ref().get_associated_files() {
+                    if let Some(siblings) = buckets.get(f.get_file().as_str()) {
+                        for &j in siblings {
+                            if set.insert(j) {
+                                stack.push(j);
+                            }
+                        }
+                    }
+                }
+            }
+            for p in graph.predecessors(i) {
+                if let Some(pn) = graph.get_node_by_key(&p.0) {
+                    let j = pn.index();
+                    if set.insert(j) {
+                        stack.push(j);
+                    }
+                }
+            }
+        }
+
+        // keep the total order topological over the expanded set
+        graph
+            .get_graph()
+            .topological_sort()
+            .into_iter()
+            .filter(|i| set.contains(i))
+            .collect()
+    }
+
     ///
     /// Several files may be associated with an index in the `global_graph`, so it is important
     /// to account for those too.

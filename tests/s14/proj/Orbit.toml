@@ -1,0 +1,9 @@
+[project]
+name = "closure-proj"
+uuid = "bezim4tizm97gqcphec09svr6"
+version = "0.1.0"
+library = "design"
+public = ["rtl/"]
+
+[dependencies]
+libx = { path = "../libx" }

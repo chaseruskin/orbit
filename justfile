@@ -51,6 +51,7 @@ run-sys-tests:
     just test-pub
     just test-partv
     just test-rel-dep
+    just test-closure
     just test-sep-arch-refs
     just test-recur-filesets
     just test-custom-filesets
@@ -64,6 +65,7 @@ test-all:
     just test-pub
     just test-partv
     just test-rel-dep
+    just test-closure
     just test-sep-arch-refs
     just test-recur-filesets
     just test-custom-filesets
@@ -102,6 +104,11 @@ test-partv:
 test-rel-dep:
     chmod +x ./tests/s5/test.sh
     cd ./tests/s5; ./test.sh
+
+# Multi-unit file closure: units after process-bearing architectures ride the plan
+test-closure:
+    chmod +x ./tests/s14/closure.sh
+    cd ./tests/s14; ./closure.sh
 
 # TODO: Ip namespace collision 
 test-ip-collide:

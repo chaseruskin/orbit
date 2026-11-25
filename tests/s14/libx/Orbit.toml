@@ -1,0 +1,6 @@
+[project]
+name = "libx"
+uuid = "dhm51chtdj61zui32i5lqu430"
+version = "0.1.0"
+library = "techmap"
+public = ["rtl/"]
